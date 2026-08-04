@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 
-import type { Content } from "@/shared/lib/schemas";
+import type { Content } from "@synapse/shared/schemas";
 
 export interface UploadedFileInfo {
 	objectName: string;

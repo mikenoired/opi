@@ -1,7 +1,6 @@
+import type { createContentSchema, updateContentSchema } from "@synapse/shared/schemas";
 import { and, asc, desc, eq, gt, ilike, inArray, isNull, lt, lte, ne, or, type SQL, sql } from "drizzle-orm";
 import type z from "zod";
-
-import type { createContentSchema, updateContentSchema } from "@/shared/lib/schemas";
 
 import type { Context } from "../context";
 import { content, contentTags, edges, nodes, tags } from "../db/schema";

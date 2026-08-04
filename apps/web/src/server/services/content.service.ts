@@ -1,7 +1,9 @@
-import type z from "zod";
-
-import { deleteFile, getFileMetadata } from "@/shared/api/minio";
-import type { Content, CreateContent, createContentSchema, updateContentSchema } from "@/shared/lib/schemas";
+import type {
+	Content,
+	CreateContent,
+	createContentSchema,
+	updateContentSchema,
+} from "@synapse/shared/schemas";
 import {
 	contentDetailSchema,
 	contentListItemSchema,
@@ -9,7 +11,10 @@ import {
 	extractTextFromStructuredContent,
 	parseAudioJson,
 	parseMediaJson,
-} from "@/shared/lib/schemas";
+} from "@synapse/shared/schemas";
+import type z from "zod";
+
+import { deleteFile, getFileMetadata } from "@/shared/api/minio";
 
 import type { Context } from "../context";
 import type { content as contentTable } from "../db/schema";

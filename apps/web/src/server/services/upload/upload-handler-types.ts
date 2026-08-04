@@ -1,4 +1,4 @@
-import type { Content } from "@/shared/lib/schemas";
+import type { Content } from "@synapse/shared/schemas";
 
 import type { Context } from "../../context";
 import type { UploadContentType } from "./upload-types";

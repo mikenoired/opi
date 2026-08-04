@@ -1,6 +1,5 @@
+import { parseMediaJson } from "@synapse/shared/schemas";
 import { z } from "zod";
-
-import { parseMediaJson } from "@/shared/lib/schemas";
 
 import { aiConfig, computeCostUsd } from "../ai/config";
 import { devLog } from "../ai/logger";

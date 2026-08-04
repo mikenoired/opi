@@ -2,18 +2,18 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { Scalar } from "@scalar/hono-api-reference";
+import {
+	authSchema,
+	contentTypeSchema,
+	createContentSchema,
+	updateContentSchema,
+} from "@synapse/shared/schemas";
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { z } from "zod";
 
 import { deleteUserFiles, getPresignedUrl } from "@/shared/api/minio";
-import {
-	authSchema,
-	contentTypeSchema,
-	createContentSchema,
-	updateContentSchema,
-} from "@/shared/lib/schemas";
 
 import type { Context } from "../context";
 import { ApiError, STATUS_CODES } from "../lib/api-error";
