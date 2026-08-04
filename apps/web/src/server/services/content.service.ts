@@ -1,9 +1,11 @@
 import {
 	attachContentTags,
+	createContentSuggestionCursor,
 	groupContentSuggestions,
 	groupTagContentPreviews,
 	mapContentRecord,
 	normalizeTagTitle,
+	parseContentSuggestionCursor,
 	type SuggestedContentTag,
 	uniqueTagTitles,
 } from "@synapse/core";
@@ -129,9 +131,9 @@ export default class ContentService {
 			return { groups: [], nextCursor: undefined };
 		}
 
-		const [rawTagIndex, cursorTimestamp, cursorId] = cursor?.split("|") ?? [];
-		let tagIndex = Math.max(0, Number.parseInt(rawTagIndex || "0", 10) || 0);
-		let itemCursor = cursorTimestamp && cursorId ? `${cursorTimestamp}|${cursorId}` : undefined;
+		const parsedCursor = parseContentSuggestionCursor(cursor);
+		let tagIndex = parsedCursor.tagIndex;
+		let itemCursor = parsedCursor.itemCursor;
 		const matches: Array<{
 			row: ContentRow;
 			tag: { color: number; id: string; title: string; itemCount: number };
@@ -159,7 +161,7 @@ export default class ContentService {
 
 			if (rows.length > remaining) {
 				const last = pageRows[pageRows.length - 1]!;
-				nextCursor = `${tagIndex}|${(last.createdAt ?? new Date(0)).toISOString()}|${last.id}`;
+				nextCursor = createContentSuggestionCursor(tagIndex, last.createdAt, last.id);
 				break;
 			}
 

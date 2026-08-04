@@ -208,6 +208,22 @@ export function groupTagContentPreviews(
 	return Array.from(groups.values());
 }
 
+export function parseContentSuggestionCursor(cursor?: string) {
+	const [rawTagIndex, timestamp, id] = cursor?.split("|") ?? [];
+	return {
+		tagIndex: Math.max(0, Number.parseInt(rawTagIndex || "0", 10) || 0),
+		itemCursor: timestamp && id ? `${timestamp}|${id}` : undefined,
+	};
+}
+
+export function createContentSuggestionCursor(
+	tagIndex: number,
+	createdAt: Date | null | undefined,
+	id: string
+) {
+	return `${tagIndex}|${(createdAt ?? new Date(0)).toISOString()}|${id}`;
+}
+
 export function attachContentTags(items: Content[], relations: ContentTagRelation[]): Content[] {
 	const byContent = new Map<string, { ids: string[]; titles: string[] }>();
 
