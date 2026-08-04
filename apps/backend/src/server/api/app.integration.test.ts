@@ -171,4 +171,16 @@ describe.serial("API integration", () => {
 		expect(deleted.body).toEqual({ success: true });
 		expect(await db.select().from(content).where(eq(content.id, item.id))).toHaveLength(0);
 	});
+
+	test("exposes Synapse Sync only to paid plans", async () => {
+		const account = await register("sync-entitlement");
+		const starter = await request("GET", "/user/sync/entitlement", { token: account.token });
+		expect(starter.response.status).toBe(200);
+		expect(starter.body).toEqual({ eligible: false, plan: "starter" });
+
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const paid = await request("GET", "/user/sync/entitlement", { token: account.token });
+		expect(paid.response.status).toBe(200);
+		expect(paid.body).toEqual({ eligible: true, plan: "plus" });
+	});
 });

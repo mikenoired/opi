@@ -2,10 +2,13 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { app, BrowserWindow, net, protocol } from "electron";
+import { ipcMain } from "electron";
 
 import { DesktopStorageProvider } from "./desktop-storage.provider";
+import { LocalLibraryRepository, type LocalItemInput, type LocalSettings } from "./local-library.repository";
 
 const objectStorage = new DesktopStorageProvider(join(app.getPath("userData"), "objects"));
+const library = new LocalLibraryRepository(join(app.getPath("userData"), "library"));
 
 function createWindow(): void {
 	const window = new BrowserWindow({
@@ -22,6 +25,14 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+	ipcMain.handle("library:list", (_event, search?: string) => library.list(search));
+	ipcMain.handle("library:save", (_event, input: LocalItemInput & { id?: string }) => library.save(input));
+	ipcMain.handle("library:delete", (_event, id: string) => library.delete(id));
+	ipcMain.handle("library:settings", () => library.getSettings());
+	ipcMain.handle("library:update-settings", (_event, settings: Partial<LocalSettings>) =>
+		library.updateSettings(settings)
+	);
+	ipcMain.handle("library:statistics", () => library.getStatistics());
 	protocol.handle("synapse-object", (request) => {
 		const objectName = decodeURIComponent(new URL(request.url).pathname.slice(1));
 		return net.fetch(pathToFileURL(objectStorage.getObjectPath(objectName)).toString());

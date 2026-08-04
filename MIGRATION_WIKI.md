@@ -195,9 +195,9 @@ Core now owns the ordering for appending or replacing Content↔tag relations, i
 
 `WebCoreContentProvider` maps the existing Web Content repository to the Core Content, graph, and tag-title ports. It is constructed with a transaction-scoped repository for mutations, preserving the original transaction boundary. `WebStorageProvider` maps Core's storage port to MinIO and is used for Content media/audio cleanup; MinIO's validation, naming, and public URL policy stay in the adapter. Core workflows no longer receive anonymous Web adapter objects from `ContentService`.
 
-### Desktop owns Electron and local object persistence
+### Desktop owns Electron, local object persistence, and a local-library baseline
 
-`apps/desktop` is a separate Electron Vite application with an isolated preload bridge. `DesktopStorageProvider` implements the existing Core `StorageProvider` using Electron's per-user data directory and serves resulting object URLs through the main-process-only `synapse-object://` protocol. Object identifiers are generated and path-validated in the adapter, preserving the Core rule that storage naming and URL policy are platform concerns. A SQLite/Content repository was not introduced: the existing Core port is intentionally broader than the Stage 7 object-storage preparation, and its data-model migration must be designed separately rather than copied from the Web/Backend implementation.
+`apps/desktop` is a separate Electron Vite application with an isolated preload bridge. `DesktopStorageProvider` implements the existing Core `StorageProvider` using Electron's per-user data directory and serves resulting object URLs through the main-process-only `synapse-object://` protocol. Object identifiers are generated and path-validated in the adapter, preserving the Core rule that storage naming and URL policy are platform concerns. The main process now also owns a small, atomic JSON-backed local library and exposes only explicit CRUD, settings, and statistics IPC calls. The renderer can create, edit, search, tag, and delete local notes, links, and tasks; its sync policy is persisted and automatic mode visibly queues newly saved items. This is a deliberate desktop-owned baseline, not a substitute for the full Core Content/graph repository.
 
 ### Content suggestion grouping is Core-owned
 
@@ -255,27 +255,35 @@ The co-located Web server was moved intact into `apps/backend`, including its AP
 
 `SyncProvider` now publishes user-scoped Content, tag, preference, and account changes after their authoritative Backend mutations complete. `@synapse/sync` defines a platform-neutral event envelope and subscription boundary. Backend's process-local adapter delivers those events as authenticated SSE at `/api/sync/events`; Web invalidates its Content, graph, and user queries when an event arrives, so separate browser clients converge through the existing API reads. Delivery failure never rolls back an already committed database mutation, and reconnecting clients obtain the canonical state by refetching. No transport, Node, Browser, or Electron dependency was added to Core.
 
+### Synapse Sync is a paid-plan capability
+
+`@synapse/shared/plans` is the policy source of truth: Plus, Pro, and God Mode are eligible for Synapse Sync; Starter is not. Backend exposes the authenticated `/user/sync/entitlement` contract and integration tests cover both outcomes. This establishes authorization before any Desktop remote mutation endpoint is introduced; it does not yet implement the transport itself.
+
+### Web release metadata is public configuration, not backend telemetry
+
+The landing page chooses a recommended installer locally from the browser user agent and still displays all platform choices. Installer URL and version are optional Vite build variables (`VITE_DESKTOP_MACOS_URL`, `VITE_DESKTOP_WINDOWS_URL`, `VITE_DESKTOP_LINUX_URL`, and `VITE_DESKTOP_VERSION`); without a published signed build, the page explicitly says it is not yet available. iOS and Android are visibly marked as in development with no download action.
+
 ## Known limitations
 
-- Desktop currently provides application bootstrapping and local object storage only. Its product UI and a local implementation of the complete Content/graph repository are deliberately not copied from Web; they require separate Desktop feature/persistence work after the staged platform split.
+- Desktop has a functional local-library UI for notes, links, and tasks, but it does not yet support media/document import, the graph view, account authentication, or full Web feature parity.
 - Web and Backend are separate runtime processes. Production deployments must set `VITE_API_URL` to the Backend `/api` origin and configure `CORS_ORIGIN` accordingly; local Vite development uses the configured `/api` proxy.
 - Content persistence, graph storage, cache ownership, and file cleanup remain implemented by Backend adapters. Their Core integration is complete for the existing Content service; other Backend services are intentionally out of scope because they do not implement a migrated Core workflow.
 - Existing UI and TypeScript packages were already present and have not been reorganized as part of this task.
 - No Collection domain model or persistence exists in the current product. Stage 3 therefore migrates the complete set of existing domain models without inventing a feature solely to match the target architecture.
-- Desktop has no local Content/graph repository yet, so it has no state target for applying synchronization events. The event contract and subscription boundary are ready for that later Desktop persistence task; adding a SQLite model solely for transport delivery would exceed this migration's scope.
+- Desktop's local library has a persisted sync-policy and queue state, but no remote transfer implementation. Backend now exposes paid-plan eligibility, but it still has no durable remote sync protocol, cursor, conflict handling, or object-transfer lifecycle for Desktop; queued state must not be presented as completed synchronization.
 
 ## Next recommended tasks
 
-1. Design the Desktop Content/graph repository, then consume `@synapse/sync` events to apply the already-defined changes locally.
-2. If delivery must survive Backend restarts or support offline mutation replay, replace the process-local Backend adapter with a durable outbox without changing the Core contract.
-3. After local Desktop parity and remote synchronization are complete, follow [the Desktop local-mode follow-up plan](docs/plans/desktop-local-sync-followups.md).
+1. Replace the Desktop JSON library with a complete local Content/graph repository and migration layer; add media/document import and graph projection.
+2. Define and implement Backend entitlement, durable remote sync outbox/cursor, conflict handling, and object transfers before enabling any Desktop upload control.
+3. Add packaged, signed releases and connect the Web download landing section to published release metadata.
 
 ## Platform boundaries
 
 | Module              | Boundary | Current contents                                                                                                                                                                                                                |
 | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/web`          | Web      | Browser UI, routing, API client, and a local-development `/api` proxy                                                                                                                                                           |
-| `apps/desktop`      | Desktop  | Electron main/preload bootstrap, `synapse-object://` protocol, and filesystem-backed Core `StorageProvider`                                                                                                                     |
+| `apps/desktop`      | Desktop  | Electron main/preload bootstrap, `synapse-object://` protocol, filesystem-backed Core `StorageProvider`, JSON local library, explicit IPC bridge, and local-library UI                                                          |
 | `apps/backend`      | Backend  | Runnable Bun/Hono API; services, repositories, DB schema/migrations, parsers, AI, Redis/MinIO, and Core persistence/storage adapters                                                                                            |
 | `packages/core`     | Core     | Content, graph, storage, and sync provider contracts; tag identity/title resolution; Content relation/deletion and query orchestration; serialized Content payloads/projections; User mapping/preferences; Note image ownership |
 | `packages/ui`       | Shared   | Existing React UI library                                                                                                                                                                                                       |

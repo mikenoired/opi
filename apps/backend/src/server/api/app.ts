@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { Scalar } from "@scalar/hono-api-reference";
+import { canUseSynapseSync } from "@synapse/shared/plans";
 import {
 	authSchema,
 	contentTypeSchema,
@@ -384,6 +385,10 @@ export const api = new Hono()
 	.get("/user", requireAuth, rateLimit("query"), async (c) =>
 		c.json(await new UserService(c.get("apiContext")).getUser())
 	)
+	.get("/user/sync/entitlement", requireAuth, rateLimit("query"), async (c) => {
+		const user = await new UserService(c.get("apiContext")).getUser();
+		return c.json({ eligible: canUseSynapseSync(user.plan), plan: user.plan });
+	})
 	.delete("/user", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
 		const userId = c.get("apiContext").user!.id;
 		await deleteUserFiles(userId);

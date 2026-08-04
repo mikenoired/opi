@@ -41,6 +41,7 @@ export type User = Awaited<ReturnType<UserService["getUser"]>>;
 export type StorageUsage = Awaited<ReturnType<UserService["getStorageUsage"]>>;
 export type Preferences = Awaited<ReturnType<UserService["getPreferences"]>>;
 export type AiUsage = Awaited<ReturnType<AiUsageRepository["getOverview"]>>;
+export type SyncEntitlement = { eligible: boolean; plan: import("@synapse/shared/plans").PlanId };
 export type CreateContentInput = z.input<typeof createContentSchema>;
 export type UpdateContentInput = z.input<typeof updateContentSchema>;
 export type CreateContentResult = Awaited<ReturnType<ContentService["create"]>>;

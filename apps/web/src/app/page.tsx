@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 
 import { AuthDialog } from "@/features/auth-dialog/ui/auth-dialog";
+import { detectDesktopPlatform, getDesktopReleases } from "@/shared/config/desktop-releases";
 import { useAuth } from "@/shared/lib/auth-context";
 import Image from "@/shared/router/image";
 
@@ -71,6 +72,8 @@ export default function HomePage() {
 	const [authDialogOpen, setAuthDialogOpen] = useState(false);
 	const [authMode, setAuthMode] = useState<"login" | "register">("login");
 	const { user, loading } = useAuth();
+	const recommendedPlatform = detectDesktopPlatform();
+	const desktopReleases = getDesktopReleases();
 
 	const handleAuthClick = (mode: "login" | "register") => {
 		setAuthMode(mode);
@@ -165,6 +168,47 @@ export default function HomePage() {
 							<FeatureHighlight key={feature.title} {...feature} />
 						))}
 					</div>
+				</div>
+			</section>
+
+			<section className="border-y bg-muted/35 px-4 py-20">
+				<div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-end">
+					<div className="space-y-4">
+						<p className="text-sm font-medium tracking-[0.2em] text-primary uppercase">Synapse Desktop</p>
+						<h2 className="text-3xl font-bold text-balance md:text-4xl">Ваш архив — на вашем устройстве</h2>
+						<p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
+							Локальная библиотека работает независимо от браузера. Синхронизация доступна на платных планах,
+							когда выйдет первая подписанная сборка.
+						</p>
+					</div>
+					<div className="grid gap-3 sm:grid-cols-3">
+						{desktopReleases.map((release) => {
+							const recommended = release.platform === recommendedPlatform;
+							return (
+								<div key={release.platform} className="rounded-xl border bg-background p-5 shadow-sm">
+									<p className="text-lg font-semibold">{release.label}</p>
+									<p className="mt-1 min-h-10 text-sm text-muted-foreground">
+										{recommended ? "Рекомендуется для этого устройства" : "Установщик для этой платформы"}
+									</p>
+									{release.url ? (
+										<a
+											className="mt-4 inline-flex text-sm font-semibold text-primary underline-offset-4 hover:underline"
+											href={release.url}>
+											Скачать{release.version ? ` v${release.version}` : ""}
+										</a>
+									) : (
+										<span className="mt-4 inline-block text-sm text-muted-foreground">Скоро выйдет</span>
+									)}
+								</div>
+							);
+						})}
+					</div>
+				</div>
+				<div className="mx-auto mt-8 max-w-6xl rounded-xl border border-dashed bg-background/60 p-5">
+					<p className="font-medium">iOS и Android — в разработке</p>
+					<p className="mt-1 text-sm text-muted-foreground">
+						Мобильные приложения пока не доступны для скачивания.
+					</p>
 				</div>
 			</section>
 
