@@ -55,6 +55,7 @@
 - Completed: Stage 3 (ninth slice) — moved tag-content preview grouping into `@synapse/core`.
 - Completed: Stage 3 (tenth slice) — moved Content suggestion cursor rules into `@synapse/core`.
 - Completed: Stage 3 (eleventh slice) — moved tag-content page cursor rules into `@synapse/core`.
+- Completed: Stage 3 (twelfth slice) — moved current User model mapping into `@synapse/core`.
 - In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 

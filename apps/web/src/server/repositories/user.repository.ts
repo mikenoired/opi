@@ -1,4 +1,4 @@
-import { DEFAULT_PLAN_ID, isPlanId, type PlanId } from "@synapse/shared/plans";
+import { mapCurrentUser, type CurrentUser } from "@synapse/core";
 import { normalizeUserPreferences, type UserPreferencesInput } from "@synapse/shared/preferences";
 import { eq } from "drizzle-orm";
 
@@ -6,14 +6,6 @@ import type { Context } from "../context";
 import { users } from "../db/schema";
 import { ApiError } from "../lib/api-error";
 import { requireAuth } from "../lib/auth-guard";
-
-export interface CurrentUser {
-	id: string;
-	email: string;
-	plan: PlanId;
-	createdAt: Date | null;
-	updatedAt: Date | null;
-}
 
 export default class UserRepository {
 	constructor(private readonly ctx: Context) {}
@@ -39,13 +31,7 @@ export default class UserRepository {
 			});
 		}
 
-		return {
-			id: user.id,
-			email: user.email,
-			plan: isPlanId(user.plan) ? user.plan : DEFAULT_PLAN_ID,
-			createdAt: user.createdAt,
-			updatedAt: user.updatedAt,
-		};
+		return mapCurrentUser(user);
 	}
 
 	async getPreferences() {
