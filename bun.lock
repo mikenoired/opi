@@ -14,11 +14,20 @@
         "typescript": "^7.0.2",
       },
     },
+    "apps/backend": {
+      "name": "@synapse/backend",
+      "version": "0.0.0",
+    },
+    "apps/desktop": {
+      "name": "@synapse/desktop",
+      "version": "0.0.0",
+    },
     "apps/web": {
       "name": "@synapse/web",
       "version": "0.0.0",
       "dependencies": {
         "@scalar/hono-api-reference": "^0.11.12",
+        "@synapse/shared": "workspace:*",
         "@synapse/ui": "workspace:*",
         "@tanstack/react-query": "^5.101.0",
         "@tanstack/react-router": "^1.170.18",
@@ -72,6 +81,49 @@
         "drizzle-kit": "^0.31.10",
         "tailwindcss": "^4.3.1",
         "typescript": "^6.0.3",
+      },
+    },
+    "packages/api": {
+      "name": "@synapse/api",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@synapse/tsconfig": "workspace:*",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/core": {
+      "name": "@synapse/core",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@synapse/tsconfig": "workspace:*",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/features": {
+      "name": "@synapse/features",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@synapse/tsconfig": "workspace:*",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/shared": {
+      "name": "@synapse/shared",
+      "version": "0.0.0",
+      "dependencies": {
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "@synapse/tsconfig": "workspace:*",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/sync": {
+      "name": "@synapse/sync",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@synapse/tsconfig": "workspace:*",
+        "typescript": "^7.0.2",
       },
     },
     "packages/tsconfig": {
@@ -484,6 +536,20 @@
     "@scalar/types": ["@scalar/types@0.17.0", "", { "dependencies": { "@scalar/helpers": "0.9.2", "nanoid": "^5.1.6", "type-fest": "^5.3.1", "zod": "^4.3.5" } }, "sha512-mj033MX0EFOEwfpO3ch7FGGnMbye1aLlnP6LmTC9Il2AlBCDL41rYPk67jF5ICAMsAES1RQ+8N2bcC0MJnupLQ=="],
 
     "@scalar/validation": ["@scalar/validation@0.6.2", "", {}, "sha512-Sc1TkcwGV6aVCO51AyKeaGiP8gpwAHxEtO5d3tZzPV+KsnlC/YokQxFxwBrbIXw73k9hmcExnJyGu3k5i6n6VA=="],
+
+    "@synapse/api": ["@synapse/api@workspace:packages/api"],
+
+    "@synapse/backend": ["@synapse/backend@workspace:apps/backend"],
+
+    "@synapse/core": ["@synapse/core@workspace:packages/core"],
+
+    "@synapse/desktop": ["@synapse/desktop@workspace:apps/desktop"],
+
+    "@synapse/features": ["@synapse/features@workspace:packages/features"],
+
+    "@synapse/shared": ["@synapse/shared@workspace:packages/shared"],
+
+    "@synapse/sync": ["@synapse/sync@workspace:packages/sync"],
 
     "@synapse/tsconfig": ["@synapse/tsconfig@workspace:packages/tsconfig"],
 

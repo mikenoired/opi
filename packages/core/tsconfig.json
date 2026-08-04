@@ -1,0 +1,10 @@
+{
+	"extends": "@synapse/tsconfig/base.json",
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"module": "ESNext",
+		"noEmit": true
+	},
+	"include": ["src/**/*.ts"]
+}

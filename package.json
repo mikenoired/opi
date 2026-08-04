@@ -26,7 +26,7 @@
 		"smoke:api": "bun run test:api",
 		"smoke:server": "JWT_SECRET=smoke-test-secret JWT_REFRESH_SECRET=smoke-test-refresh-secret API_RATE_LIMIT_MUTATION=1000 bun scripts/server-smoke.ts",
 		"smoke:release": "JWT_SECRET=smoke-test-secret JWT_REFRESH_SECRET=smoke-test-refresh-secret API_RATE_LIMIT_MUTATION=1000 SMOKE_WARMUP_RUNS=0 SMOKE_RUNS=1 bun scripts/server-smoke.ts",
-		"typecheck": "bun x tsc -p apps/web/tsconfig.json --noEmit && bun x tsc -p packages/ui/tsconfig.json --noEmit"
+		"typecheck": "bun x tsc -p apps/web/tsconfig.json --noEmit && bun x tsc -p packages/ui/tsconfig.json --noEmit && bun --filter '@synapse/core' typecheck && bun --filter '@synapse/features' typecheck && bun --filter '@synapse/api' typecheck && bun --filter '@synapse/shared' typecheck && bun --filter '@synapse/sync' typecheck"
 	},
 	"devDependencies": {
 		"@types/bun": "^1.3.14",
