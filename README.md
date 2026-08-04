@@ -60,12 +60,15 @@ bun --filter @synapse/backend search:backfill
 bun --filter @synapse/backend dev
 # в отдельном терминале
 bun --filter @synapse/web dev
+# в третьем терминале (Desktop)
+bun --filter @synapse/desktop dev
 ```
 
 Приложения запускаются отдельными процессами:
 
 - Vite-клиент: [http://localhost:5173](http://localhost:5173)
 - Bun + Hono API: [http://localhost:3000](http://localhost:3000)
+- Electron Desktop: отдельное нативное окно
 
 Vite автоматически проксирует `/api` на Backend. Если Web и Backend должны работать с разных origin, задайте:
 
@@ -75,6 +78,15 @@ CORS_ORIGIN=http://localhost:5173
 ```
 
 API-документация Scalar доступна на [http://localhost:3000/api/docs](http://localhost:3000/api/docs), а спецификация OpenAPI — на [http://localhost:3000/api/openapi.json](http://localhost:3000/api/openapi.json).
+
+### Проверка Synapse Sync в Desktop
+
+1. Зарегистрируйте пользователя в Web.
+2. Для локального теста включите платный план у существующих пользователей: `bun --filter @synapse/backend db:set-god-mode`.
+3. В Desktop создайте заметку, в разделе **Synapse Sync** укажите `http://localhost:3000/api`, войдите тем же аккаунтом и нажмите **Синхронизировать очередь**.
+4. Убедитесь в Web, что материал появился. В Desktop кнопка **Удалить с сервера** сохраняет локальную копию и удаляет только удалённую.
+
+Токен Desktop хранится только в памяти main-процесса и сбрасывается при закрытии приложения; это сделано для безопасного локального тестирования до добавления системного защищённого хранилища.
 
 ## Production-сборка и запуск
 

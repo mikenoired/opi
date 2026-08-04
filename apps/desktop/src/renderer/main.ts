@@ -5,6 +5,7 @@ interface LocalItem {
 	content: string;
 	createdAt: string;
 	id: string;
+	remoteId?: string;
 	syncState: string;
 	tags: string[];
 	title: string;
@@ -154,10 +155,22 @@ function render(): void {
 			await refresh();
 		})
 	);
+	document.querySelectorAll<HTMLButtonElement>("[data-delete-remote]").forEach((button) =>
+		button.addEventListener("click", async () => {
+			if (!confirm("Удалить только серверную копию? Локальный материал останется на устройстве.")) return;
+			try {
+				await window.synapseDesktop.sync.deleteRemote(button.dataset.deleteRemote!);
+				notice = "Серверная копия удалена; локальный материал сохранён";
+			} catch (error) {
+				notice = error instanceof Error ? error.message : "Не удалось удалить серверную копию";
+			}
+			await refresh();
+		})
+	);
 }
 
 function itemCard(item: LocalItem): string {
-	return `<li><article><div><span class="type">${item.type}</span><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.content || item.url || "Без содержимого")}</p><small>${item.tags.map((tag) => `#${escapeHtml(tag)}`).join(" ")}</small></div><div class="item-actions"><button data-edit="${item.id}" class="secondary">Изменить</button><button data-delete="${item.id}" class="danger">Удалить</button></div></article></li>`;
+	return `<li><article><div><span class="type">${item.type} · ${item.syncState}</span><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.content || item.url || "Без содержимого")}</p><small>${item.tags.map((tag) => `#${escapeHtml(tag)}`).join(" ")}</small></div><div class="item-actions"><button data-edit="${item.id}" class="secondary">Изменить</button>${item.remoteId && item.syncState === "synced" ? `<button data-delete-remote="${item.id}" class="secondary">Удалить с сервера</button>` : ""}<button data-delete="${item.id}" class="danger">Удалить</button></div></article></li>`;
 }
 
 async function saveItem(event: SubmitEvent): Promise<void> {
