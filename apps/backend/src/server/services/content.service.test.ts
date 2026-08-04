@@ -265,6 +265,7 @@ const createService = () =>
 	new ContentService({
 		cache,
 		db,
+		sync: { publish: async () => undefined },
 		user: { id: userId, email: testEmail },
 	} as unknown as Context);
 

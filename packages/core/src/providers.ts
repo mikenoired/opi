@@ -58,6 +58,8 @@ export interface SyncChange {
 	entityType: string;
 	operation: "create" | "delete" | "update";
 	payload?: unknown;
+	/** The owner scopes delivery; adapters must never broadcast across users. */
+	userId: string;
 }
 
 /** A platform adapter will deliver these changes when synchronization is added in Stage 9. */

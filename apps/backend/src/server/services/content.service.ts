@@ -165,6 +165,7 @@ export default class ContentService {
 				: [mapContentRecord(result, this.ctx.user!.id)];
 		await this.invalidateUserTags();
 		const content = contentDetailSchema.parse(withTags);
+		await this.publishContentChange("create", content);
 		return content;
 	}
 
@@ -294,6 +295,7 @@ export default class ContentService {
 		const [withTags] = await this.attachTagsToContent([result]);
 		await this.invalidateUserTags();
 		const content = contentDetailSchema.parse(withTags);
+		await this.publishContentChange("update", content);
 		return content;
 	}
 
@@ -362,6 +364,12 @@ export default class ContentService {
 		await this.trackRemovedNoteImages(removedFileSizes);
 
 		await this.invalidateUserTags();
+		await this.ctx.sync.publish({
+			entityId: id,
+			entityType: "content",
+			operation: "delete",
+			userId: this.ctx.user!.id,
+		});
 		return { success: true };
 	}
 
@@ -388,6 +396,13 @@ export default class ContentService {
 	async updateTagColor(id: string, color: number) {
 		const tag = await this.repo.updateTagColor(id, color);
 		await this.invalidateUserTags();
+		await this.ctx.sync.publish({
+			entityId: tag.id,
+			entityType: "tag",
+			operation: "update",
+			payload: tag,
+			userId: this.ctx.user!.id,
+		});
 		return tag;
 	}
 
@@ -460,5 +475,15 @@ export default class ContentService {
 
 	private async trackRemovedNoteImages(sizes: number[]) {
 		await Promise.all(sizes.map((size) => this.ctx.cache.removeFile(this.ctx.user!.id, size)));
+	}
+
+	private async publishContentChange(operation: "create" | "update", content: Content) {
+		await this.ctx.sync.publish({
+			entityId: content.id,
+			entityType: "content",
+			operation,
+			payload: content,
+			userId: this.ctx.user!.id,
+		});
 	}
 }

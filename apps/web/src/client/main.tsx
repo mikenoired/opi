@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	createRootRoute,
 	createRoute,
@@ -9,7 +9,7 @@ import {
 	useParams,
 } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 
@@ -17,6 +17,7 @@ import DashboardContent from "@/app/dashboard/dashboard-content";
 import HomePage from "@/app/page";
 import { apiClient, unwrap } from "@/shared/api/client";
 import type { ContentTags, Graph } from "@/shared/api/contracts";
+import { apiUrl } from "@/shared/config/api";
 import { AuthProvider, useAuth } from "@/shared/lib/auth-context";
 import { DashboardProvider } from "@/shared/lib/dashboard-context";
 import { UserPreferencesProvider } from "@/shared/lib/user-preferences-context";
@@ -43,6 +44,7 @@ function Root() {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<AuthProvider>
+				<SyncListener />
 				<UserPreferencesProvider>
 					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 						<ModalProvider>
@@ -55,6 +57,27 @@ function Root() {
 			</AuthProvider>
 		</QueryClientProvider>
 	);
+}
+
+function SyncListener() {
+	const { user } = useAuth();
+	const queryClient = useQueryClient();
+
+	useEffect(() => {
+		if (!user) return;
+
+		const events = new EventSource(apiUrl("/sync/events"), { withCredentials: true });
+		const invalidateSyncedData = () => {
+			void queryClient.invalidateQueries({
+				predicate: (query) => ["content", "graph", "user"].includes(String(query.queryKey[0])),
+			});
+		};
+		events.addEventListener("change", invalidateSyncedData);
+
+		return () => events.close();
+	}, [queryClient, user?.id]);
+
+	return null;
 }
 
 function DashboardShell() {

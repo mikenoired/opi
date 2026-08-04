@@ -121,6 +121,13 @@ export default class UploadService {
 		const contentService = new ContentService(this.ctx);
 		const createdContent = await contentService.getById(contentId);
 		await contentService.syncSearchText(createdContent);
+		await this.ctx.sync.publish({
+			entityId: createdContent.id,
+			entityType: "content",
+			operation: "create",
+			payload: createdContent,
+			userId: input.userId,
+		});
 		return createdContent;
 	}
 

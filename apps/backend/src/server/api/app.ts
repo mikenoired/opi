@@ -11,9 +11,11 @@ import {
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
+import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 
 import { deleteUserFiles, getPresignedUrl } from "../../storage/minio";
+import { backendSyncProvider } from "../adapters/backend-sync.provider";
 import type { Context } from "../context";
 import { ApiError, STATUS_CODES } from "../lib/api-error";
 import { getUserFromTokens } from "../lib/auth-session";
@@ -191,6 +193,30 @@ export const api = new Hono()
 		})
 	)
 	.get("/health", (c) => c.json({ ok: true as const }))
+	.get("/sync/events", requireAuth, (c) => {
+		const userId = c.get("apiContext").user!.id;
+		return streamSSE(c, async (stream) => {
+			await stream.writeSSE({ event: "ready", data: "{}" });
+			await new Promise<void>((resolve) => {
+				const unsubscribe = backendSyncProvider.subscribe(userId, async (event) => {
+					try {
+						await stream.writeSSE({ data: JSON.stringify(event), event: "change", id: event.id });
+					} catch {
+						unsubscribe();
+						resolve();
+					}
+				});
+				c.req.raw.signal.addEventListener(
+					"abort",
+					() => {
+						unsubscribe();
+						resolve();
+					},
+					{ once: true }
+				);
+			});
+		});
+	})
 	.get("/files/*", rateLimit("query"), async (c) => {
 		const requestPath = new URL(c.req.url).pathname;
 		const filesPathIndex = requestPath.indexOf("/files/");

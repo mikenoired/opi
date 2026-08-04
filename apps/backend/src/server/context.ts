@@ -1,3 +1,4 @@
+import { backendSyncProvider } from "./adapters/backend-sync.provider";
 import { db } from "./db";
 import { getUserFromTokens } from "./lib/auth-session";
 import { CacheRepository } from "./repositories/cache.repository";
@@ -27,6 +28,7 @@ export async function createContext({ req }: { req?: Request }) {
 		token,
 		refreshToken,
 		requestId: req?.headers.get("x-request-id") || crypto.randomUUID?.() || undefined,
+		sync: backendSyncProvider,
 		ip: req?.headers.get("x-forwarded-for") || undefined,
 		userAgent: req?.headers.get("user-agent") || undefined,
 	};

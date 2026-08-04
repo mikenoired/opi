@@ -28,6 +28,7 @@
 		"@scalar/hono-api-reference": "^0.11.12",
 		"@synapse/core": "workspace:*",
 		"@synapse/shared": "workspace:*",
+		"@synapse/sync": "workspace:*",
 		"drizzle-orm": "^0.45.2",
 		"epub2": "^3.0.2",
 		"hono": "^4.12.34",

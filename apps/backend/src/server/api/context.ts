@@ -1,6 +1,7 @@
 import type { Context as HonoContext } from "hono";
 import { getCookie } from "hono/cookie";
 
+import { backendSyncProvider } from "../adapters/backend-sync.provider";
 import type { Context } from "../context";
 import { db } from "../db";
 import { getUserFromTokens } from "../lib/auth-session";
@@ -22,6 +23,7 @@ export async function createContext(c: HonoContext) {
 		token,
 		refreshToken,
 		requestId: c.req.header("x-request-id") || crypto.randomUUID(),
+		sync: backendSyncProvider,
 		ip: c.req.header("x-forwarded-for"),
 		userAgent: c.req.header("user-agent"),
 	} as unknown as Context;

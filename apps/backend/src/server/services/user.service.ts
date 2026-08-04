@@ -23,10 +23,21 @@ export default class UserService {
 	}
 
 	async updatePreferences(preferences: UserPreferencesInput) {
-		return await this.repo.updatePreferences(preferences);
+		const updatedPreferences = await this.repo.updatePreferences(preferences);
+		await this.ctx.sync.publish({
+			entityId: this.ctx.user!.id,
+			entityType: "user-preferences",
+			operation: "update",
+			payload: updatedPreferences,
+			userId: this.ctx.user!.id,
+		});
+		return updatedPreferences;
 	}
 
 	async deleteAccount() {
-		return await this.repo.deleteAccount();
+		const userId = this.ctx.user!.id;
+		const result = await this.repo.deleteAccount();
+		await this.ctx.sync.publish({ entityId: userId, entityType: "user", operation: "delete", userId });
+		return result;
 	}
 }

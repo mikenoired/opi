@@ -15,5 +15,8 @@
 	"devDependencies": {
 		"@synapse/tsconfig": "workspace:*",
 		"typescript": "^7.0.2"
+	},
+	"dependencies": {
+		"@synapse/core": "workspace:*"
 	}
 }

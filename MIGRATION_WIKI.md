@@ -75,7 +75,7 @@
 - Completed: Stage 6 — Web is wired through named Core Content/graph and storage provider adapters without changing transaction, cache, API-validation, or file-policy boundaries.
 - Completed: Stage 7 — prepared a runnable Electron Desktop application and its local Core storage adapter without moving Backend responsibilities or introducing synchronization.
 - Completed: Stage 8 — moved the Bun/Hono API, services, repositories, infrastructure, database schema/migrations, server tests, and Backend Core adapters from Web to the runnable `apps/backend` application. Web consumes only type-only public Backend API contracts and proxies `/api` to Backend in local development.
-- Remaining: Stage 9 — synchronization.
+- Completed: Stage 9 — synchronization changes are published through the Core `SyncProvider`, delivered by Backend SSE, and applied by Web through query invalidation.
 
 ## Decisions
 
@@ -251,6 +251,10 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 The co-located Web server was moved intact into `apps/backend`, including its API routes, services, repositories, database schema and migrations, integrations, tests, and Core persistence/storage adapters. This preserves existing behavior while making the runtime owner explicit. Web now imports only the public, type-only `@synapse/backend/api` and `@synapse/backend/contracts` surfaces; it neither imports Backend implementation files nor bundles them. The Vite `/api` proxy preserves local development without reintroducing a Web server.
 
+### Synchronization is delivered through a Core provider boundary
+
+`SyncProvider` now publishes user-scoped Content, tag, preference, and account changes after their authoritative Backend mutations complete. `@synapse/sync` defines a platform-neutral event envelope and subscription boundary. Backend's process-local adapter delivers those events as authenticated SSE at `/api/sync/events`; Web invalidates its Content, graph, and user queries when an event arrives, so separate browser clients converge through the existing API reads. Delivery failure never rolls back an already committed database mutation, and reconnecting clients obtain the canonical state by refetching. No transport, Node, Browser, or Electron dependency was added to Core.
+
 ## Known limitations
 
 - Desktop currently provides application bootstrapping and local object storage only. Its product UI and a local implementation of the complete Content/graph repository are deliberately not copied from Web; they require separate Desktop feature/persistence work after the staged platform split.
@@ -258,11 +262,12 @@ The co-located Web server was moved intact into `apps/backend`, including its AP
 - Content persistence, graph storage, cache ownership, and file cleanup remain implemented by Backend adapters. Their Core integration is complete for the existing Content service; other Backend services are intentionally out of scope because they do not implement a migrated Core workflow.
 - Existing UI and TypeScript packages were already present and have not been reorganized as part of this task.
 - No Collection domain model or persistence exists in the current product. Stage 3 therefore migrates the complete set of existing domain models without inventing a feature solely to match the target architecture.
+- Desktop has no local Content/graph repository yet, so it has no state target for applying synchronization events. The event contract and subscription boundary are ready for that later Desktop persistence task; adding a SQLite model solely for transport delivery would exceed this migration's scope.
 
 ## Next recommended tasks
 
-1. Start Stage 9 by adding synchronization through the existing Core `SyncProvider` contract without coupling Core to a transport or platform.
-2. Keep Backend HTTP, persistence, cache, file, and API-validation policy in `apps/backend`; keep browser routing and presentation in `apps/web`.
+1. Design the Desktop Content/graph repository, then consume `@synapse/sync` events to apply the already-defined changes locally.
+2. If delivery must survive Backend restarts or support offline mutation replay, replace the process-local Backend adapter with a durable outbox without changing the Core contract.
 
 ## Platform boundaries
 
@@ -276,4 +281,4 @@ The co-located Web server was moved intact into `apps/backend`, including its AP
 | `packages/features` | Shared   | Empty public entry point                                                                                                                                                                                                        |
 | `packages/api`      | Shared   | Empty public entry point                                                                                                                                                                                                        |
 | `packages/shared`   | Shared   | Domain schemas, preferences, plans, formatting, animation config, content-type filtering, tag colors, parsing helpers, and public exports                                                                                       |
-| `packages/sync`     | Shared   | Empty public entry point                                                                                                                                                                                                        |
+| `packages/sync`     | Shared   | Platform-neutral sync event envelope and subscription boundary; Backend adapter and Web SSE consumer remain platform-owned                                                                                                      |
