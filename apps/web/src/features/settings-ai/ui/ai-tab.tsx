@@ -1,8 +1,8 @@
+import { isUnlimited } from "@synapse/shared/plans";
 import { Skeleton } from "@synapse/ui/components";
 import { Activity, Bot, CircleDollarSign, Gauge, Timer } from "lucide-react";
 
 import { api } from "@/shared/api/hooks";
-import { isUnlimited } from "@/shared/config/plans";
 import { useI18n } from "@/shared/lib/i18n";
 import { PixelSparkles } from "@/shared/ui/pixel-sparkles";
 

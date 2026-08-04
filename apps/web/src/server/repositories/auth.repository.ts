@@ -1,6 +1,5 @@
+import { DEFAULT_PLAN_ID } from "@synapse/shared/plans";
 import { eq } from "drizzle-orm";
-
-import { DEFAULT_PLAN_ID } from "@/shared/config/plans";
 
 import type { Context } from "../context";
 import { users } from "../db/schema";

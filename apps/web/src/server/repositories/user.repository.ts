@@ -1,6 +1,6 @@
+import { DEFAULT_PLAN_ID, isPlanId, type PlanId } from "@synapse/shared/plans";
 import { eq } from "drizzle-orm";
 
-import { DEFAULT_PLAN_ID, isPlanId, type PlanId } from "@/shared/config/plans";
 import type { UserPreferencesInput } from "@/shared/lib/user-preferences";
 import { normalizeUserPreferences } from "@/shared/lib/user-preferences";
 

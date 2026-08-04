@@ -36,6 +36,7 @@
 - Completed: Stage 2 (sixteenth slice) — updated Web foundation modules to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (seventeenth slice) — updated legacy modal orchestration to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (eighteenth slice) — migrated all remaining Web schema consumers and removed the compatibility adapter.
+- Completed: Stage 2 (nineteenth slice) — migrated all plan consumers and removed the Web plans compatibility wrapper.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -120,6 +121,10 @@ The Web API contracts, content-type options, upload normalization, and dashboard
 ### Legacy modal orchestration imports schemas from the shared package directly
 
 The legacy modal context and add-content modal now import content types from `@synapse/shared/schemas`. This completes the direct schema-import migration for the legacy modal cluster.
+
+### Plan consumers import from the shared package directly
+
+All Web and server plan consumers now import from `@synapse/shared/plans`. The temporary `apps/web/src/shared/config/plans.ts` re-export has been removed.
 
 ## Known limitations
 

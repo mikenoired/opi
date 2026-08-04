@@ -1,6 +1,5 @@
+import { getPlanLimits, PLANS, type PlanId } from "@synapse/shared/plans";
 import { and, desc, eq, gte } from "drizzle-orm";
-
-import { getPlanLimits, PLANS, type PlanId } from "@/shared/config/plans";
 
 import type { Context } from "../context";
 import { aiUsage } from "../db/schema";
