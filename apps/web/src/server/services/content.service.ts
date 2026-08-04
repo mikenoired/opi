@@ -1,4 +1,4 @@
-import { mapContentRecord, normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
+import { attachContentTags, mapContentRecord, normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
 import { buildContentSearchText } from "@synapse/shared/content-search";
 import { isSupportedFileType } from "@synapse/shared/file-types";
 import type {
@@ -621,23 +621,7 @@ export default class ContentService {
 
 		const ids = rows.map((r) => r.id);
 		const contentTagsWithTitles = await this.repo.contentTagsWithTitles(ids);
-		const byContent = new Map<string, { ids: string[]; titles: string[] }>();
-
-		for (const r of contentTagsWithTitles || []) {
-			byContent.set(r.content_id, {
-				ids: r.tag_ids || [],
-				titles: r.tag_titles || [],
-			});
-		}
-
-		return items.map((i) => {
-			const tags = byContent.get(i.id);
-			return {
-				...i,
-				tag_ids: tags?.ids || [],
-				tags: tags?.titles || [],
-			};
-		});
+		return attachContentTags(items, contentTagsWithTitles || []);
 	}
 
 	private async resolveTagTitlesToIds(repo: ContentRepository, titles: string[]): Promise<string[]> {

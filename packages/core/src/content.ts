@@ -159,6 +159,32 @@ interface ContentRecord {
 	userId?: string | null;
 }
 
+interface ContentTagRelation {
+	content_id: string;
+	tag_ids?: string[] | null;
+	tag_titles?: string[] | null;
+}
+
+export function attachContentTags(items: Content[], relations: ContentTagRelation[]): Content[] {
+	const byContent = new Map<string, { ids: string[]; titles: string[] }>();
+
+	for (const relation of relations) {
+		byContent.set(relation.content_id, {
+			ids: relation.tag_ids || [],
+			titles: relation.tag_titles || [],
+		});
+	}
+
+	return items.map((item) => {
+		const tags = byContent.get(item.id);
+		return {
+			...item,
+			tag_ids: tags?.ids || [],
+			tags: tags?.titles || [],
+		};
+	});
+}
+
 export function mapContentRecord(
 	record: ContentRecord,
 	fallbackUserId: string,

@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 
-import { buildContentListPreview, mapContentRecord } from "@synapse/core";
+import { attachContentTags, buildContentListPreview, mapContentRecord } from "@synapse/core";
 import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -47,6 +47,23 @@ test("builds platform-neutral content previews", () => {
 		tags: [],
 		user_id: "user-1",
 	});
+	expect(
+		attachContentTags(
+			[
+				{
+					content: "body",
+					created_at: "2026-01-02T03:04:05.000Z",
+					id: "content-1",
+					tag_ids: [],
+					tags: [],
+					type: "note",
+					updated_at: "2026-01-02T03:04:05.000Z",
+					user_id: "user-1",
+				},
+			],
+			[{ content_id: "content-1", tag_ids: ["tag-1"], tag_titles: ["Tag"] }]
+		)
+	).toMatchObject([{ tag_ids: ["tag-1"], tags: ["Tag"] }]);
 });
 
 const createService = () =>
