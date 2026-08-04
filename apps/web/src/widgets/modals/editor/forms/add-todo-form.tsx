@@ -1,9 +1,9 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Button, Input } from "@synapse/ui/components";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 
 import { api } from "@/shared/api/hooks";
-import type { Content } from "@/shared/lib/schemas";
 import { TagEditor } from "@/shared/ui/tag-editor";
 
 import { ModalActions, ModalBody } from "../../layout";

@@ -1,8 +1,8 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Button, Input } from "@synapse/ui/components";
 import { useState } from "react";
 
 import { api } from "@/shared/api/hooks";
-import type { Content } from "@/shared/lib/schemas";
 import { TagEditor } from "@/shared/ui/tag-editor";
 import { Editor } from "@/widgets/editor/ui/editor";
 

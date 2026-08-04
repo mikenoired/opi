@@ -1,10 +1,10 @@
+import type { Content } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import { Button } from "@synapse/ui/components";
 import { ArrowLeft, Maximize, Minimize } from "lucide-react";
 
 import { contentTypeOptions, getContentTypeMeta } from "@/shared/lib/content-type-options";
 import { useI18n } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
 
 interface ContentTypePickerProps {
 	onSelect: (type: Content["type"]) => void;

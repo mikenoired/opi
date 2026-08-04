@@ -1,10 +1,10 @@
+import type { Content } from "@synapse/shared/schemas";
+import type { LinkContent } from "@synapse/shared/schemas";
 import { Button, Input } from "@synapse/ui/components";
 import { useState } from "react";
 
 import { api } from "@/shared/api/hooks";
 import { apiUrl } from "@/shared/config/api";
-import type { Content } from "@/shared/lib/schemas";
-import type { LinkContent } from "@/shared/lib/schemas";
 import { TagEditor } from "@/shared/ui/tag-editor";
 
 import { ModalActions, ModalBody } from "../../layout";

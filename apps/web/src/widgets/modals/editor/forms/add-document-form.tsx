@@ -1,10 +1,10 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Badge, Button } from "@synapse/ui/components";
 import { Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import { api } from "@/shared/api/hooks";
-import type { Content } from "@/shared/lib/schemas";
 
 import { ModalActions, ModalBody } from "../../layout";
 

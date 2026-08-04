@@ -1,10 +1,10 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Button, Input } from "@synapse/ui/components";
 import { Upload, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { api } from "@/shared/api/hooks";
 import { fileToScaledDataUrl } from "@/shared/lib/downscale-image";
-import type { Content } from "@/shared/lib/schemas";
 import { TagEditor } from "@/shared/ui/tag-editor";
 
 import { ModalActions, ModalBody } from "../../layout";
