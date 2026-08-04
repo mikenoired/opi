@@ -1,8 +1,8 @@
+import type { Content } from "@synapse/shared/schemas";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { api } from "@/shared/api/hooks";
-import type { Content } from "@/shared/lib/schemas";
 import { usePathname, useRouter, useSearchParams } from "@/shared/router/navigation";
 
 export type ModalType = "viewer" | "editor" | "confirm" | "custom";

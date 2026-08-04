@@ -1,6 +1,6 @@
+import type { Content } from "@synapse/shared/schemas";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { Content } from "@/shared/lib/schemas";
 import { inferContentTypeFromFiles } from "@/shared/lib/upload-file-kind";
 
 import { BaseModal } from "../base";

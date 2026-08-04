@@ -34,6 +34,7 @@
 - Completed: Stage 2 (fourteenth slice) — updated the add-content feature model layer to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (fifteenth slice) — updated the add-content feature UI to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (sixteenth slice) — updated Web foundation modules to import schemas from `@synapse/shared/schemas`.
+- Completed: Stage 2 (seventeenth slice) — updated legacy modal orchestration to import schemas from `@synapse/shared/schemas`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -114,6 +115,10 @@ The add-content dialog, type selector, and tag input now import content types fr
 ### Web foundation modules import schemas from the shared package directly
 
 The Web API contracts, content-type options, upload normalization, and dashboard context now import schema types and values from `@synapse/shared/schemas`. Their platform-specific behavior remains unchanged.
+
+### Legacy modal orchestration imports schemas from the shared package directly
+
+The legacy modal context and add-content modal now import content types from `@synapse/shared/schemas`. This completes the direct schema-import migration for the legacy modal cluster.
 
 ## Known limitations
 
