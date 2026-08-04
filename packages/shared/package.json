@@ -6,6 +6,7 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./content-types": "./src/content-types.ts",
+		"./preferences": "./src/preferences.ts",
 		"./schemas": "./src/schemas.ts",
 		"./tag-colors": "./src/tag-colors.ts"
 	},

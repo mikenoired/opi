@@ -10,6 +10,7 @@
 - `packages/shared` owns the platform-neutral domain schemas and types; Web retains a compatibility re-export at `src/shared/lib/schemas.ts`.
 - `packages/shared/content-types` owns content-type filter normalization; Web retains only icon and translation metadata for its content-type picker.
 - `packages/shared/tag-colors` owns the tag-color palette and index lookup; CSS and Pixi adapters remain in Web.
+- `packages/shared/preferences` owns platform-neutral user-preference types, defaults, and normalization; browser persistence remains in the Web context.
 
 ## Migration progress
 
@@ -17,6 +18,7 @@
 - Completed: Stage 2 (first slice) — moved platform-neutral schemas, types, and parsing helpers into `@synapse/shared`.
 - Completed: Stage 2 (second slice) — moved content-type filtering constants and helpers into `@synapse/shared/content-types`.
 - Completed: Stage 2 (third slice) — moved tag-color palette and lookup into `@synapse/shared/tag-colors`.
+- Completed: Stage 2 (fourth slice) — moved user-preference types, defaults, and normalization into `@synapse/shared/preferences`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -46,6 +48,10 @@ The document-type expansion and filter-availability helpers moved to `@synapse/s
 
 The palette and numeric index lookup moved to `@synapse/shared/tag-colors`; both are plain data and platform-neutral. The Web module retains React `CSSProperties` creation and Pixi color conversion, which are rendering concerns.
 
+### User-preference normalization is shared; browser persistence remains Web-specific
+
+User-preference types, defaults, and validation moved to `@synapse/shared/preferences`. The React context remains in Web because it applies preferences through `window`, `document`, and `localStorage`.
+
 ## Known limitations
 
 - `apps/desktop` and `apps/backend` are directory placeholders, not runnable applications. Their setup belongs to stages 7 and 8.
@@ -55,18 +61,18 @@ The palette and numeric index lookup moved to `@synapse/shared/tag-colors`; both
 ## Next recommended tasks
 
 1. Replace a cohesive set of Web schema imports with `@synapse/shared/schemas`, then remove the compatibility adapter once all callers have migrated.
-2. Inventory pure user-preference normalization helpers for a further Stage 2 slice; exclude React context and browser persistence.
+2. Inventory another pure Stage 2 utility for migration; retain code using browser APIs or rendering libraries in Web.
 
 ## Platform boundaries
 
-| Module              | Boundary | Current contents                                                                        |
-| ------------------- | -------- | --------------------------------------------------------------------------------------- |
-| `apps/web`          | Web      | Existing browser and co-located server implementation                                   |
-| `apps/desktop`      | Desktop  | Empty placeholder                                                                       |
-| `apps/backend`      | Backend  | Empty placeholder                                                                       |
-| `packages/core`     | Core     | Empty public entry point; platform-neutral TypeScript config                            |
-| `packages/ui`       | Shared   | Existing React UI library                                                               |
-| `packages/features` | Shared   | Empty public entry point                                                                |
-| `packages/api`      | Shared   | Empty public entry point                                                                |
-| `packages/shared`   | Shared   | Domain schemas, content-type filtering, tag colors, parsing helpers, and public exports |
-| `packages/sync`     | Shared   | Empty public entry point                                                                |
+| Module              | Boundary | Current contents                                                                                     |
+| ------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
+| `apps/web`          | Web      | Existing browser and co-located server implementation                                                |
+| `apps/desktop`      | Desktop  | Empty placeholder                                                                                    |
+| `apps/backend`      | Backend  | Empty placeholder                                                                                    |
+| `packages/core`     | Core     | Empty public entry point; platform-neutral TypeScript config                                         |
+| `packages/ui`       | Shared   | Existing React UI library                                                                            |
+| `packages/features` | Shared   | Empty public entry point                                                                             |
+| `packages/api`      | Shared   | Empty public entry point                                                                             |
+| `packages/shared`   | Shared   | Domain schemas, preferences, content-type filtering, tag colors, parsing helpers, and public exports |
+| `packages/sync`     | Shared   | Empty public entry point                                                                             |
