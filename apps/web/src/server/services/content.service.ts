@@ -6,10 +6,9 @@ import {
 	getContentSuggestions,
 	getTagsWithContentPreviews,
 	mapContentRecord,
-	normalizeTagTitle,
+	resolveTagTitlesToIds,
 	getTagsWithContentPage,
 	type SuggestedContentTag,
-	uniqueTagTitles,
 } from "@synapse/core";
 import { buildContentSearchText } from "@synapse/shared/content-search";
 import { isSupportedFileType } from "@synapse/shared/file-types";
@@ -498,21 +497,15 @@ export default class ContentService {
 	}
 
 	private async resolveTagTitlesToIds(repo: ContentRepository, titles: string[]): Promise<string[]> {
-		const uniqueTitles = uniqueTagTitles(titles);
-		if (uniqueTitles.length === 0) return [];
-
-		const existing = await repo.getTagsByTitle(uniqueTitles);
-		const existingMap = new Map((existing || []).map((t) => [normalizeTagTitle(t.title), t.id]));
-		const missing = uniqueTitles.filter((title) => !existingMap.has(normalizeTagTitle(title)));
-		if (missing.length) {
-			const inserted = await repo.createTags(missing.map((title) => ({ title })));
-			for (const t of inserted || []) {
-				await repo.createNode(t.title);
-				existingMap.set(normalizeTagTitle(t.title), t.id);
-			}
-		}
-		const ids = uniqueTitles.map((title) => existingMap.get(normalizeTagTitle(title)));
-		return ids.filter((v): v is string => typeof v === "string" && v.length > 0);
+		const { createdTags, ids } = await resolveTagTitlesToIds(
+			{
+				createTags: async (missingTitles) => await repo.createTags(missingTitles.map((title) => ({ title }))),
+				findTagsByTitle: async (tagTitles) => await repo.getTagsByTitle(tagTitles),
+			},
+			titles
+		);
+		for (const tag of createdTags) await repo.createNode(tag.title);
+		return ids;
 	}
 
 	private async upsertContentTags(

@@ -9,6 +9,7 @@ import {
 	getTagsWithContentPreviews,
 	getTagsWithContentPage,
 	mapContentRecord,
+	resolveTagTitlesToIds,
 } from "@synapse/core";
 import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
 import { and, eq, inArray, sql } from "drizzle-orm";
@@ -183,6 +184,21 @@ test("normalizes available content types through a repository port", async () =>
 	await expect(
 		getAvailableContentTypes({ findAvailableContentTypes: async () => ["unsupported"] })
 	).rejects.toThrow();
+});
+
+test("resolves normalized tag titles through a repository port", async () => {
+	const result = await resolveTagTitlesToIds(
+		{
+			createTags: async (titles) => titles.map((title) => ({ id: `new-${title}`, title })),
+			findTagsByTitle: async () => [{ id: "existing-work", title: "Work" }],
+		},
+		[" work ", "New", "NEW"]
+	);
+
+	expect(result).toEqual({
+		createdTags: [{ id: "new-NEW", title: "NEW" }],
+		ids: ["existing-work", "new-NEW"],
+	});
 });
 
 const createService = () =>

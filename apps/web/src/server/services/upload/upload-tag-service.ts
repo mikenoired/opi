@@ -1,4 +1,4 @@
-import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
+import { normalizeTagTitle, resolveTagTitlesToIds } from "@synapse/core";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
@@ -30,47 +30,42 @@ export class UploadTagService {
 	}
 
 	private async resolveTagTitlesToIds(titles: string[]): Promise<string[]> {
-		const uniqueTitles = uniqueTagTitles(titles);
-		if (!uniqueTitles.length) return [];
+		const { ids } = await resolveTagTitlesToIds(
+			{
+				createTags: async (missingTitles) => {
+					const userId = this.requireUserId();
+					const automaticColorEnabled = await isAutomaticTagColorEnabled(this.database, userId);
+					await this.database
+						.insert(tags)
+						.values(
+							missingTitles.map((title) => ({
+								color: randomTagColor(automaticColorEnabled),
+								title,
+								userId,
+							}))
+						)
+						.onConflictDoNothing();
+					return await this.findTagsByTitle(missingTitles, false);
+				},
+				findTagsByTitle: async (tagTitles) => await this.findTagsByTitle(tagTitles),
+			},
+			titles
+		);
+		return ids;
+	}
 
-		const existingTags = await this.database.query.tags.findMany({
+	private async findTagsByTitle(titles: string[], includeShared = true) {
+		const normalizedTitles = titles.map(normalizeTagTitle).filter(Boolean);
+		if (!normalizedTitles.length) return [];
+		return await this.database.query.tags.findMany({
 			columns: { id: true, title: true },
 			where: and(
-				inArray(sql`lower(btrim(${tags.title}))`, uniqueTitles.map(normalizeTagTitle)),
-				or(eq(tags.userId, this.requireUserId()), isNull(tags.userId))!
+				inArray(sql`lower(btrim(${tags.title}))`, normalizedTitles),
+				includeShared
+					? or(eq(tags.userId, this.requireUserId()), isNull(tags.userId))!
+					: eq(tags.userId, this.requireUserId())
 			),
 		});
-
-		const tagIdByTitle = new Map(existingTags.map((tag) => [normalizeTagTitle(tag.title), tag.id]));
-		const missingTitles = uniqueTitles.filter((title) => !tagIdByTitle.has(normalizeTagTitle(title)));
-
-		if (missingTitles.length) {
-			const automaticColorEnabled = await isAutomaticTagColorEnabled(this.database, this.requireUserId());
-			await this.database
-				.insert(tags)
-				.values(
-					missingTitles.map((title) => ({
-						color: randomTagColor(automaticColorEnabled),
-						title,
-						userId: this.requireUserId(),
-					}))
-				)
-				.onConflictDoNothing();
-
-			const insertedTags = await this.database.query.tags.findMany({
-				columns: { id: true, title: true },
-				where: and(
-					inArray(sql`lower(btrim(${tags.title}))`, missingTitles.map(normalizeTagTitle)),
-					eq(tags.userId, this.requireUserId())
-				),
-			});
-
-			for (const tag of insertedTags) tagIdByTitle.set(normalizeTagTitle(tag.title), tag.id);
-		}
-
-		return uniqueTitles
-			.map((title) => tagIdByTitle.get(normalizeTagTitle(title)))
-			.filter((tagId): tagId is string => typeof tagId === "string" && tagId.length > 0);
 	}
 
 	private async getOrCreateContentNode(params: {

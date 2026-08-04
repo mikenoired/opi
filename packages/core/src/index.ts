@@ -29,5 +29,6 @@ export type {
 	TagContentPreviewRepository,
 } from "./content";
 export { extractOwnedNoteImages } from "./note";
-export { normalizeTagTitle, uniqueTagTitles } from "./tag";
+export { normalizeTagTitle, resolveTagTitlesToIds, uniqueTagTitles } from "./tag";
+export type { TagTitleRecord, TagTitleRepository } from "./tag";
 export { mapCurrentUser, mergeUserPreferences, type CurrentUser } from "./user";

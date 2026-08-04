@@ -63,6 +63,7 @@
 - Completed: Stage 4 (third slice) — moved tag Content-preview query orchestration behind a Core repository port.
 - Completed: Stage 4 (fourth slice) — moved paginated tag Content-preview query orchestration behind a Core repository port.
 - Completed: Stage 4 (fifth slice) — moved available Content-type normalization behind a Core repository port.
+- Completed: Stage 4 (sixth slice) — moved normalized tag-title resolution and creation behind a Core repository port.
 - In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 
@@ -164,6 +165,10 @@ Core now combines tag-page cursor handling with the existing per-tag preview orc
 
 Core now validates the values returned by the available-type query. Web retains cache ownership and supplies the existing SQL query result.
 
+### Tag-title resolution uses a Core repository port
+
+Core now deduplicates normalized tag titles, resolves existing tag IDs, and determines missing titles through a repository port. Web retains tag color policy, SQL conflict handling, and graph-node creation, while both the Content and upload services share the same domain workflow.
+
 ### Content suggestion grouping is Core-owned
 
 Web still retrieves and paginates suggestion candidates, while Core groups the resulting Content models by their prioritized tags. This keeps ranking queries in Web and the returned model shape platform-neutral.
@@ -221,19 +226,19 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 ## Next recommended tasks
 
-1. Define the next bounded write-side Content operation for Core; this will require a transaction and graph-relation port.
+1. Define the next bounded write-side Content tag-relation operation for Core; this will require a transaction and graph-relation port.
 2. Keep Note image storage and Content persistence in Web until their required Core ports are introduced.
 
 ## Platform boundaries
 
-| Module              | Boundary | Current contents                                                                                                                          |
-| ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`          | Web      | Existing browser and co-located server implementation                                                                                     |
-| `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                         |
-| `apps/backend`      | Backend  | Empty placeholder                                                                                                                         |
-| `packages/core`     | Core     | Tag identity, serialized Content payloads/projections, User mapping/preferences, Note image ownership, and Content-query orchestration    |
-| `packages/ui`       | Shared   | Existing React UI library                                                                                                                 |
-| `packages/features` | Shared   | Empty public entry point                                                                                                                  |
-| `packages/api`      | Shared   | Empty public entry point                                                                                                                  |
-| `packages/shared`   | Shared   | Domain schemas, preferences, plans, formatting, animation config, content-type filtering, tag colors, parsing helpers, and public exports |
-| `packages/sync`     | Shared   | Empty public entry point                                                                                                                  |
+| Module              | Boundary | Current contents                                                                                                                                            |
+| ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`          | Web      | Existing browser and co-located server implementation                                                                                                       |
+| `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                                           |
+| `apps/backend`      | Backend  | Empty placeholder                                                                                                                                           |
+| `packages/core`     | Core     | Tag identity and title resolution, serialized Content payloads/projections, User mapping/preferences, Note image ownership, and Content-query orchestration |
+| `packages/ui`       | Shared   | Existing React UI library                                                                                                                                   |
+| `packages/features` | Shared   | Empty public entry point                                                                                                                                    |
+| `packages/api`      | Shared   | Empty public entry point                                                                                                                                    |
+| `packages/shared`   | Shared   | Domain schemas, preferences, plans, formatting, animation config, content-type filtering, tag colors, parsing helpers, and public exports                   |
+| `packages/sync`     | Shared   | Empty public entry point                                                                                                                                    |
