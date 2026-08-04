@@ -6,6 +6,7 @@ import {
 	getContentList,
 	getContentSuggestions,
 	getTagsWithContentPreviews,
+	getTagsWithContentPage,
 	mapContentRecord,
 } from "@synapse/core";
 import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
@@ -151,6 +152,27 @@ test("orchestrates tag content previews through a repository port", async () => 
 			title: "Tag",
 		},
 	]);
+});
+
+test("orchestrates paginated tag content previews through a repository port", async () => {
+	const result = await getTagsWithContentPage(
+		{
+			findTagContentPreviews: async () => [],
+			findTagPage: async () => [
+				{ color: 1, id: "tag-1", title: "A" },
+				{ color: 2, id: "tag-2", title: "B" },
+			],
+			findTagRelations: async () => [],
+		},
+		"user-1",
+		undefined,
+		1
+	);
+
+	expect(result).toEqual({
+		items: [{ color: 1, id: "tag-1", items: [], title: "A" }],
+		nextCursor: "A|tag-1",
+	});
 });
 
 const createService = () =>

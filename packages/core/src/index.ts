@@ -11,6 +11,7 @@ export {
 	getContentList,
 	getContentSuggestions,
 	getTagsWithContentPreviews,
+	getTagsWithContentPage,
 	mapContentRecord,
 	parseContentSuggestionCursor,
 	parseTagContentPageCursor,
@@ -22,6 +23,7 @@ export type {
 	ContentSuggestionRepository,
 	ContentTagRelation,
 	SuggestedContentTag,
+	TagContentPageRepository,
 	TagContentPreviewRepository,
 } from "./content";
 export { extractOwnedNoteImages } from "./note";

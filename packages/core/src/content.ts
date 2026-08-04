@@ -432,6 +432,38 @@ export async function getTagsWithContentPreviews(
 	return groupTagContentPreviews(previewRows, items, limitPerTag);
 }
 
+export interface TagContentPageRepository extends TagContentPreviewRepository {
+	findTagPage: (
+		limit: number,
+		cursor?: { id: string; title: string }
+	) => Promise<Array<{ color: number; id: string; title: string }>>;
+}
+
+export async function getTagsWithContentPage(
+	repository: TagContentPageRepository,
+	userId: string,
+	cursor: string | undefined,
+	limit: number
+) {
+	const cursorValue = parseTagContentPageCursor(cursor);
+	const tagRows = await repository.findTagPage(limit + 1, cursorValue);
+	const pageTags = tagRows.slice(0, limit);
+	if (pageTags.length === 0) return { items: [], nextCursor: undefined };
+
+	const previews = await getTagsWithContentPreviews(
+		repository,
+		userId,
+		3,
+		pageTags.map((tag) => tag.id)
+	);
+	const previewByTag = new Map(previews.map((group) => [group.id, group.items]));
+	const last = pageTags[pageTags.length - 1];
+	return {
+		items: pageTags.map((tag) => ({ ...tag, items: previewByTag.get(tag.id) ?? [] })),
+		nextCursor: tagRows.length > limit && last ? createTagContentPageCursor(last.title, last.id) : undefined,
+	};
+}
+
 async function mapContentListRows(
 	repository: Pick<ContentListRepository, "findTagRelations">,
 	rows: ContentRecord[],

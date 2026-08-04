@@ -1,14 +1,12 @@
 import {
 	attachContentTags,
-	createTagContentPageCursor,
 	extractOwnedNoteImages,
 	getContentList,
 	getContentSuggestions,
 	getTagsWithContentPreviews,
-	groupTagContentPreviews,
 	mapContentRecord,
 	normalizeTagTitle,
-	parseTagContentPageCursor,
+	getTagsWithContentPage,
 	type SuggestedContentTag,
 	uniqueTagTitles,
 } from "@synapse/core";
@@ -436,32 +434,19 @@ export default class ContentService {
 	}
 
 	async getTagsWithContentPage(cursor: string | undefined, limit: number) {
-		const cursorValue = parseTagContentPageCursor(cursor);
-		const tagRows = await this.repo.getContentTagPage(limit + 1, cursorValue);
-		const pageTags = tagRows.slice(0, limit);
-		if (pageTags.length === 0) return { items: [], nextCursor: undefined };
-
-		const previewRows = await this.repo.getTagsWithContentPreview(
-			3,
-			pageTags.map((tag) => tag.id)
+		return await getTagsWithContentPage(
+			{
+				findTagContentPreviews: async (...args) =>
+					(await this.repo.getTagsWithContentPreview(...args)) as Array<
+						ContentRow & { tagColor: number; tagId: string; tagTitle: string }
+					>,
+				findTagPage: async (...args) => await this.repo.getContentTagPage(...args),
+				findTagRelations: async (contentIds) => await this.repo.contentTagsWithTitles(contentIds),
+			},
+			this.ctx.user!.id,
+			cursor,
+			limit
 		);
-		const uniqueRows = Array.from(new Map(previewRows.map((row) => [row.id, row as ContentRow])).values());
-		const contentItems = await this.attachTagsToContent(uniqueRows, { previewContent: true });
-		const previewByTag = new Map(
-			groupTagContentPreviews(previewRows, contentItems).map((group) => [group.id, group.items])
-		);
-
-		const last = pageTags[pageTags.length - 1];
-		return {
-			items: pageTags.map((tag) => ({
-				color: tag.color,
-				id: tag.id,
-				title: tag.title,
-				items: previewByTag.get(tag.id) ?? [],
-			})),
-			nextCursor:
-				tagRows.length > limit && last ? createTagContentPageCursor(last.title, last.id) : undefined,
-		};
 	}
 
 	private extractObjectNameFromApiUrl(url?: string | null): string | null {

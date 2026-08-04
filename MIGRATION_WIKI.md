@@ -61,6 +61,7 @@
 - Completed: Stage 4 (first slice) — moved Content list-query orchestration behind a Core repository port.
 - Completed: Stage 4 (second slice) — moved Content suggestion-query orchestration behind a Core repository port.
 - Completed: Stage 4 (third slice) — moved tag Content-preview query orchestration behind a Core repository port.
+- Completed: Stage 4 (fourth slice) — moved paginated tag Content-preview query orchestration behind a Core repository port.
 - In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 
@@ -154,6 +155,10 @@ Core now prioritizes tags, paginates matching Content, attaches tag relations, a
 
 Core now deduplicates preview rows, attaches tag relations, and builds per-tag preview groups. Web retains cache ownership and adapts the existing SQL query.
 
+### Paginated tag Content previews use a Core repository port
+
+Core now combines tag-page cursor handling with the existing per-tag preview orchestration. Web still supplies the SQL queries, and no cache policy or API shape changed.
+
 ### Content suggestion grouping is Core-owned
 
 Web still retrieves and paginates suggestion candidates, while Core groups the resulting Content models by their prioritized tags. This keeps ranking queries in Web and the returned model shape platform-neutral.
@@ -211,7 +216,7 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 ## Next recommended tasks
 
-1. Move paginated tag-content preview queries behind a Core repository port.
+1. Move available Content-type lookup behind a small Core repository port.
 2. Keep Note image storage and Content persistence in Web until their required Core ports are introduced.
 
 ## Platform boundaries
