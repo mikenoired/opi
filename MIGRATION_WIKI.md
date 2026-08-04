@@ -268,6 +268,7 @@ The co-located Web server was moved intact into `apps/backend`, including its AP
 
 1. Design the Desktop Content/graph repository, then consume `@synapse/sync` events to apply the already-defined changes locally.
 2. If delivery must survive Backend restarts or support offline mutation replay, replace the process-local Backend adapter with a durable outbox without changing the Core contract.
+3. After local Desktop parity and remote synchronization are complete, follow [the Desktop local-mode follow-up plan](docs/plans/desktop-local-sync-followups.md).
 
 ## Platform boundaries
 
