@@ -1,8 +1,8 @@
+import { buildContentSearchText } from "@synapse/shared/content-search";
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "../db";
 import { content, contentTags, tags } from "../db/schema";
-import { buildContentSearchText } from "../lib/content-search";
 
 const rows = await db
 	.select({

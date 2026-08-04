@@ -40,6 +40,7 @@
 - Completed: Stage 2 (twentieth slice) — migrated the size-formatting consumer and removed the Web utility compatibility wrapper.
 - Completed: Stage 2 (twenty-first slice) — migrated animation configuration consumers and removed the Web compatibility wrapper.
 - Completed: Stage 2 (twenty-second slice) — migrated user-preference consumers and removed the Web compatibility wrapper.
+- Completed: Stage 2 (twenty-third slice) — moved platform-neutral content-search text helpers into `@synapse/shared/content-search`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -84,6 +85,10 @@ The byte-size formatter moved to `@synapse/shared/formatting`. It uses only stan
 ### Animation configuration is shared; rendering remains Web-specific
 
 The sidebar transition values moved to `@synapse/shared/animations`. They are serializable data and can be reused by another client, while the Web components continue to choose and execute their rendering library.
+
+### Content-search text extraction is shared
+
+The search-text builder and structured-content text extractor moved to `@synapse/shared/content-search`. They only process strings and JSON, so the server services and future platforms can use them without a platform dependency.
 
 ### Server code imports schemas from the shared package directly
 

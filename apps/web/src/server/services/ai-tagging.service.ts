@@ -1,3 +1,4 @@
+import { extractContentText } from "@synapse/shared/content-search";
 import { parseMediaJson } from "@synapse/shared/schemas";
 import { z } from "zod";
 
@@ -7,7 +8,6 @@ import { TAGGING_PROMPT } from "../ai/prompts";
 import type { ChatMessage, LlmProvider } from "../ai/provider";
 import { createLlmProvider } from "../ai/provider";
 import type { Context } from "../context";
-import { extractContentText } from "../lib/content-search";
 import { fetchImageForVision, prepareDataUrlForVision } from "../lib/image-vision";
 import AiUsageRepository from "../repositories/ai-usage.repository";
 import ContentRepository from "../repositories/content.repository";

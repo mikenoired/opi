@@ -6,6 +6,7 @@
 	"exports": {
 		".": "./src/index.ts",
 		"./animations": "./src/animations.ts",
+		"./content-search": "./src/content-search.ts",
 		"./content-types": "./src/content-types.ts",
 		"./formatting": "./src/formatting.ts",
 		"./plans": "./src/plans.ts",

@@ -1,3 +1,4 @@
+import { buildContentSearchText } from "@synapse/shared/content-search";
 import type {
 	Content,
 	CreateContent,
@@ -19,7 +20,6 @@ import { deleteFile, getFileMetadata } from "@/shared/api/minio";
 import type { Context } from "../context";
 import type { content as contentTable } from "../db/schema";
 import { ApiError } from "../lib/api-error";
-import { buildContentSearchText } from "../lib/content-search";
 import {
 	deleteStoredNoteImages,
 	deleteUploadedNoteImages,

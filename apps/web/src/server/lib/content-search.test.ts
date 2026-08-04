@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { buildContentSearchText } from "./content-search";
+import { buildContentSearchText } from "@synapse/shared/content-search";
 
 describe("content search text", () => {
 	test("extracts title, tags, tiptap text and raw link text", () => {
