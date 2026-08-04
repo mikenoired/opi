@@ -6,7 +6,8 @@
 - `apps/web` remains the only implemented application and retains all existing product code.
 - `apps/desktop` and `apps/backend` are empty workspace placeholders; no platform code has moved into them.
 - `packages/ui` and `packages/tsconfig` predate this migration task.
-- `packages/core`, `packages/features`, `packages/api`, and `packages/sync` have only a package manifest, a platform-neutral TypeScript configuration, and an empty public entry point.
+- `packages/features`, `packages/api`, and `packages/sync` have only a package manifest, a platform-neutral TypeScript configuration, and an empty public entry point.
+- `packages/core` now owns platform-neutral tag identity rules and serialized media Content payload construction.
 - `packages/shared` owns the platform-neutral domain schemas and types; all Web consumers import them directly.
 - `packages/shared/content-types` owns content-type filter normalization; Web retains only icon and translation metadata for its content-type picker.
 - `packages/shared/tag-colors` owns the tag-color palette and index lookup; CSS and Pixi adapters remain in Web.
@@ -47,7 +48,7 @@
 - Completed: Stage 3 (second slice) — moved image and video content payload construction into `@synapse/core`.
 - Completed: Stage 3 (third slice) — moved audio content payload construction into `@synapse/core`.
 - Completed: Stage 3 (fourth slice) — migrated editor tag merging to the Core tag invariant.
-- In progress: none.
+- In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 
 ## Decisions
@@ -160,12 +161,13 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 - `apps/desktop` and `apps/backend` are directory placeholders, not runnable applications. Their setup belongs to stages 7 and 8.
 - The web server is still co-located with the web application. It must remain there until the migration order reaches the backend stage.
+- Content persistence, graph updates, storage cleanup, caching, and list-preview projection remain in the Web service and repository. They require explicit Core ports before they can move in later Stage 3 slices.
 - Existing UI and TypeScript packages were already present and have not been reorganized as part of this task.
 
 ## Next recommended tasks
 
-1. Begin Stage 3 with a small, self-contained slice of the Content business model, keeping persistence, HTTP, and UI code in Web.
-2. Before moving a model, identify its platform-neutral data and rules separately from repository and service dependencies.
+1. Define the next small Content-model boundary by separating a platform-neutral data/rule slice from the Web repository and service adapters.
+2. Keep Note image storage and Content persistence in Web until the relevant Core ports are introduced in stages 4–5.
 
 ## Platform boundaries
 
@@ -174,7 +176,7 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 | `apps/web`          | Web      | Existing browser and co-located server implementation                                                                                     |
 | `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                         |
 | `apps/backend`      | Backend  | Empty placeholder                                                                                                                         |
-| `packages/core`     | Core     | Empty public entry point; platform-neutral TypeScript config                                                                              |
+| `packages/core`     | Core     | Tag identity rules and serialized image, video, and audio Content payload construction                                                    |
 | `packages/ui`       | Shared   | Existing React UI library                                                                                                                 |
 | `packages/features` | Shared   | Empty public entry point                                                                                                                  |
 | `packages/api`      | Shared   | Empty public entry point                                                                                                                  |
