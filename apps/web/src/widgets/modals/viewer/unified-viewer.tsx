@@ -1,3 +1,11 @@
+import type { Content, LinkContent } from "@synapse/shared/schemas";
+import {
+	calculateReadingTime,
+	calculateReadingTimeFromLinkContent,
+	parseAudioJson,
+	parseLinkContent,
+	parseMediaJson,
+} from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import { prose } from "@synapse/ui/prose";
 import DOMPurify from "dompurify";
@@ -11,14 +19,6 @@ import { api } from "@/shared/api/hooks";
 import useMouseActivity from "@/shared/hooks/use-mouse-activity";
 import { useI18n } from "@/shared/lib/i18n";
 import { getPresignedMediaUrl } from "@/shared/lib/image-utils";
-import type { Content, LinkContent } from "@/shared/lib/schemas";
-import {
-	calculateReadingTime,
-	calculateReadingTimeFromLinkContent,
-	parseAudioJson,
-	parseLinkContent,
-	parseMediaJson,
-} from "@/shared/lib/schemas";
 import { useUserPreferences } from "@/shared/lib/user-preferences-context";
 import Image from "@/shared/router/image";
 import { useRouter } from "@/shared/router/navigation";

@@ -29,6 +29,7 @@
 - Completed: Stage 2 (ninth slice) — updated the Web item-rendering cluster to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (tenth slice) — updated Web content-list, filter, and suggestion components to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (eleventh slice) — updated Web dashboard route components to import schemas from `@synapse/shared/schemas`.
+- Completed: Stage 2 (twelfth slice) — updated Web viewer modal components to import schemas from `@synapse/shared/schemas`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -89,6 +90,10 @@ The Web filter, grid, masonry, and suggestion components now import their conten
 ### Dashboard route components import schemas from the shared package directly
 
 The main dashboard, tag, tags, and graph route components now import their content type from `@synapse/shared/schemas`. The remaining compatibility-adapter consumers are isolated to other Web feature and modal clusters.
+
+### Viewer modal components import schemas from the shared package directly
+
+The unified viewer and its detail panel now import their content types and parsing helpers from `@synapse/shared/schemas`. The compatibility adapter remains for editor, add-content, and other independent Web clusters.
 
 ## Known limitations
 

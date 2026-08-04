@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import { Dropdown, useDropdown } from "@synapse/ui/components";
 import { motion } from "framer-motion";
@@ -12,8 +13,6 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
-
-import type { Content } from "@/shared/lib/schemas";
 
 import { TagManager } from "../components";
 
