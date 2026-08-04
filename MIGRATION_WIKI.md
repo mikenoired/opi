@@ -4,7 +4,8 @@
 
 - The repository is a Bun workspace with `apps/*` and `packages/*` workspaces.
 - `apps/web` remains the only implemented application and retains all existing product code.
-- `apps/desktop` and `apps/backend` are empty workspace placeholders; no platform code has moved into them.
+- `apps/desktop` is now a runnable Electron application built with Electron Vite. It owns its Electron main/preload boundaries and a filesystem-backed `DesktopStorageProvider` for local Core object storage in Electron `userData`.
+- `apps/backend` remains an empty workspace placeholder; no Backend code has moved into it.
 - `packages/ui` and `packages/tsconfig` predate this migration task.
 - `packages/features`, `packages/api`, and `packages/sync` have only a package manifest, a platform-neutral TypeScript configuration, and an empty public entry point.
 - `packages/core` now owns platform-neutral Content service orchestration: queries, tag-title resolution, Content↔tag graph-relation writes, persistence-deletion ordering, and explicit provider contracts, plus serialized Content payload construction and media/audio/link model parsing.
@@ -72,7 +73,8 @@
 - Completed: Stage 4 — all existing platform-neutral Content service operations have moved to `@synapse/core`. The product has no `SearchService` or `CollectionService` implementation to migrate.
 - Completed: Stage 5 — Core provider contracts are explicit and platform-neutral; Web retains the concrete persistence, graph, object-storage, and future-sync implementations.
 - Completed: Stage 6 — Web is wired through named Core Content/graph and storage provider adapters without changing transaction, cache, API-validation, or file-policy boundaries.
-- Remaining: stages 7–9, in the documented order.
+- Completed: Stage 7 — prepared a runnable Electron Desktop application and its local Core storage adapter without moving Backend responsibilities or introducing synchronization.
+- Remaining: stages 8–9, in the documented order.
 
 ## Decisions
 
@@ -192,6 +194,10 @@ Core now owns the ordering for appending or replacing Content↔tag relations, i
 
 `WebCoreContentProvider` maps the existing Web Content repository to the Core Content, graph, and tag-title ports. It is constructed with a transaction-scoped repository for mutations, preserving the original transaction boundary. `WebStorageProvider` maps Core's storage port to MinIO and is used for Content media/audio cleanup; MinIO's validation, naming, and public URL policy stay in the adapter. Core workflows no longer receive anonymous Web adapter objects from `ContentService`.
 
+### Desktop owns Electron and local object persistence
+
+`apps/desktop` is a separate Electron Vite application with an isolated preload bridge. `DesktopStorageProvider` implements the existing Core `StorageProvider` using Electron's per-user data directory and serves resulting object URLs through the main-process-only `synapse-object://` protocol. Object identifiers are generated and path-validated in the adapter, preserving the Core rule that storage naming and URL policy are platform concerns. A SQLite/Content repository was not introduced: the existing Core port is intentionally broader than the Stage 7 object-storage preparation, and its data-model migration must be designed separately rather than copied from the Web/Backend implementation.
+
 ### Content suggestion grouping is Core-owned
 
 Web still retrieves and paginates suggestion candidates, while Core groups the resulting Content models by their prioritized tags. This keeps ranking queries in Web and the returned model shape platform-neutral.
@@ -242,7 +248,8 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 ## Known limitations
 
-- `apps/desktop` and `apps/backend` are directory placeholders, not runnable applications. Their setup belongs to stages 7 and 8.
+- Desktop currently provides application bootstrapping and local object storage only. Its product UI and a local implementation of the complete Content/graph repository are deliberately not copied from Web; they require separate Desktop feature/persistence work after the staged platform split.
+- `apps/backend` is still a directory placeholder, not a runnable application. Its setup belongs to Stage 8.
 - The web server is still co-located with the web application. It must remain there until the migration order reaches the backend stage.
 - Content persistence, graph storage, cache ownership, and file cleanup remain implemented by Web adapters. Their Core integration is complete for the existing Content service; other Web services are intentionally out of scope because they do not implement a migrated Core workflow.
 - Existing UI and TypeScript packages were already present and have not been reorganized as part of this task.
@@ -250,7 +257,7 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 ## Next recommended tasks
 
-1. Start Stage 7 by preparing the Desktop application structure and its local persistence adapter without moving Backend responsibilities.
+1. Start Stage 8 by preparing the Backend application structure and moving only Backend-owned adapters from the co-located Web server.
 2. Keep Web-specific note-image processing, cache ownership, API validation, and MinIO file policy in `apps/web`.
 
 ## Platform boundaries
@@ -258,7 +265,7 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 | Module              | Boundary | Current contents                                                                                                                                                                                                                |
 | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/web`          | Web      | Existing browser and co-located server implementation; Core Content/graph and storage adapters                                                                                                                                  |
-| `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                                                                                                               |
+| `apps/desktop`      | Desktop  | Electron main/preload bootstrap, `synapse-object://` protocol, and filesystem-backed Core `StorageProvider`                                                                                                                     |
 | `apps/backend`      | Backend  | Empty placeholder                                                                                                                                                                                                               |
 | `packages/core`     | Core     | Content, graph, storage, and sync provider contracts; tag identity/title resolution; Content relation/deletion and query orchestration; serialized Content payloads/projections; User mapping/preferences; Note image ownership |
 | `packages/ui`       | Shared   | Existing React UI library                                                                                                                                                                                                       |

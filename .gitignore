@@ -17,6 +17,7 @@ node_modules
 /build
 apps/web/dist/
 apps/web/.server-build/
+apps/desktop/out/
 
 # misc
 .DS_Store

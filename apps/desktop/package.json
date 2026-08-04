@@ -2,5 +2,27 @@
 	"name": "@synapse/desktop",
 	"version": "0.0.0",
 	"private": true,
-	"type": "module"
+	"type": "module",
+	"main": "./out/main/index.js",
+	"scripts": {
+		"build": "electron-vite build",
+		"dev": "electron-vite dev",
+		"format": "bun x oxfmt --config ../../.oxfmtrc.json --write .",
+		"format:check": "bun x oxfmt --config ../../.oxfmtrc.json --check .",
+		"lint": "bun x oxlint . --config ../../.oxlintrc.json --deny-warnings",
+		"preview": "electron-vite preview",
+		"test": "bun test src --path-ignore-patterns '**/renderer/**'",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@synapse/core": "workspace:*",
+		"electron": "^39.2.7"
+	},
+	"devDependencies": {
+		"@synapse/tsconfig": "workspace:*",
+		"@types/bun": "^1.3.14",
+		"@types/node": "^24.13.2",
+		"electron-vite": "^5.0.0",
+		"typescript": "^7.0.2"
+	}
 }
