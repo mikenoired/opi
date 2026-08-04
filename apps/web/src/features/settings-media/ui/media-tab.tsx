@@ -1,10 +1,10 @@
+import { formatSize } from "@synapse/shared/formatting";
 import { Switch } from "@synapse/ui/components";
 import { HardDrive, PlayCircle } from "lucide-react";
 
 import { api } from "@/shared/api/hooks";
 import { useI18n } from "@/shared/lib/i18n";
 import { useUserPreferences } from "@/shared/lib/user-preferences-context";
-import { formatSize } from "@/shared/lib/utils";
 
 function StorageMetric({ label, value }: { label: string; value: string }) {
 	return (
