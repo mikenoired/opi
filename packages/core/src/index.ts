@@ -7,8 +7,10 @@ export {
 	groupContentSuggestions,
 	groupTagContentPreviews,
 	createContentSuggestionCursor,
+	createTagContentPageCursor,
 	mapContentRecord,
 	parseContentSuggestionCursor,
+	parseTagContentPageCursor,
 } from "./content";
 export type { SuggestedContentTag } from "./content";
 export { normalizeTagTitle, uniqueTagTitles } from "./tag";

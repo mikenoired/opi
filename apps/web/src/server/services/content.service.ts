@@ -1,11 +1,13 @@
 import {
 	attachContentTags,
 	createContentSuggestionCursor,
+	createTagContentPageCursor,
 	groupContentSuggestions,
 	groupTagContentPreviews,
 	mapContentRecord,
 	normalizeTagTitle,
 	parseContentSuggestionCursor,
+	parseTagContentPageCursor,
 	type SuggestedContentTag,
 	uniqueTagTitles,
 } from "@synapse/core";
@@ -530,9 +532,7 @@ export default class ContentService {
 	}
 
 	async getTagsWithContentPage(cursor: string | undefined, limit: number) {
-		const [encodedTitle, cursorId] = cursor?.split("|") ?? [];
-		const cursorValue =
-			encodedTitle && cursorId ? { title: decodeURIComponent(encodedTitle), id: cursorId } : undefined;
+		const cursorValue = parseTagContentPageCursor(cursor);
 		const tagRows = await this.repo.getContentTagPage(limit + 1, cursorValue);
 		const pageTags = tagRows.slice(0, limit);
 		if (pageTags.length === 0) return { items: [], nextCursor: undefined };
@@ -555,7 +555,8 @@ export default class ContentService {
 				title: tag.title,
 				items: previewByTag.get(tag.id) ?? [],
 			})),
-			nextCursor: tagRows.length > limit && last ? `${encodeURIComponent(last.title)}|${last.id}` : undefined,
+			nextCursor:
+				tagRows.length > limit && last ? createTagContentPageCursor(last.title, last.id) : undefined,
 		};
 	}
 

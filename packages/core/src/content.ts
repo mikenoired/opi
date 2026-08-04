@@ -224,6 +224,15 @@ export function createContentSuggestionCursor(
 	return `${tagIndex}|${(createdAt ?? new Date(0)).toISOString()}|${id}`;
 }
 
+export function parseTagContentPageCursor(cursor?: string): { id: string; title: string } | undefined {
+	const [encodedTitle, id] = cursor?.split("|") ?? [];
+	return encodedTitle && id ? { title: decodeURIComponent(encodedTitle), id } : undefined;
+}
+
+export function createTagContentPageCursor(title: string, id: string): string {
+	return `${encodeURIComponent(title)}|${id}`;
+}
+
 export function attachContentTags(items: Content[], relations: ContentTagRelation[]): Content[] {
 	const byContent = new Map<string, { ids: string[]; titles: string[] }>();
 
