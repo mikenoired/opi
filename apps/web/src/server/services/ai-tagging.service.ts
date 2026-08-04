@@ -1,5 +1,5 @@
+import { parseMediaJson } from "@synapse/core";
 import { extractContentText } from "@synapse/shared/content-search";
-import { parseMediaJson } from "@synapse/shared/schemas";
 import { z } from "zod";
 
 import { aiConfig, computeCostUsd } from "../ai/config";

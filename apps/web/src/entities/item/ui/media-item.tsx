@@ -1,5 +1,5 @@
+import { parseAudioJson, parseMediaJson } from "@synapse/core";
 import type { Content } from "@synapse/shared/schemas";
-import { parseAudioJson, parseMediaJson } from "@synapse/shared/schemas";
 import { Music2 } from "lucide-react";
 import { useMemo, useState } from "react";
 

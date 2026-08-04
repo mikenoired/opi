@@ -1,4 +1,10 @@
-import { contentTypeSchema, extractTextFromStructuredContent, type Content } from "@synapse/shared/schemas";
+import {
+	contentTypeSchema,
+	extractTextFromStructuredContent,
+	linkContentSchema,
+	type Content,
+	type LinkContent,
+} from "@synapse/shared/schemas";
 
 interface MediaDimensions {
 	height: number;
@@ -51,6 +57,67 @@ interface AudioContentParams {
 	makeTrack: boolean;
 	metadata: AudioContentMetadata | null;
 	title?: string | null;
+}
+
+export interface MediaJson {
+	media: {
+		height?: number;
+		object?: string;
+		thumbnailBase64?: string;
+		thumbnailUrl?: string;
+		type: "image" | "video";
+		url?: string;
+		width?: number;
+	};
+}
+
+export interface AudioJson {
+	audio: {
+		bitrateKbps?: number;
+		channels?: number;
+		durationSec?: number;
+		mimeType?: string;
+		object?: string;
+		sampleRateHz?: number;
+		sizeBytes?: number;
+		url?: string;
+	};
+	cover?: {
+		height?: number;
+		object?: string;
+		thumbnailBase64?: string;
+		url?: string;
+		width?: number;
+	};
+	track?: {
+		album?: string;
+		artist?: string;
+		diskNumber?: number;
+		genre?: string[];
+		isTrack: boolean;
+		lyrics?: string;
+		title?: string;
+		trackNumber?: number;
+		year?: number;
+	};
+}
+
+export function parseMediaJson(content: string): MediaJson | null {
+	const parsed = parseJsonRecord(content);
+	return parsed && hasMediaType(parsed.media) ? (parsed as unknown as MediaJson) : null;
+}
+
+export function parseAudioJson(content: string): AudioJson | null {
+	const parsed = parseJsonRecord(content);
+	return parsed && isRecord(parsed.audio) ? (parsed as unknown as AudioJson) : null;
+}
+
+export function parseLinkContent(content: string): LinkContent | null {
+	try {
+		return linkContentSchema.parse(JSON.parse(content));
+	} catch {
+		return null;
+	}
 }
 
 export function buildImageMediaContent({
@@ -578,4 +645,21 @@ function parseJsonStringLiteral(value: string): string {
 	} catch {
 		return value;
 	}
+}
+
+function parseJsonRecord(content: string): Record<string, unknown> | null {
+	try {
+		const parsed = JSON.parse(content);
+		return isRecord(parsed) ? parsed : null;
+	} catch {
+		return null;
+	}
+}
+
+function hasMediaType(value: unknown): boolean {
+	return isRecord(value) && typeof value.type === "string";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }

@@ -7,7 +7,7 @@
 - `apps/desktop` and `apps/backend` are empty workspace placeholders; no platform code has moved into them.
 - `packages/ui` and `packages/tsconfig` predate this migration task.
 - `packages/features`, `packages/api`, and `packages/sync` have only a package manifest, a platform-neutral TypeScript configuration, and an empty public entry point.
-- `packages/core` now owns platform-neutral tag identity rules and serialized media Content payload construction.
+- `packages/core` now owns platform-neutral tag identity rules plus serialized Content payload construction and media/audio/link model parsing.
 - `packages/shared` owns the platform-neutral domain schemas and types; all Web consumers import them directly.
 - `packages/shared/content-types` owns content-type filter normalization; Web retains only icon and translation metadata for its content-type picker.
 - `packages/shared/tag-colors` owns the tag-color palette and index lookup; CSS and Pixi adapters remain in Web.
@@ -58,14 +58,17 @@
 - Completed: Stage 3 (twelfth slice) — moved current User model mapping into `@synapse/core`.
 - Completed: Stage 3 (thirteenth slice) — moved User preference merging into `@synapse/core`.
 - Completed: Stage 3 (fourteenth slice) — moved owned Note-image reference extraction into `@synapse/core`.
+- Completed: Stage 3 (fifteenth slice) — moved serialized media and audio Content-model parsing into `@synapse/core`.
+- Completed: Stage 3 (sixteenth slice) — moved serialized link Content-model parsing into `@synapse/core`.
 - Completed: Stage 4 (first slice) — moved Content list-query orchestration behind a Core repository port.
 - Completed: Stage 4 (second slice) — moved Content suggestion-query orchestration behind a Core repository port.
 - Completed: Stage 4 (third slice) — moved tag Content-preview query orchestration behind a Core repository port.
 - Completed: Stage 4 (fourth slice) — moved paginated tag Content-preview query orchestration behind a Core repository port.
 - Completed: Stage 4 (fifth slice) — moved available Content-type normalization behind a Core repository port.
 - Completed: Stage 4 (sixth slice) — moved normalized tag-title resolution and creation behind a Core repository port.
-- In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
-- Remaining: stages 3–9, in the documented order.
+- Completed: Stage 3 — all existing platform-neutral Content, Note, and User model rules are owned by `@synapse/core`; the product has no Collection model to migrate.
+- In progress: Stage 4 — Content service operations are being moved behind Core repository ports incrementally.
+- Remaining: stages 4–9, in the documented order.
 
 ## Decisions
 
@@ -124,6 +127,10 @@ Case-insensitive tag identity and preservation of the trimmed display title now 
 ### Content payload construction belongs to Core
 
 Image and video upload handlers now receive their serialized Content payloads from `@synapse/core`. FFmpeg, image analysis, object storage, and audio metadata remain Web/server adapters; audio payload construction stays there until its external metadata dependency is represented by a platform-neutral input.
+
+### Serialized Content models belong to Core
+
+Core now owns the platform-neutral media, audio, and link model interfaces and their safe parsing. Web renderers and server cleanup code consume Core directly; Zod API schemas remain in `@synapse/shared`.
 
 ### Audio payload construction accepts a Core-owned metadata projection
 
@@ -223,10 +230,11 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 - The web server is still co-located with the web application. It must remain there until the migration order reaches the backend stage.
 - Content persistence, graph updates, storage cleanup, caching, and most list operations remain in the Web service and repository. They require additional explicit Core ports before they can move in later Stage 4–5 slices.
 - Existing UI and TypeScript packages were already present and have not been reorganized as part of this task.
+- No Collection domain model or persistence exists in the current product. Stage 3 therefore migrates the complete set of existing domain models without inventing a feature solely to match the target architecture.
 
 ## Next recommended tasks
 
-1. Define the next bounded write-side Content tag-relation operation for Core; this will require a transaction and graph-relation port.
+1. Continue Stage 4 with the bounded Content tag-relation write operation; this will require a transaction and graph-relation port.
 2. Keep Note image storage and Content persistence in Web until their required Core ports are introduced.
 
 ## Platform boundaries

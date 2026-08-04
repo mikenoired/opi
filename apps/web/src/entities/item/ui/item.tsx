@@ -1,5 +1,6 @@
+import { parseLinkContent } from "@synapse/core";
 import type { Content, LinkContent } from "@synapse/shared/schemas";
-import { extractTextFromStructuredContent, parseLinkContent } from "@synapse/shared/schemas";
+import { extractTextFromStructuredContent } from "@synapse/shared/schemas";
 import {
 	CheckboxGroup,
 	ContextMenu,

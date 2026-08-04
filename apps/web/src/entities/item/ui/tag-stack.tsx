@@ -1,5 +1,5 @@
+import { parseMediaJson } from "@synapse/core";
 import type { Content } from "@synapse/shared/schemas";
-import { parseMediaJson } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import { FileText, LinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";

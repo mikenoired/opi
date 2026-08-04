@@ -6,6 +6,8 @@ import {
 	getContentSuggestions,
 	getTagsWithContentPreviews,
 	mapContentRecord,
+	parseAudioJson,
+	parseMediaJson,
 	resolveTagTitlesToIds,
 	getTagsWithContentPage,
 	type SuggestedContentTag,
@@ -18,13 +20,7 @@ import type {
 	createContentSchema,
 	updateContentSchema,
 } from "@synapse/shared/schemas";
-import {
-	contentDetailSchema,
-	contentListItemSchema,
-	contentTypeSchema,
-	parseAudioJson,
-	parseMediaJson,
-} from "@synapse/shared/schemas";
+import { contentDetailSchema, contentListItemSchema, contentTypeSchema } from "@synapse/shared/schemas";
 import type z from "zod";
 
 import { deleteFile, getFileMetadata } from "@/shared/api/minio";

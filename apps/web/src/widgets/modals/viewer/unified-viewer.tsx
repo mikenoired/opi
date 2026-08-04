@@ -1,11 +1,6 @@
+import { parseAudioJson, parseLinkContent, parseMediaJson } from "@synapse/core";
 import type { Content, LinkContent } from "@synapse/shared/schemas";
-import {
-	calculateReadingTime,
-	calculateReadingTimeFromLinkContent,
-	parseAudioJson,
-	parseLinkContent,
-	parseMediaJson,
-} from "@synapse/shared/schemas";
+import { calculateReadingTime, calculateReadingTimeFromLinkContent } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import { prose } from "@synapse/ui/prose";
 import DOMPurify from "dompurify";

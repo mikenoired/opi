@@ -9,6 +9,9 @@ import {
 	getTagsWithContentPreviews,
 	getTagsWithContentPage,
 	mapContentRecord,
+	parseAudioJson,
+	parseLinkContent,
+	parseMediaJson,
 	resolveTagTitlesToIds,
 } from "@synapse/core";
 import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
@@ -32,6 +35,18 @@ const cache = {
 };
 
 test("builds platform-neutral content previews", () => {
+	expect(parseMediaJson('{"media":{"type":"image","url":"https://example.com/image.png"}}')).toMatchObject({
+		media: { type: "image", url: "https://example.com/image.png" },
+	});
+	expect(parseAudioJson('{"audio":{"durationSec":42}}')).toMatchObject({ audio: { durationSec: 42 } });
+	expect(parseMediaJson('{"media":{"type":"unsupported"}}')).toMatchObject({
+		media: { type: "unsupported" },
+	});
+	expect(
+		parseLinkContent(
+			'{"url":"https://example.com","title":"Example","description":"","content":{"type":"doc","content":[]},"rawText":"","metadata":{"extractedAt":"","contentBlocks":0},"parsing":{"method":"test","userAgent":"","success":true}}'
+		)
+	).toMatchObject({ title: "Example", url: "https://example.com" });
 	expect(
 		buildContentListPreview(
 			"note",
