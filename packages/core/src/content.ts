@@ -410,6 +410,28 @@ export async function getContentSuggestions(
 	};
 }
 
+export interface TagContentPreviewRepository {
+	findTagContentPreviews: (
+		limitPerTag: number,
+		tagIds?: string[]
+	) => Promise<Array<ContentRecord & { tagColor: number; tagId: string; tagTitle: string }>>;
+	findTagRelations: (contentIds: string[]) => Promise<ContentTagRelation[]>;
+}
+
+export async function getTagsWithContentPreviews(
+	repository: TagContentPreviewRepository,
+	userId: string,
+	limitPerTag = 3,
+	tagIds?: string[]
+) {
+	const previewRows = await repository.findTagContentPreviews(limitPerTag, tagIds);
+	if (previewRows.length === 0) return [];
+
+	const uniqueRows = Array.from(new Map(previewRows.map((row) => [row.id, row])).values());
+	const items = await mapContentListRows(repository, uniqueRows, userId, true);
+	return groupTagContentPreviews(previewRows, items, limitPerTag);
+}
+
 async function mapContentListRows(
 	repository: Pick<ContentListRepository, "findTagRelations">,
 	rows: ContentRecord[],

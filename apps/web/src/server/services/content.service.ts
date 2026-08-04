@@ -4,6 +4,7 @@ import {
 	extractOwnedNoteImages,
 	getContentList,
 	getContentSuggestions,
+	getTagsWithContentPreviews,
 	groupTagContentPreviews,
 	mapContentRecord,
 	normalizeTagTitle,
@@ -420,12 +421,16 @@ export default class ContentService {
 			await this.ctx.cache.getJSON<Array<{ id: string; title: string; items: Content[] }>>(cacheKey);
 		if (cached) return cached;
 
-		const previewRows = await this.repo.getTagsWithContentPreview(3);
-		if (!previewRows.length) return [];
-
-		const uniqueRows = Array.from(new Map(previewRows.map((row) => [row.id, row as ContentRow])).values());
-		const items = await this.attachTagsToContent(uniqueRows, { previewContent: true });
-		const result = groupTagContentPreviews(previewRows, items);
+		const result = await getTagsWithContentPreviews(
+			{
+				findTagContentPreviews: async (...args) =>
+					(await this.repo.getTagsWithContentPreview(...args)) as Array<
+						ContentRow & { tagColor: number; tagId: string; tagTitle: string }
+					>,
+				findTagRelations: async (contentIds) => await this.repo.contentTagsWithTitles(contentIds),
+			},
+			this.ctx.user!.id
+		);
 		await this.ctx.cache.setJSON(cacheKey, result, TAGS_CACHE_TTL_SECONDS);
 		return result;
 	}

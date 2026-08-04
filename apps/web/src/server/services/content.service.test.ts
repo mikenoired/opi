@@ -5,6 +5,7 @@ import {
 	buildContentListPreview,
 	getContentList,
 	getContentSuggestions,
+	getTagsWithContentPreviews,
 	mapContentRecord,
 } from "@synapse/core";
 import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
@@ -121,6 +122,35 @@ test("orchestrates content suggestions through a repository port", async () => {
 		],
 		nextCursor: undefined,
 	});
+});
+
+test("orchestrates tag content previews through a repository port", async () => {
+	const result = await getTagsWithContentPreviews(
+		{
+			findTagContentPreviews: async () => [
+				{
+					content: "preview",
+					createdAt: new Date("2026-01-02T03:04:05.000Z"),
+					id: "content-1",
+					tagColor: 1,
+					tagId: "tag-1",
+					tagTitle: "Tag",
+					type: "note",
+				},
+			],
+			findTagRelations: async () => [{ content_id: "content-1", tag_ids: ["tag-1"], tag_titles: ["Tag"] }],
+		},
+		"user-1"
+	);
+
+	expect(result).toMatchObject([
+		{
+			color: 1,
+			id: "tag-1",
+			items: [{ id: "content-1", tag_ids: ["tag-1"], tags: ["Tag"] }],
+			title: "Tag",
+		},
+	]);
 });
 
 const createService = () =>
