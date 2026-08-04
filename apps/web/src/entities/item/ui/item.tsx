@@ -1,3 +1,5 @@
+import type { Content, LinkContent } from "@synapse/shared/schemas";
+import { extractTextFromStructuredContent, parseLinkContent } from "@synapse/shared/schemas";
 import {
 	CheckboxGroup,
 	ContextMenu,
@@ -13,8 +15,6 @@ import toast from "react-hot-toast";
 
 import { api } from "@/shared/api/hooks";
 import { useI18n } from "@/shared/lib/i18n";
-import type { Content, LinkContent } from "@/shared/lib/schemas";
-import { extractTextFromStructuredContent, parseLinkContent } from "@/shared/lib/schemas";
 import { ContentTag } from "@/shared/ui/content-tag";
 
 import DocumentItem from "./document-item";

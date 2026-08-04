@@ -1,9 +1,9 @@
+import type { Content } from "@synapse/shared/schemas";
+import { parseAudioJson, parseMediaJson } from "@synapse/shared/schemas";
 import { Music2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { getPresignedMediaUrl } from "@/shared/lib/image-utils";
-import type { Content } from "@/shared/lib/schemas";
-import { parseAudioJson, parseMediaJson } from "@/shared/lib/schemas";
 import Image from "@/shared/router/image";
 import { ContentTag } from "@/shared/ui/content-tag";
 

@@ -1,10 +1,10 @@
+import type { Content } from "@synapse/shared/schemas";
+import { parseMediaJson } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import { FileText, LinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { getPresignedMediaUrl } from "@/shared/lib/image-utils";
-import type { Content } from "@/shared/lib/schemas";
-import { parseMediaJson } from "@/shared/lib/schemas";
 import Image from "@/shared/router/image";
 
 function ensureDataUri(base64: string): string {

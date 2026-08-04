@@ -26,6 +26,7 @@
 - Completed: Stage 2 (sixth slice) — moved size formatting into `@synapse/shared/formatting`.
 - Completed: Stage 2 (seventh slice) — moved shared animation configuration into `@synapse/shared/animations`.
 - Completed: Stage 2 (eighth slice) — updated all server-side schema consumers to import from `@synapse/shared/schemas`.
+- Completed: Stage 2 (ninth slice) — updated the Web item-rendering cluster to import schemas from `@synapse/shared/schemas`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -75,6 +76,10 @@ The sidebar transition values moved to `@synapse/shared/animations`. They are se
 
 All existing server-side schema consumers now import `@synapse/shared/schemas` directly. The Web compatibility adapter remains only for client-side and shared Web callers; removing it requires migrating those consumers in smaller cohesive groups.
 
+### Item renderers import schemas from the shared package directly
+
+The Web item renderer components now import their content types and parsing helpers from `@synapse/shared/schemas`. Other client callers still use the compatibility adapter and will be migrated by feature cluster.
+
 ## Known limitations
 
 - `apps/desktop` and `apps/backend` are directory placeholders, not runnable applications. Their setup belongs to stages 7 and 8.
@@ -83,7 +88,7 @@ All existing server-side schema consumers now import `@synapse/shared/schemas` d
 
 ## Next recommended tasks
 
-1. Replace a cohesive client-side group of Web schema imports with `@synapse/shared/schemas`, then remove the compatibility adapter once all callers have migrated.
+1. Replace another cohesive client-side group of Web schema imports with `@synapse/shared/schemas`, then remove the compatibility adapter once all callers have migrated.
 2. Inventory another pure Stage 2 utility for migration; retain code using browser APIs or rendering libraries in Web.
 
 ## Platform boundaries

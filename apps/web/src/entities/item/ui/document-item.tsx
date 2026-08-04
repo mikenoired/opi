@@ -1,10 +1,10 @@
+import type { Content } from "@synapse/shared/schemas";
+import { calculateReadingTime } from "@synapse/shared/schemas";
 import { Badge } from "@synapse/ui/components";
 import { motion } from "framer-motion";
 import { Calendar, Clock } from "lucide-react";
 import { useMemo } from "react";
 
-import type { Content } from "@/shared/lib/schemas";
-import { calculateReadingTime } from "@/shared/lib/schemas";
 import { ContentTag } from "@/shared/ui/content-tag";
 
 function ensureDataUri(base64: string): string {
