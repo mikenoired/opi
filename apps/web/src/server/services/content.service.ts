@@ -3,6 +3,7 @@ import {
 	createContentSuggestionCursor,
 	createTagContentPageCursor,
 	extractOwnedNoteImages,
+	getContentList,
 	groupContentSuggestions,
 	groupTagContentPreviews,
 	mapContentRecord,
@@ -65,44 +66,16 @@ export default class ContentService {
 		limit: number,
 		includeTags: boolean
 	) {
-		if (search?.trim()) {
-			return await this.searchContent(search.trim(), types, tagIds, limit, includeTags);
-		}
-		if (tagIds && tagIds.length) {
-			return await this.getContentWithTagFilter(tagIds, limit, search, types, cursor, includeTags);
-		}
-		const data = await this.repo.getAll(search, types, cursor, limit);
-
-		const contentRows = (data || []) as ContentRow[];
-		const last = contentRows[contentRows.length - 1];
-		const nextCursor = last ? `${last.createdAt}|${last.id}` : undefined;
-
-		const items = includeTags
-			? await this.attachTagsToContent(contentRows, { previewContent: true })
-			: contentRows.map((r) => mapContentRecord(r, this.ctx.user!.id, { previewContent: true }));
-
-		return {
-			items: items.map((i) => contentListItemSchema.parse(i)),
-			nextCursor,
-		};
-	}
-
-	private async searchContent(
-		search: string,
-		types: ContentType[] | undefined,
-		tagIds: string[] | undefined,
-		limit: number,
-		includeTags: boolean
-	) {
-		const rows = (await this.repo.searchFtsFiltered(search, types, tagIds, limit)) as ContentRow[];
-		const items = includeTags
-			? await this.attachTagsToContent(rows, { previewContent: true })
-			: rows.map((row) => mapContentRecord(row, this.ctx.user!.id, { previewContent: true }));
-
-		return {
-			items: items.map((item) => contentListItemSchema.parse(item)),
-			nextCursor: undefined,
-		};
+		const result = await getContentList(
+			{
+				findAll: async (...args) => (await this.repo.getAll(...args)) as ContentRow[],
+				findByTagFilter: async (...args) => (await this.repo.getWithTagFilter(...args)) as ContentRow[],
+				findTagRelations: async (contentIds) => await this.repo.contentTagsWithTitles(contentIds),
+				search: async (...args) => (await this.repo.searchFtsFiltered(...args)) as ContentRow[],
+			},
+			{ cursor, includeTags, limit, search, tagIds, types, userId: this.ctx.user!.id }
+		);
+		return { ...result, items: result.items.map((item) => contentListItemSchema.parse(item)) };
 	}
 
 	async getById(id: string) {
@@ -179,29 +152,6 @@ export default class ContentService {
 				matches.map((match) => match.tag),
 				contentItems.map((item) => contentListItemSchema.parse(item))
 			),
-			nextCursor,
-		};
-	}
-
-	private async getContentWithTagFilter(
-		tagIds: string[],
-		limit: number,
-		search: string | undefined,
-		types: ContentType[] | undefined,
-		cursor: string | undefined,
-		includeTags: boolean
-	) {
-		const data = await this.repo.getWithTagFilter(tagIds, limit, search, types, cursor);
-		const contentRows = (data || []) as ContentRow[];
-		const last = contentRows[contentRows.length - 1];
-		const nextCursor = last ? `${last.createdAt}|${last.id}` : undefined;
-
-		const items = includeTags
-			? await this.attachTagsToContent(contentRows, { previewContent: true })
-			: contentRows.map((r) => mapContentRecord(r, this.ctx.user!.id, { previewContent: true }));
-
-		return {
-			items: items.map((i) => contentListItemSchema.parse(i)),
 			nextCursor,
 		};
 	}

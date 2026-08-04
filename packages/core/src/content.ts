@@ -147,7 +147,7 @@ export function buildAudioContent({
 
 const contentListPreviewChars = 1_200;
 
-interface ContentRecord {
+export interface ContentRecord {
 	content: string;
 	createdAt?: Date | null;
 	documentImages?: unknown;
@@ -159,7 +159,7 @@ interface ContentRecord {
 	userId?: string | null;
 }
 
-interface ContentTagRelation {
+export interface ContentTagRelation {
 	content_id: string;
 	tag_ids?: string[] | null;
 	tag_titles?: string[] | null;
@@ -275,6 +275,69 @@ export function mapContentRecord(
 		thumbnail_base64: record.thumbnailBase64 ?? undefined,
 		document_images: Array.isArray(record.documentImages) ? record.documentImages : undefined,
 	};
+}
+
+export interface ContentListRepository {
+	findAll: (
+		search: string | undefined,
+		types: Content["type"][] | undefined,
+		cursor: string | undefined,
+		limit: number
+	) => Promise<ContentRecord[]>;
+	findByTagFilter: (
+		tagIds: string[],
+		limit: number,
+		search: string | undefined,
+		types: Content["type"][] | undefined,
+		cursor: string | undefined
+	) => Promise<ContentRecord[]>;
+	findTagRelations: (contentIds: string[]) => Promise<ContentTagRelation[]>;
+	search: (
+		search: string,
+		types: Content["type"][] | undefined,
+		tagIds: string[] | undefined,
+		limit: number
+	) => Promise<ContentRecord[]>;
+}
+
+export interface ContentListParams {
+	cursor?: string;
+	includeTags: boolean;
+	limit: number;
+	search?: string;
+	tagIds?: string[];
+	types?: Content["type"][];
+	userId: string;
+}
+
+export async function getContentList(
+	repository: ContentListRepository,
+	{ cursor, includeTags, limit, search, tagIds, types, userId }: ContentListParams
+): Promise<{ items: Content[]; nextCursor: string | undefined }> {
+	if (search?.trim()) {
+		const rows = await repository.search(search.trim(), types, tagIds, limit);
+		return { items: await mapContentListRows(repository, rows, userId, includeTags), nextCursor: undefined };
+	}
+
+	const rows = tagIds?.length
+		? await repository.findByTagFilter(tagIds, limit, search, types, cursor)
+		: await repository.findAll(search, types, cursor, limit);
+	const last = rows[rows.length - 1];
+	return {
+		items: await mapContentListRows(repository, rows, userId, includeTags),
+		nextCursor: last ? `${last.createdAt}|${last.id}` : undefined,
+	};
+}
+
+async function mapContentListRows(
+	repository: Pick<ContentListRepository, "findTagRelations">,
+	rows: ContentRecord[],
+	userId: string,
+	includeTags: boolean
+): Promise<Content[]> {
+	const items = rows.map((row) => mapContentRecord(row, userId, { previewContent: true }));
+	if (!includeTags || items.length === 0) return items;
+	return attachContentTags(items, await repository.findTagRelations(rows.map((row) => row.id)));
 }
 
 export function buildContentListPreview(

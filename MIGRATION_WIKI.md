@@ -58,6 +58,7 @@
 - Completed: Stage 3 (twelfth slice) — moved current User model mapping into `@synapse/core`.
 - Completed: Stage 3 (thirteenth slice) — moved User preference merging into `@synapse/core`.
 - Completed: Stage 3 (fourteenth slice) — moved owned Note-image reference extraction into `@synapse/core`.
+- Completed: Stage 4 (first slice) — moved Content list-query orchestration behind a Core repository port.
 - In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 
@@ -139,6 +140,10 @@ Web repositories still load tag relations, but Core now deterministically merges
 
 Core now traverses serialized Note documents to identify only image object paths under the current user's namespace. Uploading, deletion, object metadata, and URL creation remain Web storage-adapter responsibilities.
 
+### Content list queries use a Core repository port
+
+The search, tag-filter, list-preview, relation-attachment, and cursor orchestration for Content lists now runs in Core through a structural repository port. The Web service supplies the existing Drizzle repository methods and retains API response validation.
+
 ### Content suggestion grouping is Core-owned
 
 Web still retrieves and paginates suggestion candidates, while Core groups the resulting Content models by their prioritized tags. This keeps ranking queries in Web and the returned model shape platform-neutral.
@@ -191,13 +196,13 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 - `apps/desktop` and `apps/backend` are directory placeholders, not runnable applications. Their setup belongs to stages 7 and 8.
 - The web server is still co-located with the web application. It must remain there until the migration order reaches the backend stage.
-- Content persistence, graph updates, storage cleanup, caching, and list-preview projection remain in the Web service and repository. They require explicit Core ports before they can move in later Stage 3 slices.
+- Content persistence, graph updates, storage cleanup, caching, and most list operations remain in the Web service and repository. They require additional explicit Core ports before they can move in later Stage 4–5 slices.
 - Existing UI and TypeScript packages were already present and have not been reorganized as part of this task.
 
 ## Next recommended tasks
 
-1. Define the next small Content-model boundary by separating a platform-neutral data/rule slice from the Web repository and service adapters.
-2. Keep Note image storage and Content persistence in Web until the relevant Core ports are introduced in stages 4–5.
+1. Move one additional read-only Content query (suggestions or tag-content previews) behind the Core repository port.
+2. Keep Note image storage and Content persistence in Web until their required Core ports are introduced.
 
 ## Platform boundaries
 
@@ -206,7 +211,7 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 | `apps/web`          | Web      | Existing browser and co-located server implementation                                                                                     |
 | `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                         |
 | `apps/backend`      | Backend  | Empty placeholder                                                                                                                         |
-| `packages/core`     | Core     | Tag identity, serialized Content payloads and projections, User mapping/preferences, and Note image ownership rules                       |
+| `packages/core`     | Core     | Tag identity, serialized Content payloads/projections, User mapping/preferences, Note image ownership, and list-query orchestration       |
 | `packages/ui`       | Shared   | Existing React UI library                                                                                                                 |
 | `packages/features` | Shared   | Empty public entry point                                                                                                                  |
 | `packages/api`      | Shared   | Empty public entry point                                                                                                                  |
