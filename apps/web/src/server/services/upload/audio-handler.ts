@@ -1,3 +1,4 @@
+import { buildAudioContent } from "@synapse/core";
 import sharp from "sharp";
 
 import { deleteFile, getPublicUrl, uploadFile } from "@/shared/api/minio";
@@ -6,12 +7,34 @@ import { generateThumbnail, getImageDimensions } from "../../lib/generate-thumbn
 import type { UploadHandlerDeps } from "./upload-handler-types";
 import {
 	audioUploadMaxFileSizeBytes,
-	buildAudioContent,
 	getImageDimensionsSafe,
 	jpegMimeType,
 	parseAudioMetadataSafe,
 } from "./upload-media";
 import type { AudioUploadParams, FilePayload, ProcessOutcome } from "./upload-types";
+
+function toCoreAudioMetadata(metadata: Awaited<ReturnType<typeof parseAudioMetadataSafe>>) {
+	if (!metadata) return null;
+
+	return {
+		common: {
+			album: metadata.common.album,
+			artist: metadata.common.artist,
+			disk: metadata.common.disk,
+			genre: metadata.common.genre,
+			lyrics: metadata.common.lyrics?.map(String),
+			title: metadata.common.title,
+			track: metadata.common.track,
+			year: metadata.common.year,
+		},
+		format: {
+			bitrate: metadata.format.bitrate,
+			duration: metadata.format.duration,
+			numberOfChannels: metadata.format.numberOfChannels,
+			sampleRate: metadata.format.sampleRate,
+		},
+	};
+}
 
 export async function processAudioUpload(
 	deps: UploadHandlerDeps,
@@ -82,7 +105,7 @@ export async function processAudioUpload(
 				coverUrl,
 				fileType: file.type,
 				makeTrack: params.makeTrack,
-				metadata,
+				metadata: toCoreAudioMetadata(metadata),
 				title: params.title,
 			})
 		);

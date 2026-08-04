@@ -45,6 +45,7 @@
 - Completed: Stage 2 — all identified platform-neutral types, constants, schemas, and helper functions have moved into `@synapse/shared`.
 - Completed: Stage 3 (first slice) — moved tag-title normalization and deduplication rules into `@synapse/core`.
 - Completed: Stage 3 (second slice) — moved image and video content payload construction into `@synapse/core`.
+- Completed: Stage 3 (third slice) — moved audio content payload construction into `@synapse/core`.
 - In progress: none.
 - Remaining: stages 3–9, in the documented order.
 
@@ -105,6 +106,10 @@ Case-insensitive tag identity and preservation of the trimmed display title now 
 ### Content payload construction belongs to Core
 
 Image and video upload handlers now receive their serialized Content payloads from `@synapse/core`. FFmpeg, image analysis, object storage, and audio metadata remain Web/server adapters; audio payload construction stays there until its external metadata dependency is represented by a platform-neutral input.
+
+### Audio payload construction accepts a Core-owned metadata projection
+
+The audio Content payload builder now accepts only the metadata fields it needs, expressed as a platform-neutral structural input. The Web upload adapter still reads files with `music-metadata` and processes artwork, while Core owns the resulting Content representation.
 
 ### Server code imports schemas from the shared package directly
 
