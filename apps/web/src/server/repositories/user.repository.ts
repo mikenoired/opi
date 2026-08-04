@@ -1,4 +1,4 @@
-import { mapCurrentUser, type CurrentUser } from "@synapse/core";
+import { mapCurrentUser, mergeUserPreferences, type CurrentUser } from "@synapse/core";
 import { normalizeUserPreferences, type UserPreferencesInput } from "@synapse/shared/preferences";
 import { eq } from "drizzle-orm";
 
@@ -58,10 +58,7 @@ export default class UserRepository {
 		requireAuth(this.ctx);
 
 		const currentPreferences = await this.getPreferences();
-		const nextPreferences = normalizeUserPreferences({
-			...currentPreferences,
-			...preferences,
-		});
+		const nextPreferences = mergeUserPreferences(currentPreferences, preferences);
 
 		const [updatedUser] = await this.ctx.db
 			.update(users)
