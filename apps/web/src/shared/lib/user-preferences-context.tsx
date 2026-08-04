@@ -1,10 +1,3 @@
-import type { ReactNode } from "react";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import toast from "react-hot-toast";
-
-import { api } from "@/shared/api/hooks";
-import { useAuth } from "@/shared/lib/auth-context";
-
 import {
 	DEFAULT_USER_PREFERENCES,
 	isColorPalette,
@@ -13,7 +6,13 @@ import {
 	type UserPreferences,
 	type UserPreferencesInput,
 	normalizeUserPreferences,
-} from "./user-preferences";
+} from "@synapse/shared/preferences";
+import type { ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import toast from "react-hot-toast";
+
+import { api } from "@/shared/api/hooks";
+import { useAuth } from "@/shared/lib/auth-context";
 
 interface UserPreferencesContextValue extends UserPreferences {
 	isReady: boolean;

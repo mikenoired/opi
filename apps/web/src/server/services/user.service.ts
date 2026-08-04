@@ -1,4 +1,4 @@
-import type { UserPreferencesInput } from "@/shared/lib/user-preferences";
+import type { UserPreferencesInput } from "@synapse/shared/preferences";
 
 import type { Context } from "../context";
 import UserRepository from "../repositories/user.repository";

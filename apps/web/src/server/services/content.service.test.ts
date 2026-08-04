@@ -1,8 +1,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 
+import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
 import { and, eq, inArray, sql } from "drizzle-orm";
-
-import { DEFAULT_USER_PREFERENCES } from "@/shared/lib/user-preferences";
 
 import type { Context } from "../context";
 import { db } from "../db";

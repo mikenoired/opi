@@ -1,4 +1,5 @@
 import { SIDEBAR_ANIMATION } from "@synapse/shared/animations";
+import type { ColorPalette, InterfaceLanguage } from "@synapse/shared/preferences";
 import { cn } from "@synapse/ui/cn";
 import { Switch } from "@synapse/ui/components";
 import { motion } from "framer-motion";
@@ -22,7 +23,6 @@ import { useEffect, useState } from "react";
 
 import { useI18n } from "@/shared/lib/i18n";
 import type { KeysWithoutParams } from "@/shared/lib/i18n";
-import type { ColorPalette, InterfaceLanguage } from "@/shared/lib/user-preferences";
 import { useUserPreferences } from "@/shared/lib/user-preferences-context";
 
 const themeOptions = [

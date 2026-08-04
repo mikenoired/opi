@@ -39,6 +39,7 @@
 - Completed: Stage 2 (nineteenth slice) — migrated all plan consumers and removed the Web plans compatibility wrapper.
 - Completed: Stage 2 (twentieth slice) — migrated the size-formatting consumer and removed the Web utility compatibility wrapper.
 - Completed: Stage 2 (twenty-first slice) — migrated animation configuration consumers and removed the Web compatibility wrapper.
+- Completed: Stage 2 (twenty-second slice) — migrated user-preference consumers and removed the Web compatibility wrapper.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 

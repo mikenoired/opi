@@ -1,3 +1,4 @@
+import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@synapse/shared/preferences";
 import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
@@ -12,9 +13,6 @@ import {
 	timestamp,
 	uuid,
 } from "drizzle-orm/pg-core";
-
-import type { UserPreferences } from "@/shared/lib/user-preferences";
-import { DEFAULT_USER_PREFERENCES } from "@/shared/lib/user-preferences";
 
 const tsvector = customType<{ data: string }>({
 	dataType() {

@@ -1,6 +1,5 @@
+import { normalizeUserPreferences } from "@synapse/shared/preferences";
 import { eq } from "drizzle-orm";
-
-import { normalizeUserPreferences } from "@/shared/lib/user-preferences";
 
 import type { Context } from "../context";
 import { users } from "../db/schema";
