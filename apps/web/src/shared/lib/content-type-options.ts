@@ -11,6 +11,12 @@ import {
 import type { KeysWithoutParams } from "@/shared/lib/i18n";
 import type { Content } from "@/shared/lib/schemas";
 
+export {
+	documentContentTypes,
+	getQueryTypesForFilter,
+	isContentTypeFilterAvailable,
+} from "@synapse/shared/content-types";
+
 interface ContentTypeOption {
 	description: string;
 	descriptionKey: KeysWithoutParams;
@@ -70,16 +76,6 @@ export const contentTypeOptions: ContentTypeOption[] = [
 		descriptionKey: "contentType.doc.description",
 	},
 ];
-
-export const documentContentTypes: Content["type"][] = ["doc", "pdf", "docx", "epub", "xlsx", "csv"];
-
-export function getQueryTypesForFilter(type: Content["type"]) {
-	return type === "doc" ? documentContentTypes : [type];
-}
-
-export function isContentTypeFilterAvailable(type: Content["type"], availableTypes: Content["type"][]) {
-	return getQueryTypesForFilter(type).some((queryType) => availableTypes.includes(queryType));
-}
 
 export function getContentTypeMeta(type: Content["type"]) {
 	return contentTypeOptions.find((option) => option.key === type) ?? contentTypeOptions[0];
