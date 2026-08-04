@@ -1,6 +1,12 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 
-import { attachContentTags, buildContentListPreview, getContentList, mapContentRecord } from "@synapse/core";
+import {
+	attachContentTags,
+	buildContentListPreview,
+	getContentList,
+	getContentSuggestions,
+	mapContentRecord,
+} from "@synapse/core";
 import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -87,6 +93,34 @@ test("orchestrates platform-neutral content list queries through a repository po
 		{ id: "content-1", tag_ids: ["tag-1"], tags: ["Tag"], user_id: "user-1" },
 	]);
 	expect(result.nextCursor).toBe(`${record.createdAt}|content-1`);
+});
+
+test("orchestrates content suggestions through a repository port", async () => {
+	const result = await getContentSuggestions(
+		{
+			findSuggestionTagPriorities: async () => [{ color: 1, id: "tag-1", itemCount: 1, title: "Tag" }],
+			findSuggestionsForTag: async () => [
+				{
+					content: "suggestion",
+					createdAt: new Date("2026-01-02T03:04:05.000Z"),
+					id: "content-2",
+					type: "note",
+				},
+			],
+			findTagRelations: async () => [{ content_id: "content-2", tag_ids: ["tag-1"], tag_titles: ["Tag"] }],
+		},
+		{ contentId: "content-1", limit: 10, sourceTagIds: ["tag-1"], userId: "user-1" }
+	);
+
+	expect(result).toMatchObject({
+		groups: [
+			{
+				items: [{ id: "content-2", tag_ids: ["tag-1"], tags: ["Tag"] }],
+				tag: { id: "tag-1" },
+			},
+		],
+		nextCursor: undefined,
+	});
 });
 
 const createService = () =>

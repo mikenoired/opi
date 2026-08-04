@@ -9,6 +9,7 @@ export {
 	createContentSuggestionCursor,
 	createTagContentPageCursor,
 	getContentList,
+	getContentSuggestions,
 	mapContentRecord,
 	parseContentSuggestionCursor,
 	parseTagContentPageCursor,
@@ -17,6 +18,7 @@ export type {
 	ContentListParams,
 	ContentListRepository,
 	ContentRecord,
+	ContentSuggestionRepository,
 	ContentTagRelation,
 	SuggestedContentTag,
 } from "./content";

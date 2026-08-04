@@ -329,6 +329,87 @@ export async function getContentList(
 	};
 }
 
+export interface ContentSuggestionRepository {
+	findSuggestionsForTag: (
+		tagId: string,
+		higherPriorityTagIds: string[],
+		excludedContentId: string,
+		cursor: string | undefined,
+		limit: number
+	) => Promise<ContentRecord[]>;
+	findSuggestionTagPriorities: (tagIds: string[]) => Promise<SuggestedContentTag[]>;
+	findTagRelations: (contentIds: string[]) => Promise<ContentTagRelation[]>;
+}
+
+export async function getContentSuggestions(
+	repository: ContentSuggestionRepository,
+	{
+		contentId,
+		cursor,
+		limit,
+		sourceTagIds,
+		userId,
+	}: {
+		contentId: string;
+		cursor?: string;
+		limit: number;
+		sourceTagIds: string[];
+		userId: string;
+	}
+): Promise<{
+	groups: Array<{ tag: SuggestedContentTag; items: Content[] }>;
+	nextCursor: string | undefined;
+}> {
+	if (sourceTagIds.length === 0) return { groups: [], nextCursor: undefined };
+
+	const priorities = await repository.findSuggestionTagPriorities(sourceTagIds);
+	if (priorities.length === 0) return { groups: [], nextCursor: undefined };
+
+	const parsedCursor = parseContentSuggestionCursor(cursor);
+	let tagIndex = parsedCursor.tagIndex;
+	let itemCursor = parsedCursor.itemCursor;
+	const matches: Array<{ row: ContentRecord; tag: SuggestedContentTag }> = [];
+	let nextCursor: string | undefined;
+
+	while (matches.length < limit && tagIndex < priorities.length) {
+		const priority = priorities[tagIndex]!;
+		const remaining = limit - matches.length;
+		const rows = await repository.findSuggestionsForTag(
+			priority.id,
+			priorities.slice(0, tagIndex).map((tag) => tag.id),
+			contentId,
+			itemCursor,
+			remaining + 1
+		);
+		const pageRows = rows.slice(0, remaining);
+		matches.push(...pageRows.map((row) => ({ row, tag: priority })));
+
+		if (rows.length > remaining) {
+			const last = pageRows[pageRows.length - 1]!;
+			nextCursor = createContentSuggestionCursor(tagIndex, last.createdAt, last.id);
+			break;
+		}
+
+		tagIndex++;
+		itemCursor = undefined;
+		if (matches.length === limit && tagIndex < priorities.length) nextCursor = `${tagIndex}`;
+	}
+
+	const contentItems = await mapContentListRows(
+		repository,
+		matches.map((match) => match.row),
+		userId,
+		true
+	);
+	return {
+		groups: groupContentSuggestions(
+			matches.map((match) => match.tag),
+			contentItems
+		),
+		nextCursor,
+	};
+}
+
 async function mapContentListRows(
 	repository: Pick<ContentListRepository, "findTagRelations">,
 	rows: ContentRecord[],

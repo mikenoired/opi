@@ -59,6 +59,7 @@
 - Completed: Stage 3 (thirteenth slice) — moved User preference merging into `@synapse/core`.
 - Completed: Stage 3 (fourteenth slice) — moved owned Note-image reference extraction into `@synapse/core`.
 - Completed: Stage 4 (first slice) — moved Content list-query orchestration behind a Core repository port.
+- Completed: Stage 4 (second slice) — moved Content suggestion-query orchestration behind a Core repository port.
 - In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 
@@ -144,6 +145,10 @@ Core now traverses serialized Note documents to identify only image object paths
 
 The search, tag-filter, list-preview, relation-attachment, and cursor orchestration for Content lists now runs in Core through a structural repository port. The Web service supplies the existing Drizzle repository methods and retains API response validation.
 
+### Content suggestions use a Core repository port
+
+Core now prioritizes tags, paginates matching Content, attaches tag relations, and groups the suggestions. Web supplies the existing query implementations and validates the response shape at its API boundary.
+
 ### Content suggestion grouping is Core-owned
 
 Web still retrieves and paginates suggestion candidates, while Core groups the resulting Content models by their prioritized tags. This keeps ranking queries in Web and the returned model shape platform-neutral.
@@ -201,7 +206,7 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 ## Next recommended tasks
 
-1. Move one additional read-only Content query (suggestions or tag-content previews) behind the Core repository port.
+1. Move tag-content preview queries behind a Core repository port.
 2. Keep Note image storage and Content persistence in Web until their required Core ports are introduced.
 
 ## Platform boundaries
@@ -211,7 +216,7 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 | `apps/web`          | Web      | Existing browser and co-located server implementation                                                                                     |
 | `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                         |
 | `apps/backend`      | Backend  | Empty placeholder                                                                                                                         |
-| `packages/core`     | Core     | Tag identity, serialized Content payloads/projections, User mapping/preferences, Note image ownership, and list-query orchestration       |
+| `packages/core`     | Core     | Tag identity, serialized Content payloads/projections, User mapping/preferences, Note image ownership, and Content-query orchestration    |
 | `packages/ui`       | Shared   | Existing React UI library                                                                                                                 |
 | `packages/features` | Shared   | Empty public entry point                                                                                                                  |
 | `packages/api`      | Shared   | Empty public entry point                                                                                                                  |

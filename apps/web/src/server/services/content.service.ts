@@ -1,14 +1,12 @@
 import {
 	attachContentTags,
-	createContentSuggestionCursor,
 	createTagContentPageCursor,
 	extractOwnedNoteImages,
 	getContentList,
-	groupContentSuggestions,
+	getContentSuggestions,
 	groupTagContentPreviews,
 	mapContentRecord,
 	normalizeTagTitle,
-	parseContentSuggestionCursor,
 	parseTagContentPageCursor,
 	type SuggestedContentTag,
 	uniqueTagTitles,
@@ -93,66 +91,21 @@ export default class ContentService {
 		nextCursor: string | undefined;
 	}> {
 		const source = await this.getById(contentId);
-		if (source.tag_ids.length === 0) {
-			return { groups: [], nextCursor: undefined };
-		}
-
-		const priorities = await this.repo.getSuggestionTagPriorities(source.tag_ids);
-		if (priorities.length === 0) {
-			return { groups: [], nextCursor: undefined };
-		}
-
-		const parsedCursor = parseContentSuggestionCursor(cursor);
-		let tagIndex = parsedCursor.tagIndex;
-		let itemCursor = parsedCursor.itemCursor;
-		const matches: Array<{
-			row: ContentRow;
-			tag: { color: number; id: string; title: string; itemCount: number };
-		}> = [];
-		let nextCursor: string | undefined;
-
-		while (matches.length < limit && tagIndex < priorities.length) {
-			const priority = priorities[tagIndex]!;
-			const remaining = limit - matches.length;
-			const rows = (await this.repo.getSuggestionsForTag(
-				priority.id,
-				priorities.slice(0, tagIndex).map((tag) => tag.id),
-				contentId,
-				itemCursor,
-				remaining + 1
-			)) as ContentRow[];
-			const pageRows = rows.slice(0, remaining);
-
-			matches.push(
-				...pageRows.map((row) => ({
-					row,
-					tag: priority,
-				}))
-			);
-
-			if (rows.length > remaining) {
-				const last = pageRows[pageRows.length - 1]!;
-				nextCursor = createContentSuggestionCursor(tagIndex, last.createdAt, last.id);
-				break;
-			}
-
-			tagIndex++;
-			itemCursor = undefined;
-			if (matches.length === limit && tagIndex < priorities.length) {
-				nextCursor = `${tagIndex}`;
-			}
-		}
-
-		const contentItems = await this.attachTagsToContent(
-			matches.map((match) => match.row),
-			{ previewContent: true }
+		const result = await getContentSuggestions(
+			{
+				findSuggestionTagPriorities: async (tagIds) => await this.repo.getSuggestionTagPriorities(tagIds),
+				findSuggestionsForTag: async (...args) =>
+					(await this.repo.getSuggestionsForTag(...args)) as ContentRow[],
+				findTagRelations: async (contentIds) => await this.repo.contentTagsWithTitles(contentIds),
+			},
+			{ contentId, cursor, limit, sourceTagIds: source.tag_ids, userId: this.ctx.user!.id }
 		);
 		return {
-			groups: groupContentSuggestions(
-				matches.map((match) => match.tag),
-				contentItems.map((item) => contentListItemSchema.parse(item))
-			),
-			nextCursor,
+			groups: result.groups.map((group) => ({
+				...group,
+				items: group.items.map((item) => contentListItemSchema.parse(item)),
+			})),
+			nextCursor: result.nextCursor,
 		};
 	}
 
