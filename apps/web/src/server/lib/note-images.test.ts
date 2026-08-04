@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 
+import { extractOwnedNoteImages } from "@synapse/core";
+
 let deleteStoredNoteImages: typeof import("./note-images").deleteStoredNoteImages;
-let extractOwnedNoteImages: typeof import("./note-images").extractOwnedNoteImages;
 let prepareNoteImages: typeof import("./note-images").prepareNoteImages;
 
 const png = "data:image/png;base64,iVBORw0KGgo=";
@@ -48,7 +49,7 @@ beforeAll(async () => {
 	process.env.MINIO_ENDPOINT ||= "localhost";
 	process.env.MINIO_ACCESS_KEY ||= "test";
 	process.env.MINIO_SECRET_KEY ||= "test";
-	({ deleteStoredNoteImages, extractOwnedNoteImages, prepareNoteImages } = await import("./note-images"));
+	({ deleteStoredNoteImages, prepareNoteImages } = await import("./note-images"));
 });
 
 describe("note images", () => {

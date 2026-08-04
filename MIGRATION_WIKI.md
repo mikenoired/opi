@@ -57,6 +57,7 @@
 - Completed: Stage 3 (eleventh slice) — moved tag-content page cursor rules into `@synapse/core`.
 - Completed: Stage 3 (twelfth slice) — moved current User model mapping into `@synapse/core`.
 - Completed: Stage 3 (thirteenth slice) — moved User preference merging into `@synapse/core`.
+- Completed: Stage 3 (fourteenth slice) — moved owned Note-image reference extraction into `@synapse/core`.
 - In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 
@@ -134,6 +135,10 @@ The pure mapping from a storage record to the Content model now lives in `@synap
 
 Web repositories still load tag relations, but Core now deterministically merges those relations into Content models. This keeps relation retrieval platform-specific while preserving one domain representation for consumers.
 
+### Note image ownership recognition is Core-owned
+
+Core now traverses serialized Note documents to identify only image object paths under the current user's namespace. Uploading, deletion, object metadata, and URL creation remain Web storage-adapter responsibilities.
+
 ### Content suggestion grouping is Core-owned
 
 Web still retrieves and paginates suggestion candidates, while Core groups the resulting Content models by their prioritized tags. This keeps ranking queries in Web and the returned model shape platform-neutral.
@@ -201,7 +206,7 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 | `apps/web`          | Web      | Existing browser and co-located server implementation                                                                                     |
 | `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                         |
 | `apps/backend`      | Backend  | Empty placeholder                                                                                                                         |
-| `packages/core`     | Core     | Tag identity rules and serialized image, video, and audio Content payload construction                                                    |
+| `packages/core`     | Core     | Tag identity, serialized Content payloads and projections, User mapping/preferences, and Note image ownership rules                       |
 | `packages/ui`       | Shared   | Existing React UI library                                                                                                                 |
 | `packages/features` | Shared   | Empty public entry point                                                                                                                  |
 | `packages/api`      | Shared   | Empty public entry point                                                                                                                  |

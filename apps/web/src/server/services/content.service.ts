@@ -2,6 +2,7 @@ import {
 	attachContentTags,
 	createContentSuggestionCursor,
 	createTagContentPageCursor,
+	extractOwnedNoteImages,
 	groupContentSuggestions,
 	groupTagContentPreviews,
 	mapContentRecord,
@@ -33,12 +34,7 @@ import { deleteFile, getFileMetadata } from "@/shared/api/minio";
 import type { Context } from "../context";
 import type { content as contentTable } from "../db/schema";
 import { ApiError } from "../lib/api-error";
-import {
-	deleteStoredNoteImages,
-	deleteUploadedNoteImages,
-	extractOwnedNoteImages,
-	prepareNoteImages,
-} from "../lib/note-images";
+import { deleteStoredNoteImages, deleteUploadedNoteImages, prepareNoteImages } from "../lib/note-images";
 import { parseFile } from "../parsers";
 import ContentRepository from "../repositories/content.repository";
 
