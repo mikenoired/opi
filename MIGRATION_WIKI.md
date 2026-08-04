@@ -42,8 +42,9 @@
 - Completed: Stage 2 (twenty-second slice) — migrated user-preference consumers and removed the Web compatibility wrapper.
 - Completed: Stage 2 (twenty-third slice) — moved platform-neutral content-search text helpers into `@synapse/shared/content-search`.
 - Completed: Stage 2 (twenty-fourth slice) — moved file-type detection constants and helpers into `@synapse/shared/file-types`.
+- Completed: Stage 2 — all identified platform-neutral types, constants, schemas, and helper functions have moved into `@synapse/shared`.
 - In progress: none.
-- Remaining: stages 2–9, in the documented order.
+- Remaining: stages 3–9, in the documented order.
 
 ## Decisions
 
@@ -147,8 +148,8 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 ## Next recommended tasks
 
-1. Inventory another pure Stage 2 utility for migration; retain code using browser APIs or rendering libraries in Web.
-2. Assess the remaining shared Web utilities and identify the next platform-neutral module that can move without changing behavior.
+1. Begin Stage 3 with a small, self-contained slice of the Content business model, keeping persistence, HTTP, and UI code in Web.
+2. Before moving a model, identify its platform-neutral data and rules separately from repository and service dependencies.
 
 ## Platform boundaries
 
