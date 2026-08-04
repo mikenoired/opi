@@ -44,6 +44,7 @@
 - Completed: Stage 2 (twenty-fourth slice) — moved file-type detection constants and helpers into `@synapse/shared/file-types`.
 - Completed: Stage 2 — all identified platform-neutral types, constants, schemas, and helper functions have moved into `@synapse/shared`.
 - Completed: Stage 3 (first slice) — moved tag-title normalization and deduplication rules into `@synapse/core`.
+- Completed: Stage 3 (second slice) — moved image and video content payload construction into `@synapse/core`.
 - In progress: none.
 - Remaining: stages 3–9, in the documented order.
 
@@ -100,6 +101,10 @@ Supported file-type constants and filename/MIME detection moved to `@synapse/sha
 ### Tag-title rules are the first Core model boundary
 
 Case-insensitive tag identity and preservation of the trimmed display title now live in `@synapse/core`. Content creation, uploads, and the Web tag inputs share the same domain rule, while persistence and UI state remain in Web.
+
+### Content payload construction belongs to Core
+
+Image and video upload handlers now receive their serialized Content payloads from `@synapse/core`. FFmpeg, image analysis, object storage, and audio metadata remain Web/server adapters; audio payload construction stays there until its external metadata dependency is represented by a platform-neutral input.
 
 ### Server code imports schemas from the shared package directly
 

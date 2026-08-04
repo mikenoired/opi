@@ -3,12 +3,13 @@ import { readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { buildVideoMediaContent } from "@synapse/core";
+
 import { getPublicUrl, uploadFile } from "@/shared/api/minio";
 
 import { generateThumbnail, getImageDimensions } from "../../lib/generate-thumbnail";
 import type { UploadHandlerDeps } from "./upload-handler-types";
 import {
-	buildVideoMediaContent,
 	compressVideo,
 	extractVideoThumbnail,
 	getImageDimensionsSafe,
