@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import {
 	FileText,
@@ -10,8 +11,6 @@ import {
 	FileUp,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
-
-import type { Content } from "@/shared/lib/schemas";
 
 interface ContentTypeSelectorProps {
 	type: Content["type"];

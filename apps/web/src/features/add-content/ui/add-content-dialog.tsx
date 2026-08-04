@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Button, Input, Label, Modal } from "@synapse/ui/components";
 import type { Transition } from "framer-motion";
 import { AnimatePresence, motion } from "framer-motion";
@@ -8,7 +9,6 @@ import toast from "react-hot-toast";
 import { api } from "@/shared/api/hooks";
 import { useDashboard } from "@/shared/lib/dashboard-context";
 import { fileToScaledDataUrl } from "@/shared/lib/downscale-image";
-import type { Content } from "@/shared/lib/schemas";
 
 import { AddContentProvider, useAddContent } from "../model/add-content-context";
 import { useDocumentUpload } from "../model/use-document-upload";

@@ -1,6 +1,6 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Button, Input, Label } from "@synapse/ui/components";
 
-import type { Content } from "@/shared/lib/schemas";
 import { ContentTag } from "@/shared/ui/content-tag";
 import type { SuggestedTag } from "@/shared/ui/generate-tags-button";
 import { GenerateTagsButton } from "@/shared/ui/generate-tags-button";
