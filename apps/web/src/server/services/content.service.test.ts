@@ -1,5 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 
+import { buildContentListPreview } from "@synapse/core";
 import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -19,6 +20,18 @@ const cache = {
 	getJSON: async () => null,
 	setJSON: async () => "OK",
 };
+
+test("builds platform-neutral content previews", () => {
+	expect(
+		buildContentListPreview(
+			"note",
+			JSON.stringify({ content: [{ content: [{ text: "Preview text", type: "text" }], type: "paragraph" }] })
+		)
+	).toBe("Preview text");
+	expect(buildContentListPreview("media", '{"media":{"url":"https://example.com/image.png"}}')).toBe(
+		'{"media":{"url":"https://example.com/image.png"}}'
+	);
+});
 
 const createService = () =>
 	new ContentService({

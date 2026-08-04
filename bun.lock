@@ -95,6 +95,9 @@
     "packages/core": {
       "name": "@synapse/core",
       "version": "0.0.0",
+      "dependencies": {
+        "@synapse/shared": "workspace:*",
+      },
       "devDependencies": {
         "@synapse/tsconfig": "workspace:*",
         "typescript": "^7.0.2",

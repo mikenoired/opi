@@ -48,6 +48,7 @@
 - Completed: Stage 3 (second slice) — moved image and video content payload construction into `@synapse/core`.
 - Completed: Stage 3 (third slice) — moved audio content payload construction into `@synapse/core`.
 - Completed: Stage 3 (fourth slice) — migrated editor tag merging to the Core tag invariant.
+- Completed: Stage 3 (fifth slice) — moved Content list-preview projection into `@synapse/core`.
 - In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 
@@ -112,6 +113,10 @@ Image and video upload handlers now receive their serialized Content payloads fr
 ### Audio payload construction accepts a Core-owned metadata projection
 
 The audio Content payload builder now accepts only the metadata fields it needs, expressed as a platform-neutral structural input. The Web upload adapter still reads files with `music-metadata` and processes artwork, while Core owns the resulting Content representation.
+
+### Content list previews are Core projections
+
+List-preview normalization for notes, links, media, and document content now lives in `@synapse/core`. The Web service still selects database rows and supplies user context, but it no longer owns the platform-neutral transformation into preview content.
 
 ### Server code imports schemas from the shared package directly
 
