@@ -1,4 +1,4 @@
-import { normalizeTagTitle } from "@synapse/core";
+import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
 import type { Content } from "@synapse/shared/schemas";
 import { Input } from "@synapse/ui/components";
 import { useId, useState } from "react";
@@ -38,14 +38,7 @@ interface TagEditorProps {
 const mediaTypes = new Set<Content["type"]>(["audio", "doc", "pdf", "docx", "epub", "xlsx", "csv"]);
 
 function mergeTags(tags: string[], names: string[]) {
-	return Array.from(
-		new Map(
-			[...tags, ...names]
-				.map((tag) => tag.trim())
-				.filter(Boolean)
-				.map((tag) => [normalizeTagTitle(tag), tag])
-		).values()
-	);
+	return uniqueTagTitles([...tags, ...names]);
 }
 
 export function TagEditor({

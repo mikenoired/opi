@@ -46,6 +46,7 @@
 - Completed: Stage 3 (first slice) — moved tag-title normalization and deduplication rules into `@synapse/core`.
 - Completed: Stage 3 (second slice) — moved image and video content payload construction into `@synapse/core`.
 - Completed: Stage 3 (third slice) — moved audio content payload construction into `@synapse/core`.
+- Completed: Stage 3 (fourth slice) — migrated editor tag merging to the Core tag invariant.
 - In progress: none.
 - Remaining: stages 3–9, in the documented order.
 
