@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import { X } from "lucide-react";
 import { type ChangeEvent, type FocusEvent, useEffect, useRef, useState } from "react";
@@ -5,7 +6,6 @@ import { type ChangeEvent, type FocusEvent, useEffect, useRef, useState } from "
 import { contentTypeOptions, isContentTypeFilterAvailable } from "@/shared/lib/content-type-options";
 import { useDashboard } from "@/shared/lib/dashboard-context";
 import { useI18n } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
 
 interface ContentFilterProps {
 	searchQuery: string;

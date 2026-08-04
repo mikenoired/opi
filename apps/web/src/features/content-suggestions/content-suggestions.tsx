@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import { Skeleton } from "@synapse/ui/components";
 import { motion } from "framer-motion";
@@ -7,7 +8,6 @@ import { useCallback, useMemo, useState } from "react";
 import { ContentMasonry } from "@/features/content-grid/content-masonry";
 import { api } from "@/shared/api/hooks";
 import { useInfiniteScroll } from "@/shared/hooks/use-infinite-scroll";
-import type { Content } from "@/shared/lib/schemas";
 import { getTagColorStyle } from "@/shared/lib/tag-colors";
 import Link from "@/shared/router/link";
 

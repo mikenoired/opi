@@ -1,10 +1,10 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Button } from "@synapse/ui/components";
 import { FileText, Search } from "lucide-react";
 import { memo } from "react";
 
 import { useInfiniteScroll } from "@/shared/hooks/use-infinite-scroll";
 import { useI18n } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
 
 import { ContentMasonry } from "./content-masonry";
 

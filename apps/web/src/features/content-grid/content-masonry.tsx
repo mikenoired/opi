@@ -1,8 +1,7 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Skeleton } from "@synapse/ui/components";
 import { lazy, memo } from "react";
 import Masonry from "react-masonry-css";
-
-import type { Content } from "@/shared/lib/schemas";
 
 const Item = lazy(() => import("@/entities/item/ui/item"));
 

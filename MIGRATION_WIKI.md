@@ -27,6 +27,7 @@
 - Completed: Stage 2 (seventh slice) — moved shared animation configuration into `@synapse/shared/animations`.
 - Completed: Stage 2 (eighth slice) — updated all server-side schema consumers to import from `@synapse/shared/schemas`.
 - Completed: Stage 2 (ninth slice) — updated the Web item-rendering cluster to import schemas from `@synapse/shared/schemas`.
+- Completed: Stage 2 (tenth slice) — updated Web content-list, filter, and suggestion components to import schemas from `@synapse/shared/schemas`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -79,6 +80,10 @@ All existing server-side schema consumers now import `@synapse/shared/schemas` d
 ### Item renderers import schemas from the shared package directly
 
 The Web item renderer components now import their content types and parsing helpers from `@synapse/shared/schemas`. Other client callers still use the compatibility adapter and will be migrated by feature cluster.
+
+### Content-list components import schemas from the shared package directly
+
+The Web filter, grid, masonry, and suggestion components now import their content type from `@synapse/shared/schemas`. The compatibility adapter remains for unrelated feature clusters.
 
 ## Known limitations
 
