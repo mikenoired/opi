@@ -165,6 +165,27 @@ interface ContentTagRelation {
 	tag_titles?: string[] | null;
 }
 
+export interface SuggestedContentTag {
+	color: number;
+	id: string;
+	itemCount: number;
+	title: string;
+}
+
+export function groupContentSuggestions(tags: SuggestedContentTag[], items: Content[]) {
+	const groups = new Map<string, { tag: SuggestedContentTag; items: Content[] }>();
+
+	for (const [index, tag] of tags.entries()) {
+		const item = items[index];
+		if (!item) continue;
+		const group = groups.get(tag.id) ?? { tag, items: [] };
+		group.items.push(item);
+		groups.set(tag.id, group);
+	}
+
+	return Array.from(groups.values());
+}
+
 export function attachContentTags(items: Content[], relations: ContentTagRelation[]): Content[] {
 	const byContent = new Map<string, { ids: string[]; titles: string[] }>();
 

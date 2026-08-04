@@ -1,4 +1,11 @@
-import { attachContentTags, mapContentRecord, normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
+import {
+	attachContentTags,
+	groupContentSuggestions,
+	mapContentRecord,
+	normalizeTagTitle,
+	type SuggestedContentTag,
+	uniqueTagTitles,
+} from "@synapse/core";
 import { buildContentSearchText } from "@synapse/shared/content-search";
 import { isSupportedFileType } from "@synapse/shared/file-types";
 import type {
@@ -103,7 +110,14 @@ export default class ContentService {
 		return contentDetailSchema.parse(withTags);
 	}
 
-	async getSuggestions(contentId: string, cursor: string | undefined, limit: number) {
+	async getSuggestions(
+		contentId: string,
+		cursor: string | undefined,
+		limit: number
+	): Promise<{
+		groups: Array<{ tag: SuggestedContentTag; items: Content[] }>;
+		nextCursor: string | undefined;
+	}> {
 		const source = await this.getById(contentId);
 		if (source.tag_ids.length === 0) {
 			return { groups: [], nextCursor: undefined };
@@ -159,20 +173,13 @@ export default class ContentService {
 			matches.map((match) => match.row),
 			{ previewContent: true }
 		);
-		const groups = new Map<
-			string,
-			{ tag: { color: number; id: string; title: string; itemCount: number }; items: Content[] }
-		>();
-
-		for (const [index, match] of matches.entries()) {
-			const item = contentItems[index];
-			if (!item) continue;
-			const group = groups.get(match.tag.id) ?? { tag: match.tag, items: [] };
-			group.items.push(contentListItemSchema.parse(item));
-			groups.set(match.tag.id, group);
-		}
-
-		return { groups: Array.from(groups.values()), nextCursor };
+		return {
+			groups: groupContentSuggestions(
+				matches.map((match) => match.tag),
+				contentItems.map((item) => contentListItemSchema.parse(item))
+			),
+			nextCursor,
+		};
 	}
 
 	private async getContentWithTagFilter(
