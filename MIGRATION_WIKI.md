@@ -13,6 +13,7 @@
 - `packages/shared/preferences` owns platform-neutral user-preference types, defaults, and normalization; browser persistence remains in the Web context.
 - `packages/shared/plans` owns plan IDs, limits, metadata, and validation shared by the Web UI and server.
 - `packages/shared/formatting` owns platform-neutral value-formatting helpers.
+- `packages/shared/animations` owns serializable animation configuration; animation rendering remains in Web.
 
 ## Migration progress
 
@@ -23,6 +24,7 @@
 - Completed: Stage 2 (fourth slice) — moved user-preference types, defaults, and normalization into `@synapse/shared/preferences`.
 - Completed: Stage 2 (fifth slice) — moved plan definitions, limits, and validation into `@synapse/shared/plans`.
 - Completed: Stage 2 (sixth slice) — moved size formatting into `@synapse/shared/formatting`.
+- Completed: Stage 2 (seventh slice) — moved shared animation configuration into `@synapse/shared/animations`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -64,6 +66,10 @@ Plan identifiers, quota limits, display metadata, and validation moved to `@syna
 
 The byte-size formatter moved to `@synapse/shared/formatting`. It uses only standard number formatting and accepts the locale as an argument, so the caller retains control of presentation language without introducing a platform dependency.
 
+### Animation configuration is shared; rendering remains Web-specific
+
+The sidebar transition values moved to `@synapse/shared/animations`. They are serializable data and can be reused by another client, while the Web components continue to choose and execute their rendering library.
+
 ## Known limitations
 
 - `apps/desktop` and `apps/backend` are directory placeholders, not runnable applications. Their setup belongs to stages 7 and 8.
@@ -77,14 +83,14 @@ The byte-size formatter moved to `@synapse/shared/formatting`. It uses only stan
 
 ## Platform boundaries
 
-| Module              | Boundary | Current contents                                                                                                        |
-| ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`          | Web      | Existing browser and co-located server implementation                                                                   |
-| `apps/desktop`      | Desktop  | Empty placeholder                                                                                                       |
-| `apps/backend`      | Backend  | Empty placeholder                                                                                                       |
-| `packages/core`     | Core     | Empty public entry point; platform-neutral TypeScript config                                                            |
-| `packages/ui`       | Shared   | Existing React UI library                                                                                               |
-| `packages/features` | Shared   | Empty public entry point                                                                                                |
-| `packages/api`      | Shared   | Empty public entry point                                                                                                |
-| `packages/shared`   | Shared   | Domain schemas, preferences, plans, formatting, content-type filtering, tag colors, parsing helpers, and public exports |
-| `packages/sync`     | Shared   | Empty public entry point                                                                                                |
+| Module              | Boundary | Current contents                                                                                                                          |
+| ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`          | Web      | Existing browser and co-located server implementation                                                                                     |
+| `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                         |
+| `apps/backend`      | Backend  | Empty placeholder                                                                                                                         |
+| `packages/core`     | Core     | Empty public entry point; platform-neutral TypeScript config                                                                              |
+| `packages/ui`       | Shared   | Existing React UI library                                                                                                                 |
+| `packages/features` | Shared   | Empty public entry point                                                                                                                  |
+| `packages/api`      | Shared   | Empty public entry point                                                                                                                  |
+| `packages/shared`   | Shared   | Domain schemas, preferences, plans, formatting, animation config, content-type filtering, tag colors, parsing helpers, and public exports |
+| `packages/sync`     | Shared   | Empty public entry point                                                                                                                  |
