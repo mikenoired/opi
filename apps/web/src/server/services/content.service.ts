@@ -1,6 +1,7 @@
 import {
 	attachContentTags,
 	extractOwnedNoteImages,
+	getAvailableContentTypes,
 	getContentList,
 	getContentSuggestions,
 	getTagsWithContentPreviews,
@@ -403,8 +404,9 @@ export default class ContentService {
 		const cached = await this.ctx.cache.getJSON<ContentType[]>(cacheKey);
 		if (cached) return cached;
 
-		const rows = await this.repo.getAvailableTypes();
-		const result = rows.map((row) => contentTypeSchema.parse(row.type));
+		const result = await getAvailableContentTypes({
+			findAvailableContentTypes: async () => (await this.repo.getAvailableTypes()).map((row) => row.type),
+		});
 		await this.ctx.cache.setJSON(cacheKey, result, CONTENT_TYPES_CACHE_TTL_SECONDS);
 		return result;
 	}

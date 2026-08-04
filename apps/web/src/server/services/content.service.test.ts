@@ -5,6 +5,7 @@ import {
 	buildContentListPreview,
 	getContentList,
 	getContentSuggestions,
+	getAvailableContentTypes,
 	getTagsWithContentPreviews,
 	getTagsWithContentPage,
 	mapContentRecord,
@@ -173,6 +174,15 @@ test("orchestrates paginated tag content previews through a repository port", as
 		items: [{ color: 1, id: "tag-1", items: [], title: "A" }],
 		nextCursor: "A|tag-1",
 	});
+});
+
+test("normalizes available content types through a repository port", async () => {
+	await expect(
+		getAvailableContentTypes({ findAvailableContentTypes: async () => ["note", "media"] })
+	).resolves.toEqual(["note", "media"]);
+	await expect(
+		getAvailableContentTypes({ findAvailableContentTypes: async () => ["unsupported"] })
+	).rejects.toThrow();
 });
 
 const createService = () =>

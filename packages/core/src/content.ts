@@ -1,4 +1,4 @@
-import { extractTextFromStructuredContent, type Content } from "@synapse/shared/schemas";
+import { contentTypeSchema, extractTextFromStructuredContent, type Content } from "@synapse/shared/schemas";
 
 interface MediaDimensions {
 	height: number;
@@ -462,6 +462,14 @@ export async function getTagsWithContentPage(
 		items: pageTags.map((tag) => ({ ...tag, items: previewByTag.get(tag.id) ?? [] })),
 		nextCursor: tagRows.length > limit && last ? createTagContentPageCursor(last.title, last.id) : undefined,
 	};
+}
+
+export interface AvailableContentTypesRepository {
+	findAvailableContentTypes: () => Promise<unknown[]>;
+}
+
+export async function getAvailableContentTypes(repository: AvailableContentTypesRepository) {
+	return (await repository.findAvailableContentTypes()).map((type) => contentTypeSchema.parse(type));
 }
 
 async function mapContentListRows(
