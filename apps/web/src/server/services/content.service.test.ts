@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 
-import { buildContentListPreview } from "@synapse/core";
+import { buildContentListPreview, mapContentRecord } from "@synapse/core";
 import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -31,6 +31,22 @@ test("builds platform-neutral content previews", () => {
 	expect(buildContentListPreview("media", '{"media":{"url":"https://example.com/image.png"}}')).toBe(
 		'{"media":{"url":"https://example.com/image.png"}}'
 	);
+	expect(
+		mapContentRecord(
+			{
+				content: "body",
+				createdAt: new Date("2026-01-02T03:04:05.000Z"),
+				id: "content-1",
+				type: "note",
+			},
+			"user-1"
+		)
+	).toMatchObject({
+		created_at: "2026-01-02T03:04:05.000Z",
+		id: "content-1",
+		tags: [],
+		user_id: "user-1",
+	});
 });
 
 const createService = () =>

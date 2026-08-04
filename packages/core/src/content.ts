@@ -147,6 +147,42 @@ export function buildAudioContent({
 
 const contentListPreviewChars = 1_200;
 
+interface ContentRecord {
+	content: string;
+	createdAt?: Date | null;
+	documentImages?: unknown;
+	id: string;
+	thumbnailBase64?: string | null;
+	title?: string | null;
+	type: string;
+	updatedAt?: Date | null;
+	userId?: string | null;
+}
+
+export function mapContentRecord(
+	record: ContentRecord,
+	fallbackUserId: string,
+	options: { previewContent?: boolean } = {}
+): Content {
+	const type = record.type as Content["type"];
+	return {
+		id: record.id,
+		user_id: record.userId ?? fallbackUserId,
+		type,
+		title: record.title ?? undefined,
+		content: options.previewContent
+			? buildContentListPreview(type, record.content, record.title)
+			: record.content,
+		tags: [],
+		tag_ids: [],
+		created_at: record.createdAt?.toISOString() ?? new Date().toISOString(),
+		updated_at:
+			record.updatedAt?.toISOString() ?? record.createdAt?.toISOString() ?? new Date().toISOString(),
+		thumbnail_base64: record.thumbnailBase64 ?? undefined,
+		document_images: Array.isArray(record.documentImages) ? record.documentImages : undefined,
+	};
+}
+
 export function buildContentListPreview(
 	type: Content["type"],
 	content: string,

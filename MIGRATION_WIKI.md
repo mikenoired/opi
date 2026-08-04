@@ -49,6 +49,7 @@
 - Completed: Stage 3 (third slice) — moved audio content payload construction into `@synapse/core`.
 - Completed: Stage 3 (fourth slice) — migrated editor tag merging to the Core tag invariant.
 - Completed: Stage 3 (fifth slice) — moved Content list-preview projection into `@synapse/core`.
+- Completed: Stage 3 (sixth slice) — moved storage-record to Content-model mapping into `@synapse/core`.
 - In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 
@@ -117,6 +118,10 @@ The audio Content payload builder now accepts only the metadata fields it needs,
 ### Content list previews are Core projections
 
 List-preview normalization for notes, links, media, and document content now lives in `@synapse/core`. The Web service still selects database rows and supplies user context, but it no longer owns the platform-neutral transformation into preview content.
+
+### Content record mapping is Core-owned
+
+The pure mapping from a storage record to the Content model now lives in `@synapse/core`. Web continues to fetch records and attach relation data, while Core supplies the common model shape and preview transformation.
 
 ### Server code imports schemas from the shared package directly
 

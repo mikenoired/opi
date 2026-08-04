@@ -1,4 +1,4 @@
-import { buildContentListPreview, normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
+import { mapContentRecord, normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
 import { buildContentSearchText } from "@synapse/shared/content-search";
 import { isSupportedFileType } from "@synapse/shared/file-types";
 import type {
@@ -71,7 +71,7 @@ export default class ContentService {
 
 		const items = includeTags
 			? await this.attachTagsToContent(contentRows, { previewContent: true })
-			: contentRows.map((r) => this.mapContentRow(r, this.ctx.user!.id, { previewContent: true }));
+			: contentRows.map((r) => mapContentRecord(r, this.ctx.user!.id, { previewContent: true }));
 
 		return {
 			items: items.map((i) => contentListItemSchema.parse(i)),
@@ -89,7 +89,7 @@ export default class ContentService {
 		const rows = (await this.repo.searchFtsFiltered(search, types, tagIds, limit)) as ContentRow[];
 		const items = includeTags
 			? await this.attachTagsToContent(rows, { previewContent: true })
-			: rows.map((row) => this.mapContentRow(row, this.ctx.user!.id, { previewContent: true }));
+			: rows.map((row) => mapContentRecord(row, this.ctx.user!.id, { previewContent: true }));
 
 		return {
 			items: items.map((item) => contentListItemSchema.parse(item)),
@@ -190,7 +190,7 @@ export default class ContentService {
 
 		const items = includeTags
 			? await this.attachTagsToContent(contentRows, { previewContent: true })
-			: contentRows.map((r) => this.mapContentRow(r, this.ctx.user!.id, { previewContent: true }));
+			: contentRows.map((r) => mapContentRecord(r, this.ctx.user!.id, { previewContent: true }));
 
 		return {
 			items: items.map((i) => contentListItemSchema.parse(i)),
@@ -254,7 +254,7 @@ export default class ContentService {
 		const [withTags] =
 			inputTagIds?.length || legacyTagTitles?.length
 				? await this.attachTagsToContent([result])
-				: [this.mapContentRow(result, this.ctx.user!.id)];
+				: [mapContentRecord(result, this.ctx.user!.id)];
 		await this.invalidateUserTags();
 		const content = contentDetailSchema.parse(withTags);
 		return content;
@@ -616,7 +616,7 @@ export default class ContentService {
 		rows: ContentRow[],
 		options: { previewContent?: boolean } = {}
 	): Promise<Content[]> {
-		const items = rows.map((r) => this.mapContentRow(r, this.ctx.user!.id, options));
+		const items = rows.map((r) => mapContentRecord(r, this.ctx.user!.id, options));
 		if (!items.length) return items;
 
 		const ids = rows.map((r) => r.id);
@@ -676,27 +676,6 @@ export default class ContentService {
 			}))
 			.filter((r) => !!r.to_node);
 		if (edgeRows.length) await repo.createEdges(edgeRows);
-	}
-
-	private mapContentRow(
-		row: ContentRow,
-		fallbackUserId: string,
-		options: { previewContent?: boolean } = {}
-	): Content {
-		const type = row.type as Content["type"];
-		return {
-			id: row.id,
-			user_id: row.userId ?? fallbackUserId,
-			type,
-			title: row.title ?? undefined,
-			content: options.previewContent ? buildContentListPreview(type, row.content, row.title) : row.content,
-			tags: [],
-			tag_ids: [],
-			created_at: row.createdAt?.toISOString() ?? new Date().toISOString(),
-			updated_at: row.updatedAt?.toISOString() ?? row.createdAt?.toISOString() ?? new Date().toISOString(),
-			thumbnail_base64: row.thumbnailBase64 ?? undefined,
-			document_images: Array.isArray(row.documentImages) ? row.documentImages : undefined,
-		};
 	}
 
 	private async trackAddedNoteImages(images: { size: number }[]) {
