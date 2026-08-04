@@ -1,3 +1,4 @@
+import { SIDEBAR_ANIMATION } from "@synapse/shared/animations";
 import { cn } from "@synapse/ui/cn";
 import { Switch } from "@synapse/ui/components";
 import { motion } from "framer-motion";
@@ -19,7 +20,6 @@ import {
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-import { SIDEBAR_ANIMATION } from "@/shared/config/animations";
 import { useI18n } from "@/shared/lib/i18n";
 import type { KeysWithoutParams } from "@/shared/lib/i18n";
 import type { ColorPalette, InterfaceLanguage } from "@/shared/lib/user-preferences";

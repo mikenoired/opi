@@ -1,10 +1,10 @@
+import { SIDEBAR_ANIMATION } from "@synapse/shared/animations";
 import { cn } from "@synapse/ui/cn";
 import { Tooltip, TooltipProvider, useProximityHover } from "@synapse/ui/components";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { SIDEBAR_ANIMATION } from "@/shared/config/animations";
 import { useDashboard } from "@/shared/lib/dashboard-context";
 import { useI18n } from "@/shared/lib/i18n";
 import Link from "@/shared/router/link";
