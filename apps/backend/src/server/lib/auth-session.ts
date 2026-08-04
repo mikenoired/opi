@@ -1,6 +1,6 @@
-import type { User } from "@/shared/lib/auth-context";
-
 import { verifyRefreshToken, verifyToken } from "./jwt";
+
+export type User = { id: string; email: string };
 
 export function getUserFromTokens(accessToken?: string | null, refreshToken?: string | null): User | null {
 	const accessPayload = accessToken ? verifyToken(accessToken) : null;

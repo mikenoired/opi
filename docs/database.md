@@ -3,7 +3,7 @@
 ## Technologies and access
 
 - PostgreSQL 15 is the authoritative relational store.
-- Drizzle ORM schema: `apps/web/src/server/db/schema.ts`; connection uses `postgres` and env-derived connection settings.
+- Drizzle ORM schema: `apps/backend/src/server/db/schema.ts`; connection uses `postgres` and env-derived connection settings.
 - Redis is separate operational storage for cache, rate-limit windows, and derived per-user storage counters; it is not an ORM-managed database.
 - MinIO is object storage, not a database table store. Object references are embedded in type-specific content payloads.
 
@@ -30,7 +30,7 @@
 
 ## Lifecycle and migrations
 
-- Drizzle config targets PostgreSQL and emits migration artifacts to `apps/web/drizzle`.
+- Drizzle config targets PostgreSQL and emits migration artifacts to `apps/backend/drizzle`.
 - Local setup currently uses `db:push` for schema synchronization rather than a committed migration chain.
 - `0000_merge_duplicate_tags.sql` is an operational migration that installs a statement trigger to merge normalized duplicate user tags, repoint joins/graph nodes/edges, clean duplicates, and create unique indexes.
 - After provisioning or significant legacy changes, run the documented tag-merge and search backfill scripts.

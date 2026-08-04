@@ -5,9 +5,9 @@
 - Primary API: typed Hono RPC at `/api`. `Api` is exported from the server and consumed through `hc<Api>`; request and response types therefore stay synchronized without code generation.
 - Inputs are validated by Zod at the HTTP boundary. Errors have a stable `{ error, code, fieldErrors }` shape.
 - TanStack Query owns client cache and request lifecycle. Browser requests include cookies.
-- `src/server/index.ts` is a Bun HTTP server; run it locally with `bun --filter @synapse/web api:dev`.
+- `apps/backend/src/index.ts` is a Bun HTTP server; run it locally with `bun --filter @synapse/backend dev`.
 - The OpenAPI 3.1 document is available at `/api/openapi.json`; the interactive Scalar reference is at `/api/docs`.
-- Set `VITE_API_URL=http://localhost:3000/api` when Vite runs on `http://localhost:5173`; leave it empty when Bun serves the SPA and API from one origin.
+- During local Vite development, `/api` is proxied to `http://localhost:3000` by default. Set `VITE_API_URL=http://localhost:3000/api` when serving Web and Backend from separate origins in another environment.
 - Set `CORS_ORIGIN=http://localhost:5173` (or a comma-separated allowlist) for credentialed browser requests to a separate API origin.
 
 ## Hono resources

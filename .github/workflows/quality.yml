@@ -39,7 +39,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Prepare test database
-        run: bun --filter @synapse/web db:push
+        run: bun --filter @synapse/backend db:push
 
       - name: Check
         run: bun run check

@@ -2,7 +2,7 @@ import { Buffer } from "node:buffer";
 
 import sharp from "sharp";
 
-import { getFileBuffer } from "@/shared/api/minio";
+import { getFileBuffer } from "../../storage/minio";
 
 // Downscale so a single tagging request stays cheap regardless of source size.
 const MAX_DIMENSION = 1024;

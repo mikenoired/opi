@@ -1,7 +1,6 @@
-import type { User } from "@/shared/lib/auth-context";
-
 import type { Context } from "../context";
 import { ApiError } from "./api-error";
+import type { User } from "./auth-session";
 
 export type AuthedContext = Context & { user: User };
 

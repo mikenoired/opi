@@ -2,8 +2,8 @@ import { Buffer } from "node:buffer";
 
 import * as Minio from "minio";
 
-import type { FileValidationConfig, ValidationResult } from "@/server/middleware/file-middleware";
-import { sanitizeFileName, validateFile } from "@/server/middleware/file-middleware";
+import type { FileValidationConfig, ValidationResult } from "../server/middleware/file-middleware";
+import { sanitizeFileName, validateFile } from "../server/middleware/file-middleware";
 
 const {
 	MINIO_ENDPOINT,

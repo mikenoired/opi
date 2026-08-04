@@ -1,6 +1,6 @@
 import sharp from "sharp";
 
-import { bucketName, getPublicUrl, minioClient } from "@/shared/api/minio";
+import { bucketName, getPublicUrl, minioClient } from "../../storage/minio";
 
 export interface DocumentImage {
 	id: string;

@@ -13,8 +13,7 @@ import { setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { z } from "zod";
 
-import { deleteUserFiles, getPresignedUrl } from "@/shared/api/minio";
-
+import { deleteUserFiles, getPresignedUrl } from "../../storage/minio";
 import type { Context } from "../context";
 import { ApiError, STATUS_CODES } from "../lib/api-error";
 import { getUserFromTokens } from "../lib/auth-session";

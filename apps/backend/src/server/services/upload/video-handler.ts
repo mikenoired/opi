@@ -5,8 +5,7 @@ import { join } from "node:path";
 
 import { buildVideoMediaContent } from "@synapse/core";
 
-import { getPublicUrl, uploadFile } from "@/shared/api/minio";
-
+import { getPublicUrl, uploadFile } from "../../../storage/minio";
 import { generateThumbnail, getImageDimensions } from "../../lib/generate-thumbnail";
 import type { UploadHandlerDeps } from "./upload-handler-types";
 import {

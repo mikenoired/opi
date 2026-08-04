@@ -3,7 +3,7 @@
 ## Code organization
 
 - Follow the existing feature-oriented client layout: `features` for user actions, `entities` for reusable domain presentation, `widgets` for composed UI, and `shared` for cross-cutting code.
-- Keep database/infrastructure operations in `src/server`. Use the server layering: **HTTP handler → service → repository**.
+- Keep database/infrastructure operations in `apps/backend/src/server`. Use the server layering: **HTTP handler → service → repository**.
 - HTTP handlers validate transport input and instantiate services; services coordinate workflows and transactions; repositories contain persistence queries and authorization-scoped lookup logic.
 - Put reusable UI primitives in `packages/ui`, export them through its documented public entry points, and use app-local UI only when it is not a shared primitive.
 - Use the `@/*` alias for `apps/web/src` imports. Imports are automatically sorted by Oxfmt.

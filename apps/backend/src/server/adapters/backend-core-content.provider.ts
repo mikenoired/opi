@@ -8,12 +8,12 @@ import type {
 import ContentRepository from "../repositories/content.repository";
 
 /**
- * Web persistence adapter for the Core Content and graph ports.
+ * Backend persistence adapter for the Core Content and graph ports.
  *
- * Transaction ownership remains with the calling Web service: construct this
+ * Transaction ownership remains with the calling Backend service: construct this
  * adapter from a transaction-scoped repository when a workflow mutates data.
  */
-export class WebCoreContentProvider implements CoreContentRepository, GraphProvider, TagTitleRepository {
+export class BackendCoreContentProvider implements CoreContentRepository, GraphProvider, TagTitleRepository {
 	constructor(private readonly repository: ContentRepository) {}
 
 	async findAll(

@@ -1,6 +1,6 @@
+import type { Api } from "@synapse/backend/api";
 import { hc } from "hono/client";
 
-import type { Api } from "@/server/api/app";
 import { apiBaseUrl } from "@/shared/config/api";
 
 export const apiClient = hc<Api>(apiBaseUrl, {

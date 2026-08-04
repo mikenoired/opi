@@ -25,8 +25,8 @@ import type {
 import { contentDetailSchema, contentListItemSchema, contentTypeSchema } from "@synapse/shared/schemas";
 import type z from "zod";
 
-import { WebCoreContentProvider } from "../adapters/web-core-content.provider";
-import { WebStorageProvider } from "../adapters/web-storage.provider";
+import { BackendCoreContentProvider } from "../adapters/backend-core-content.provider";
+import { BackendStorageProvider } from "../adapters/backend-storage.provider";
 import type { Context } from "../context";
 import type { content as contentTable } from "../db/schema";
 import { ApiError } from "../lib/api-error";
@@ -45,14 +45,14 @@ const CONTENT_TYPES_CACHE_TTL_SECONDS = Math.floor(
 );
 const MAX_IMPORT_FILE_SIZE = 50 * 1024 * 1024;
 export default class ContentService {
-	private readonly core: WebCoreContentProvider;
+	private readonly core: BackendCoreContentProvider;
 	private readonly repo: ContentRepository;
-	private readonly storage = new WebStorageProvider();
+	private readonly storage = new BackendStorageProvider();
 	private readonly ctx: Context;
 
 	constructor(ctx: Context) {
 		this.repo = new ContentRepository(ctx);
-		this.core = new WebCoreContentProvider(this.repo);
+		this.core = new BackendCoreContentProvider(this.repo);
 		this.ctx = ctx;
 	}
 
@@ -119,7 +119,7 @@ export default class ContentService {
 		try {
 			result = (await this.ctx.db.transaction(async (tx) => {
 				const repo = this.repo.withDb(tx as unknown as Context["db"]);
-				const core = new WebCoreContentProvider(repo);
+				const core = new BackendCoreContentProvider(repo);
 				const data = await repo.create(input);
 				const contentId = (data as ContentRow).id;
 
@@ -194,7 +194,7 @@ export default class ContentService {
 		let documentImages: CreateContent["document_images"];
 		if (parsed.images && parsed.images.length > 0) {
 			const { processDocumentImages, uploadDocumentImagesToMinio } =
-				await import("@/server/lib/document-image-processor");
+				await import("../lib/document-image-processor");
 			const documentId = `doc-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 			const processed = await processDocumentImages(parsed.images);
 			documentImages = await uploadDocumentImagesToMinio(processed, this.ctx.user!.id, documentId);
@@ -230,7 +230,7 @@ export default class ContentService {
 		try {
 			result = (await this.ctx.db.transaction(async (tx) => {
 				const repo = this.repo.withDb(tx as unknown as Context["db"]);
-				const core = new WebCoreContentProvider(repo);
+				const core = new BackendCoreContentProvider(repo);
 				const data = await repo.updateContent(preparedInput);
 
 				const tagIds = inputTagIds as string[] | undefined;
@@ -302,7 +302,7 @@ export default class ContentService {
 
 		await this.ctx.db.transaction(async (tx) => {
 			const repo = this.repo.withDb(tx as unknown as Context["db"]);
-			await deleteContentWithRelations(new WebCoreContentProvider(repo), id);
+			await deleteContentWithRelations(new BackendCoreContentProvider(repo), id);
 		});
 
 		let totalFileSize = 0;

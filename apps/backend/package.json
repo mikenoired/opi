@@ -2,5 +2,55 @@
 	"name": "@synapse/backend",
 	"version": "0.0.0",
 	"private": true,
-	"type": "module"
+	"type": "module",
+	"exports": {
+		"./api": "./src/server/api/app.ts",
+		"./contracts": "./src/contracts.ts"
+	},
+	"scripts": {
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "drizzle-kit migrate",
+		"db:push": "drizzle-kit push",
+		"db:install-tag-merge": "bun src/server/scripts/apply-tag-merge-db.ts",
+		"db:set-god-mode": "bun src/server/scripts/apply-god-mode-existing.ts",
+		"db:backfill-tag-colors": "bun src/server/scripts/backfill-tag-colors.ts",
+		"db:studio": "drizzle-kit studio",
+		"search:backfill": "bun src/server/scripts/backfill-search-text.ts",
+		"start": "bun src/index.ts",
+		"dev": "bun --watch src/index.ts",
+		"test:server": "bun test src/server --path-ignore-patterns '**/*.integration.test.ts'",
+		"test:api": "JWT_SECRET=test-access-secret JWT_REFRESH_SECRET=test-refresh-secret API_RATE_LIMIT_MUTATION=1000 bun test src/server --test-name-pattern 'API integration'",
+		"test:coverage": "JWT_SECRET=test-access-secret JWT_REFRESH_SECRET=test-refresh-secret API_RATE_LIMIT_MUTATION=1000 bun test src/server --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/server",
+		"test": "bun run test:server && bun run test:api",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@scalar/hono-api-reference": "^0.11.12",
+		"@synapse/core": "workspace:*",
+		"@synapse/shared": "workspace:*",
+		"drizzle-orm": "^0.45.2",
+		"epub2": "^3.0.2",
+		"hono": "^4.12.34",
+		"ioredis": "^5.11.1",
+		"jsonwebtoken": "^9.0.3",
+		"mammoth": "^1.12.0",
+		"minio": "^8.0.7",
+		"music-metadata": "^11.13.0",
+		"papaparse": "^5.5.3",
+		"pdfjs-dist": "^6.0.227",
+		"postgres": "^3.4.9",
+		"sharp": "^0.34.5",
+		"xlsx": "^0.18.5",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@synapse/tsconfig": "workspace:*",
+		"@types/bun": "^1.3.14",
+		"@types/jsonwebtoken": "^9.0.10",
+		"@types/minio": "^7.1.1",
+		"@types/node": "^24.13.2",
+		"@types/papaparse": "^5.5.2",
+		"drizzle-kit": "^0.31.10",
+		"typescript": "^6.0.3"
+	}
 }

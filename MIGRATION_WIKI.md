@@ -3,13 +3,13 @@
 ## Current architecture
 
 - The repository is a Bun workspace with `apps/*` and `packages/*` workspaces.
-- `apps/web` remains the only implemented application and retains all existing product code.
+- `apps/web` is the browser application and retains the product UI, client routing, and typed API client.
 - `apps/desktop` is now a runnable Electron application built with Electron Vite. It owns its Electron main/preload boundaries and a filesystem-backed `DesktopStorageProvider` for local Core object storage in Electron `userData`.
-- `apps/backend` remains an empty workspace placeholder; no Backend code has moved into it.
+- `apps/backend` is a runnable Bun/Hono application. It owns the HTTP API, services, repositories, database schema and migrations, server-side parsing/AI integrations, Redis/MinIO infrastructure, and Backend Core adapters.
 - `packages/ui` and `packages/tsconfig` predate this migration task.
 - `packages/features`, `packages/api`, and `packages/sync` have only a package manifest, a platform-neutral TypeScript configuration, and an empty public entry point.
 - `packages/core` now owns platform-neutral Content service orchestration: queries, tag-title resolution, Content↔tag graph-relation writes, persistence-deletion ordering, and explicit provider contracts, plus serialized Content payload construction and media/audio/link model parsing.
-- `apps/web` provides named Core adapters over its Drizzle repositories/graph persistence and MinIO object storage. Its Content service calls Core operations through those adapters while retaining transactions, cache policy, API validation, parsing, and file policy.
+- `apps/backend` provides named Core adapters over its Drizzle repositories/graph persistence and MinIO object storage. Its Content service calls Core operations through those adapters while retaining transactions, cache policy, API validation, parsing, and file policy.
 - `packages/shared` owns the platform-neutral domain schemas and types; all Web consumers import them directly.
 - `packages/shared/content-types` owns content-type filter normalization; Web retains only icon and translation metadata for its content-type picker.
 - `packages/shared/tag-colors` owns the tag-color palette and index lookup; CSS and Pixi adapters remain in Web.
@@ -74,7 +74,8 @@
 - Completed: Stage 5 — Core provider contracts are explicit and platform-neutral; Web retains the concrete persistence, graph, object-storage, and future-sync implementations.
 - Completed: Stage 6 — Web is wired through named Core Content/graph and storage provider adapters without changing transaction, cache, API-validation, or file-policy boundaries.
 - Completed: Stage 7 — prepared a runnable Electron Desktop application and its local Core storage adapter without moving Backend responsibilities or introducing synchronization.
-- Remaining: stages 8–9, in the documented order.
+- Completed: Stage 8 — moved the Bun/Hono API, services, repositories, infrastructure, database schema/migrations, server tests, and Backend Core adapters from Web to the runnable `apps/backend` application. Web consumes only type-only public Backend API contracts and proxies `/api` to Backend in local development.
+- Remaining: Stage 9 — synchronization.
 
 ## Decisions
 
@@ -246,27 +247,30 @@ The legacy modal context and add-content modal now import content types from `@s
 
 All Web and server plan consumers now import from `@synapse/shared/plans`. The temporary `apps/web/src/shared/config/plans.ts` re-export has been removed.
 
+### Backend owns the server runtime and infrastructure
+
+The co-located Web server was moved intact into `apps/backend`, including its API routes, services, repositories, database schema and migrations, integrations, tests, and Core persistence/storage adapters. This preserves existing behavior while making the runtime owner explicit. Web now imports only the public, type-only `@synapse/backend/api` and `@synapse/backend/contracts` surfaces; it neither imports Backend implementation files nor bundles them. The Vite `/api` proxy preserves local development without reintroducing a Web server.
+
 ## Known limitations
 
 - Desktop currently provides application bootstrapping and local object storage only. Its product UI and a local implementation of the complete Content/graph repository are deliberately not copied from Web; they require separate Desktop feature/persistence work after the staged platform split.
-- `apps/backend` is still a directory placeholder, not a runnable application. Its setup belongs to Stage 8.
-- The web server is still co-located with the web application. It must remain there until the migration order reaches the backend stage.
-- Content persistence, graph storage, cache ownership, and file cleanup remain implemented by Web adapters. Their Core integration is complete for the existing Content service; other Web services are intentionally out of scope because they do not implement a migrated Core workflow.
+- Web and Backend are separate runtime processes. Production deployments must set `VITE_API_URL` to the Backend `/api` origin and configure `CORS_ORIGIN` accordingly; local Vite development uses the configured `/api` proxy.
+- Content persistence, graph storage, cache ownership, and file cleanup remain implemented by Backend adapters. Their Core integration is complete for the existing Content service; other Backend services are intentionally out of scope because they do not implement a migrated Core workflow.
 - Existing UI and TypeScript packages were already present and have not been reorganized as part of this task.
 - No Collection domain model or persistence exists in the current product. Stage 3 therefore migrates the complete set of existing domain models without inventing a feature solely to match the target architecture.
 
 ## Next recommended tasks
 
-1. Start Stage 8 by preparing the Backend application structure and moving only Backend-owned adapters from the co-located Web server.
-2. Keep Web-specific note-image processing, cache ownership, API validation, and MinIO file policy in `apps/web`.
+1. Start Stage 9 by adding synchronization through the existing Core `SyncProvider` contract without coupling Core to a transport or platform.
+2. Keep Backend HTTP, persistence, cache, file, and API-validation policy in `apps/backend`; keep browser routing and presentation in `apps/web`.
 
 ## Platform boundaries
 
 | Module              | Boundary | Current contents                                                                                                                                                                                                                |
 | ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`          | Web      | Existing browser and co-located server implementation; Core Content/graph and storage adapters                                                                                                                                  |
+| `apps/web`          | Web      | Browser UI, routing, API client, and a local-development `/api` proxy                                                                                                                                                           |
 | `apps/desktop`      | Desktop  | Electron main/preload bootstrap, `synapse-object://` protocol, and filesystem-backed Core `StorageProvider`                                                                                                                     |
-| `apps/backend`      | Backend  | Empty placeholder                                                                                                                                                                                                               |
+| `apps/backend`      | Backend  | Runnable Bun/Hono API; services, repositories, DB schema/migrations, parsers, AI, Redis/MinIO, and Core persistence/storage adapters                                                                                            |
 | `packages/core`     | Core     | Content, graph, storage, and sync provider contracts; tag identity/title resolution; Content relation/deletion and query orchestration; serialized Content payloads/projections; User mapping/preferences; Note image ownership |
 | `packages/ui`       | Shared   | Existing React UI library                                                                                                                                                                                                       |
 | `packages/features` | Shared   | Empty public entry point                                                                                                                                                                                                        |

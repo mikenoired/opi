@@ -1,9 +1,9 @@
 import type { StorageProvider } from "@synapse/core";
 
-import { deleteFile, getFileMetadata, getPublicUrl, uploadFile } from "@/shared/api/minio";
+import { deleteFile, getFileMetadata, getPublicUrl, uploadFile } from "../../storage/minio";
 
-/** Web object-storage adapter. File validation and naming remain Web policy. */
-export class WebStorageProvider implements StorageProvider {
+/** Backend object-storage adapter. File validation and naming remain Backend policy. */
+export class BackendStorageProvider implements StorageProvider {
 	async deleteObject(objectName: string): Promise<void> {
 		await deleteFile(objectName);
 	}

@@ -1,7 +1,6 @@
 import { buildImageMediaContent } from "@synapse/core";
 
-import { deleteFile, getPublicUrl, uploadFile } from "@/shared/api/minio";
-
+import { deleteFile, getPublicUrl, uploadFile } from "../../../storage/minio";
 import { generateThumbnail, getImageDimensions } from "../../lib/generate-thumbnail";
 import type { UploadHandlerDeps } from "./upload-handler-types";
 import { getImageDimensionsSafe, imageUploadMaxFileSizeBytes } from "./upload-media";
