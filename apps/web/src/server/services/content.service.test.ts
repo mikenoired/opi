@@ -12,7 +12,10 @@ import {
 	parseAudioJson,
 	parseLinkContent,
 	parseMediaJson,
+	resolveTagTitlesAndCreateNodes,
 	resolveTagTitlesToIds,
+	deleteContentWithRelations,
+	writeContentTagRelations,
 } from "@synapse/core";
 import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
 import { and, eq, inArray, sql } from "drizzle-orm";
@@ -214,6 +217,48 @@ test("resolves normalized tag titles through a repository port", async () => {
 		createdTags: [{ id: "new-NEW", title: "NEW" }],
 		ids: ["existing-work", "new-NEW"],
 	});
+});
+
+test("orchestrates tag relation writes and Content deletion through repository ports", async () => {
+	const calls: string[] = [];
+	await writeContentTagRelations(
+		{
+			createContentTagEdges: async () => void calls.push("create edges"),
+			createContentTags: async () => void calls.push("create tags"),
+			deleteContentTagEdges: async () => void calls.push("delete edges"),
+			deleteContentTags: async () => void calls.push("delete tags"),
+			getOrCreateTagNodeIds: async () => ({ "tag-1": "node-1" }),
+		},
+		{ contentId: "content-1", contentNodeId: "content-node-1", mode: "replace", tagIds: ["tag-1"] }
+	);
+	expect(calls).toEqual(["delete tags", "delete edges", "create tags", "create edges"]);
+
+	calls.length = 0;
+	await deleteContentWithRelations(
+		{
+			deleteContent: async () => void calls.push("delete content"),
+			deleteContentNodeGraph: async () => void calls.push("delete graph"),
+			deleteContentTags: async () => void calls.push("delete tags"),
+			findContentNodeId: async () => "content-node-1",
+		},
+		"content-1"
+	);
+	expect(calls).toEqual(["delete tags", "delete graph", "delete content"]);
+});
+
+test("creates graph nodes only for newly created normalized tags", async () => {
+	const createdNodes: string[] = [];
+	await expect(
+		resolveTagTitlesAndCreateNodes(
+			{
+				createTagNode: async (title) => void createdNodes.push(title),
+				createTags: async (titles) => titles.map((title) => ({ id: `new-${title}`, title })),
+				findTagsByTitle: async () => [{ id: "existing-work", title: "Work" }],
+			},
+			[" work ", "New", "NEW"]
+		)
+	).resolves.toEqual(["existing-work", "new-NEW"]);
+	expect(createdNodes).toEqual(["NEW"]);
 });
 
 const createService = () =>

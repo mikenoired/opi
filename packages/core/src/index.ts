@@ -33,7 +33,28 @@ export type {
 	TagContentPageRepository,
 	TagContentPreviewRepository,
 } from "./content";
+export type {
+	ContentRepository,
+	GraphProvider,
+	StorageProvider,
+	StoredObjectMetadata,
+	SyncChange,
+	SyncProvider,
+} from "./providers";
 export { extractOwnedNoteImages } from "./note";
-export { normalizeTagTitle, resolveTagTitlesToIds, uniqueTagTitles } from "./tag";
-export type { TagTitleRecord, TagTitleRepository } from "./tag";
+export {
+	deleteContentWithRelations,
+	normalizeTagTitle,
+	resolveTagTitlesAndCreateNodes,
+	resolveTagTitlesToIds,
+	uniqueTagTitles,
+	writeContentTagRelations,
+} from "./tag";
+export type {
+	ContentDeletionRepository,
+	ContentTagRelationRepository,
+	TagTitleRecord,
+	TagTitleGraphRepository,
+	TagTitleRepository,
+} from "./tag";
 export { mapCurrentUser, mergeUserPreferences, type CurrentUser } from "./user";

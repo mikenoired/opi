@@ -1,5 +1,6 @@
 import {
 	attachContentTags,
+	deleteContentWithRelations,
 	extractOwnedNoteImages,
 	getAvailableContentTypes,
 	getContentList,
@@ -8,7 +9,8 @@ import {
 	mapContentRecord,
 	parseAudioJson,
 	parseMediaJson,
-	resolveTagTitlesToIds,
+	resolveTagTitlesAndCreateNodes,
+	writeContentTagRelations,
 	getTagsWithContentPage,
 	type SuggestedContentTag,
 } from "@synapse/core";
@@ -23,8 +25,8 @@ import type {
 import { contentDetailSchema, contentListItemSchema, contentTypeSchema } from "@synapse/shared/schemas";
 import type z from "zod";
 
-import { deleteFile, getFileMetadata } from "@/shared/api/minio";
-
+import { WebCoreContentProvider } from "../adapters/web-core-content.provider";
+import { WebStorageProvider } from "../adapters/web-storage.provider";
 import type { Context } from "../context";
 import type { content as contentTable } from "../db/schema";
 import { ApiError } from "../lib/api-error";
@@ -43,11 +45,14 @@ const CONTENT_TYPES_CACHE_TTL_SECONDS = Math.floor(
 );
 const MAX_IMPORT_FILE_SIZE = 50 * 1024 * 1024;
 export default class ContentService {
-	private repo: ContentRepository;
-	private ctx: Context;
+	private readonly core: WebCoreContentProvider;
+	private readonly repo: ContentRepository;
+	private readonly storage = new WebStorageProvider();
+	private readonly ctx: Context;
 
 	constructor(ctx: Context) {
 		this.repo = new ContentRepository(ctx);
+		this.core = new WebCoreContentProvider(this.repo);
 		this.ctx = ctx;
 	}
 
@@ -59,15 +64,15 @@ export default class ContentService {
 		limit: number,
 		includeTags: boolean
 	) {
-		const result = await getContentList(
-			{
-				findAll: async (...args) => (await this.repo.getAll(...args)) as ContentRow[],
-				findByTagFilter: async (...args) => (await this.repo.getWithTagFilter(...args)) as ContentRow[],
-				findTagRelations: async (contentIds) => await this.repo.contentTagsWithTitles(contentIds),
-				search: async (...args) => (await this.repo.searchFtsFiltered(...args)) as ContentRow[],
-			},
-			{ cursor, includeTags, limit, search, tagIds, types, userId: this.ctx.user!.id }
-		);
+		const result = await getContentList(this.core, {
+			cursor,
+			includeTags,
+			limit,
+			search,
+			tagIds,
+			types,
+			userId: this.ctx.user!.id,
+		});
 		return { ...result, items: result.items.map((item) => contentListItemSchema.parse(item)) };
 	}
 
@@ -86,15 +91,13 @@ export default class ContentService {
 		nextCursor: string | undefined;
 	}> {
 		const source = await this.getById(contentId);
-		const result = await getContentSuggestions(
-			{
-				findSuggestionTagPriorities: async (tagIds) => await this.repo.getSuggestionTagPriorities(tagIds),
-				findSuggestionsForTag: async (...args) =>
-					(await this.repo.getSuggestionsForTag(...args)) as ContentRow[],
-				findTagRelations: async (contentIds) => await this.repo.contentTagsWithTitles(contentIds),
-			},
-			{ contentId, cursor, limit, sourceTagIds: source.tag_ids, userId: this.ctx.user!.id }
-		);
+		const result = await getContentSuggestions(this.core, {
+			contentId,
+			cursor,
+			limit,
+			sourceTagIds: source.tag_ids,
+			userId: this.ctx.user!.id,
+		});
 		return {
 			groups: result.groups.map((group) => ({
 				...group,
@@ -116,6 +119,7 @@ export default class ContentService {
 		try {
 			result = (await this.ctx.db.transaction(async (tx) => {
 				const repo = this.repo.withDb(tx as unknown as Context["db"]);
+				const core = new WebCoreContentProvider(repo);
 				const data = await repo.create(input);
 				const contentId = (data as ContentRow).id;
 
@@ -129,14 +133,12 @@ export default class ContentService {
 				const tagTitles = legacyTagTitles as string[] | undefined;
 				let searchTags: string[] = [];
 				if (tagIds && tagIds.length) {
-					const tagNodeIds = await repo.getOrCreateTagNodeIds(tagIds);
-					await this.upsertContentTags(repo, contentId, tagIds, contentNodeId, tagNodeIds);
+					await writeContentTagRelations(core, { contentId, contentNodeId, mode: "append", tagIds });
 					searchTags = (await repo.getTags(tagIds)).map((tag) => tag.title);
 				} else if (tagTitles && tagTitles.length) {
-					const ids = await this.resolveTagTitlesToIds(repo, tagTitles);
+					const ids = await resolveTagTitlesAndCreateNodes(core, tagTitles);
 					if (ids.length) {
-						const tagNodeIds = await repo.getOrCreateTagNodeIds(ids);
-						await this.upsertContentTags(repo, contentId, ids, contentNodeId, tagNodeIds);
+						await writeContentTagRelations(core, { contentId, contentNodeId, mode: "append", tagIds: ids });
 						searchTags = (await repo.getTags(ids)).map((tag) => tag.title);
 					}
 				}
@@ -228,6 +230,7 @@ export default class ContentService {
 		try {
 			result = (await this.ctx.db.transaction(async (tx) => {
 				const repo = this.repo.withDb(tx as unknown as Context["db"]);
+				const core = new WebCoreContentProvider(repo);
 				const data = await repo.updateContent(preparedInput);
 
 				const tagIds = inputTagIds as string[] | undefined;
@@ -245,13 +248,16 @@ export default class ContentService {
 
 				let searchTags: string[] = [];
 				if (tagIds) {
-					const tagNodeIds = await repo.getOrCreateTagNodeIds(tagIds);
-					await this.replaceContentTags(repo, id, tagIds, contentNodeId, tagNodeIds);
+					await writeContentTagRelations(core, { contentId: id, contentNodeId, mode: "replace", tagIds });
 					searchTags = tagIds.length ? (await repo.getTags(tagIds)).map((tag) => tag.title) : [];
 				} else if (tagTitles) {
-					const ids = await this.resolveTagTitlesToIds(repo, tagTitles);
-					const tagNodeIds = await repo.getOrCreateTagNodeIds(ids);
-					await this.replaceContentTags(repo, id, ids, contentNodeId, tagNodeIds);
+					const ids = await resolveTagTitlesAndCreateNodes(core, tagTitles);
+					await writeContentTagRelations(core, {
+						contentId: id,
+						contentNodeId,
+						mode: "replace",
+						tagIds: ids,
+					});
 					searchTags = ids.length ? (await repo.getTags(ids)).map((tag) => tag.title) : [];
 				} else {
 					const [existingTags] = await repo.contentTagsWithTitles([id]);
@@ -296,16 +302,7 @@ export default class ContentService {
 
 		await this.ctx.db.transaction(async (tx) => {
 			const repo = this.repo.withDb(tx as unknown as Context["db"]);
-			const node = await repo.getNodeByContentId(id);
-			const contentNodeId = (node as { id: string } | null)?.id;
-
-			await repo.deleteContentTag(id);
-			if (contentNodeId) {
-				await repo.deleteEdge(contentNodeId);
-				await repo.deleteNode(contentNodeId);
-			}
-
-			await repo.deleteContent(id);
+			await deleteContentWithRelations(new WebCoreContentProvider(repo), id);
 		});
 
 		let totalFileSize = 0;
@@ -321,9 +318,9 @@ export default class ContentService {
 			const thumbObject = this.extractObjectNameFromApiUrl(mediaJson?.media?.thumbnailUrl);
 
 			if (mainObject) {
-				const metadata = await getFileMetadata(mainObject);
+				const metadata = await this.storage.getObjectMetadata(mainObject);
 				if (metadata?.size) totalFileSize += metadata.size;
-				await deleteFile(mainObject);
+				await this.storage.deleteObject(mainObject);
 			}
 
 			if (mediaJson?.media?.type === "image") {
@@ -333,9 +330,9 @@ export default class ContentService {
 				}
 			} else {
 				if (thumbObject) {
-					const metadata = await getFileMetadata(thumbObject);
+					const metadata = await this.storage.getObjectMetadata(thumbObject);
 					if (metadata?.size) totalFileSize += metadata.size;
-					await deleteFile(thumbObject);
+					await this.storage.deleteObject(thumbObject);
 				}
 			}
 		} else if (content.type === "audio") {
@@ -346,16 +343,16 @@ export default class ContentService {
 			if (audioJson?.audio?.sizeBytes) {
 				totalFileSize += audioJson.audio.sizeBytes;
 			} else if (audioObj) {
-				const metadata = await getFileMetadata(audioObj);
+				const metadata = await this.storage.getObjectMetadata(audioObj);
 				if (metadata?.size) totalFileSize += metadata.size;
 			}
 
-			if (audioObj) await deleteFile(audioObj);
+			if (audioObj) await this.storage.deleteObject(audioObj);
 
 			if (coverObj) {
-				const metadata = await getFileMetadata(coverObj);
+				const metadata = await this.storage.getObjectMetadata(coverObj);
 				if (metadata?.size) totalFileSize += metadata.size;
-				await deleteFile(coverObj);
+				await this.storage.deleteObject(coverObj);
 			} else if (audioJson?.cover?.thumbnailBase64) {
 				totalFileSize += audioJson.cover.thumbnailBase64.length;
 			}
@@ -399,9 +396,7 @@ export default class ContentService {
 		const cached = await this.ctx.cache.getJSON<ContentType[]>(cacheKey);
 		if (cached) return cached;
 
-		const result = await getAvailableContentTypes({
-			findAvailableContentTypes: async () => (await this.repo.getAvailableTypes()).map((row) => row.type),
-		});
+		const result = await getAvailableContentTypes(this.core);
 		await this.ctx.cache.setJSON(cacheKey, result, CONTENT_TYPES_CACHE_TTL_SECONDS);
 		return result;
 	}
@@ -416,34 +411,13 @@ export default class ContentService {
 			await this.ctx.cache.getJSON<Array<{ id: string; title: string; items: Content[] }>>(cacheKey);
 		if (cached) return cached;
 
-		const result = await getTagsWithContentPreviews(
-			{
-				findTagContentPreviews: async (...args) =>
-					(await this.repo.getTagsWithContentPreview(...args)) as Array<
-						ContentRow & { tagColor: number; tagId: string; tagTitle: string }
-					>,
-				findTagRelations: async (contentIds) => await this.repo.contentTagsWithTitles(contentIds),
-			},
-			this.ctx.user!.id
-		);
+		const result = await getTagsWithContentPreviews(this.core, this.ctx.user!.id);
 		await this.ctx.cache.setJSON(cacheKey, result, TAGS_CACHE_TTL_SECONDS);
 		return result;
 	}
 
 	async getTagsWithContentPage(cursor: string | undefined, limit: number) {
-		return await getTagsWithContentPage(
-			{
-				findTagContentPreviews: async (...args) =>
-					(await this.repo.getTagsWithContentPreview(...args)) as Array<
-						ContentRow & { tagColor: number; tagId: string; tagTitle: string }
-					>,
-				findTagPage: async (...args) => await this.repo.getContentTagPage(...args),
-				findTagRelations: async (contentIds) => await this.repo.contentTagsWithTitles(contentIds),
-			},
-			this.ctx.user!.id,
-			cursor,
-			limit
-		);
+		return await getTagsWithContentPage(this.core, this.ctx.user!.id, cursor, limit);
 	}
 
 	private extractObjectNameFromApiUrl(url?: string | null): string | null {
@@ -457,18 +431,6 @@ export default class ContentService {
 			// ignore
 		}
 		return null;
-	}
-
-	private async replaceContentTags(
-		repo: ContentRepository,
-		contentId: string,
-		tagIds: string[],
-		contentNodeId: string,
-		tagNodeIdByTagId: Record<string, string>
-	) {
-		await repo.deleteContentTag(contentId);
-		await repo.deleteTagEdge(contentNodeId);
-		await this.upsertContentTags(repo, contentId, tagIds, contentNodeId, tagNodeIdByTagId);
 	}
 
 	private async invalidateUserTags() {
@@ -490,38 +452,6 @@ export default class ContentService {
 		const ids = rows.map((r) => r.id);
 		const contentTagsWithTitles = await this.repo.contentTagsWithTitles(ids);
 		return attachContentTags(items, contentTagsWithTitles || []);
-	}
-
-	private async resolveTagTitlesToIds(repo: ContentRepository, titles: string[]): Promise<string[]> {
-		const { createdTags, ids } = await resolveTagTitlesToIds(
-			{
-				createTags: async (missingTitles) => await repo.createTags(missingTitles.map((title) => ({ title }))),
-				findTagsByTitle: async (tagTitles) => await repo.getTagsByTitle(tagTitles),
-			},
-			titles
-		);
-		for (const tag of createdTags) await repo.createNode(tag.title);
-		return ids;
-	}
-
-	private async upsertContentTags(
-		repo: ContentRepository,
-		contentId: string,
-		tagIds: string[],
-		contentNodeId: string,
-		tagNodeIdByTagId: Record<string, string>
-	) {
-		if (!tagIds.length) return;
-		await repo.createContentTags(tagIds, contentId);
-		const edgeRows = tagIds
-			.map((tagId) => ({
-				from_node: contentNodeId,
-				to_node: tagNodeIdByTagId[tagId],
-				relation_type: "content_tag",
-				user_id: this.ctx.user!.id,
-			}))
-			.filter((r) => !!r.to_node);
-		if (edgeRows.length) await repo.createEdges(edgeRows);
 	}
 
 	private async trackAddedNoteImages(images: { size: number }[]) {

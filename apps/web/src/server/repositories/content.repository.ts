@@ -537,6 +537,24 @@ export default class ContentRepository {
 		return data;
 	}
 
+	async createContentTagEdges(
+		contentNodeId: string,
+		tagNodeIdByTagId: Record<string, string>,
+		tagIds: string[]
+	): Promise<void> {
+		const edgeRows = tagIds
+			.map((tagId) => ({
+				from_node: contentNodeId,
+				to_node: tagNodeIdByTagId[tagId],
+				relation_type: "content_tag",
+				user_id: this.ctx.user!.id,
+			}))
+			.filter((row): row is { from_node: string; to_node: string; relation_type: string; user_id: string } =>
+				Boolean(row.to_node)
+			);
+		if (edgeRows.length) await this.createEdges(edgeRows);
+	}
+
 	async createNode(content: string) {
 		requireAuth(this.ctx);
 
@@ -706,6 +724,11 @@ export default class ContentRepository {
 		await this.database
 			.delete(nodes)
 			.where(and(eq(nodes.id, contentNodeId), eq(nodes.userId, this.ctx.user.id)));
+	}
+
+	async deleteContentNodeGraph(contentNodeId: string): Promise<void> {
+		await this.deleteEdge(contentNodeId);
+		await this.deleteNode(contentNodeId);
 	}
 
 	async getContentTags() {

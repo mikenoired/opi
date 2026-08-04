@@ -7,7 +7,8 @@
 - `apps/desktop` and `apps/backend` are empty workspace placeholders; no platform code has moved into them.
 - `packages/ui` and `packages/tsconfig` predate this migration task.
 - `packages/features`, `packages/api`, and `packages/sync` have only a package manifest, a platform-neutral TypeScript configuration, and an empty public entry point.
-- `packages/core` now owns platform-neutral tag identity rules plus serialized Content payload construction and media/audio/link model parsing.
+- `packages/core` now owns platform-neutral Content service orchestration: queries, tag-title resolution, Content↔tag graph-relation writes, persistence-deletion ordering, and explicit provider contracts, plus serialized Content payload construction and media/audio/link model parsing.
+- `apps/web` provides named Core adapters over its Drizzle repositories/graph persistence and MinIO object storage. Its Content service calls Core operations through those adapters while retaining transactions, cache policy, API validation, parsing, and file policy.
 - `packages/shared` owns the platform-neutral domain schemas and types; all Web consumers import them directly.
 - `packages/shared/content-types` owns content-type filter normalization; Web retains only icon and translation metadata for its content-type picker.
 - `packages/shared/tag-colors` owns the tag-color palette and index lookup; CSS and Pixi adapters remain in Web.
@@ -66,9 +67,12 @@
 - Completed: Stage 4 (fourth slice) — moved paginated tag Content-preview query orchestration behind a Core repository port.
 - Completed: Stage 4 (fifth slice) — moved available Content-type normalization behind a Core repository port.
 - Completed: Stage 4 (sixth slice) — moved normalized tag-title resolution and creation behind a Core repository port.
+- Completed: Stage 4 (seventh slice) — moved Content↔tag relation writes, tag-node creation for newly resolved tags, and Content persistence deletion ordering behind Core repository ports.
 - Completed: Stage 3 — all existing platform-neutral Content, Note, and User model rules are owned by `@synapse/core`; the product has no Collection model to migrate.
-- In progress: Stage 4 — Content service operations are being moved behind Core repository ports incrementally.
-- Remaining: stages 4–9, in the documented order.
+- Completed: Stage 4 — all existing platform-neutral Content service operations have moved to `@synapse/core`. The product has no `SearchService` or `CollectionService` implementation to migrate.
+- Completed: Stage 5 — Core provider contracts are explicit and platform-neutral; Web retains the concrete persistence, graph, object-storage, and future-sync implementations.
+- Completed: Stage 6 — Web is wired through named Core Content/graph and storage provider adapters without changing transaction, cache, API-validation, or file-policy boundaries.
+- Remaining: stages 7–9, in the documented order.
 
 ## Decisions
 
@@ -176,6 +180,18 @@ Core now validates the values returned by the available-type query. Web retains 
 
 Core now deduplicates normalized tag titles, resolves existing tag IDs, and determines missing titles through a repository port. Web retains tag color policy, SQL conflict handling, and graph-node creation, while both the Content and upload services share the same domain workflow.
 
+### Content tag-relation mutations and deletion ordering use Core repository ports
+
+Core now owns the ordering for appending or replacing Content↔tag relations, including graph-edge management, and for removing those relations, the Content graph node, and persistence records. It also creates graph nodes only for tags newly created during title resolution. Web supplies transactional Drizzle operations, authorization, tag-color policy, cache invalidation, and file cleanup. This preserves the existing transaction and side-effect boundaries while making the domain sequence reusable by desktop and backend adapters.
+
+### Provider contracts are explicit Core boundaries
+
+`ContentRepository` now composes the existing focused Content-query ports with Content relation and deletion persistence. `GraphProvider` owns graph-node and graph-edge persistence, while `StorageProvider` represents object put/read-metadata/delete/URL operations without prescribing validation or naming policy. `SyncProvider` defines publication of serializable entity changes for the later synchronization stage. Existing Stage 4 ports are retained as narrow compositions of these contracts, so Core operations stay minimally dependent and Web implementation code remains in `apps/web`.
+
+### Web uses named adapters for Core workflows
+
+`WebCoreContentProvider` maps the existing Web Content repository to the Core Content, graph, and tag-title ports. It is constructed with a transaction-scoped repository for mutations, preserving the original transaction boundary. `WebStorageProvider` maps Core's storage port to MinIO and is used for Content media/audio cleanup; MinIO's validation, naming, and public URL policy stay in the adapter. Core workflows no longer receive anonymous Web adapter objects from `ContentService`.
+
 ### Content suggestion grouping is Core-owned
 
 Web still retrieves and paginates suggestion candidates, while Core groups the resulting Content models by their prioritized tags. This keeps ranking queries in Web and the returned model shape platform-neutral.
@@ -228,25 +244,25 @@ All Web and server plan consumers now import from `@synapse/shared/plans`. The t
 
 - `apps/desktop` and `apps/backend` are directory placeholders, not runnable applications. Their setup belongs to stages 7 and 8.
 - The web server is still co-located with the web application. It must remain there until the migration order reaches the backend stage.
-- Content persistence, graph updates, storage cleanup, caching, and most list operations remain in the Web service and repository. They require additional explicit Core ports before they can move in later Stage 4–5 slices.
+- Content persistence, graph storage, cache ownership, and file cleanup remain implemented by Web adapters. Their Core integration is complete for the existing Content service; other Web services are intentionally out of scope because they do not implement a migrated Core workflow.
 - Existing UI and TypeScript packages were already present and have not been reorganized as part of this task.
 - No Collection domain model or persistence exists in the current product. Stage 3 therefore migrates the complete set of existing domain models without inventing a feature solely to match the target architecture.
 
 ## Next recommended tasks
 
-1. Continue Stage 4 with the bounded Content tag-relation write operation; this will require a transaction and graph-relation port.
-2. Keep Note image storage and Content persistence in Web until their required Core ports are introduced.
+1. Start Stage 7 by preparing the Desktop application structure and its local persistence adapter without moving Backend responsibilities.
+2. Keep Web-specific note-image processing, cache ownership, API validation, and MinIO file policy in `apps/web`.
 
 ## Platform boundaries
 
-| Module              | Boundary | Current contents                                                                                                                                            |
-| ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`          | Web      | Existing browser and co-located server implementation                                                                                                       |
-| `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                                           |
-| `apps/backend`      | Backend  | Empty placeholder                                                                                                                                           |
-| `packages/core`     | Core     | Tag identity and title resolution, serialized Content payloads/projections, User mapping/preferences, Note image ownership, and Content-query orchestration |
-| `packages/ui`       | Shared   | Existing React UI library                                                                                                                                   |
-| `packages/features` | Shared   | Empty public entry point                                                                                                                                    |
-| `packages/api`      | Shared   | Empty public entry point                                                                                                                                    |
-| `packages/shared`   | Shared   | Domain schemas, preferences, plans, formatting, animation config, content-type filtering, tag colors, parsing helpers, and public exports                   |
-| `packages/sync`     | Shared   | Empty public entry point                                                                                                                                    |
+| Module              | Boundary | Current contents                                                                                                                                                                                                                |
+| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`          | Web      | Existing browser and co-located server implementation; Core Content/graph and storage adapters                                                                                                                                  |
+| `apps/desktop`      | Desktop  | Empty placeholder                                                                                                                                                                                                               |
+| `apps/backend`      | Backend  | Empty placeholder                                                                                                                                                                                                               |
+| `packages/core`     | Core     | Content, graph, storage, and sync provider contracts; tag identity/title resolution; Content relation/deletion and query orchestration; serialized Content payloads/projections; User mapping/preferences; Note image ownership |
+| `packages/ui`       | Shared   | Existing React UI library                                                                                                                                                                                                       |
+| `packages/features` | Shared   | Empty public entry point                                                                                                                                                                                                        |
+| `packages/api`      | Shared   | Empty public entry point                                                                                                                                                                                                        |
+| `packages/shared`   | Shared   | Domain schemas, preferences, plans, formatting, animation config, content-type filtering, tag colors, parsing helpers, and public exports                                                                                       |
+| `packages/sync`     | Shared   | Empty public entry point                                                                                                                                                                                                        |
