@@ -1,6 +1,6 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
+  "configVersion": 1,
   "workspaces": {
     "": {
       "name": "synapse",
@@ -21,6 +21,7 @@
         "@scalar/hono-api-reference": "^0.11.12",
         "@synapse/core": "workspace:*",
         "@synapse/shared": "workspace:*",
+        "@synapse/sync": "workspace:*",
         "drizzle-orm": "^0.45.2",
         "epub2": "^3.0.2",
         "hono": "^4.12.34",
@@ -147,6 +148,9 @@
     "packages/sync": {
       "name": "@synapse/sync",
       "version": "0.0.0",
+      "dependencies": {
+        "@synapse/core": "workspace:*",
+      },
       "devDependencies": {
         "@synapse/tsconfig": "workspace:*",
         "typescript": "^7.0.2",
@@ -184,6 +188,7 @@
     },
   },
   "trustedDependencies": [
+    "electron",
     "@tailwindcss/oxide",
   ],
   "overrides": {

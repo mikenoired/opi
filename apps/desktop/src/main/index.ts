@@ -16,7 +16,10 @@ function createWindow(): void {
 	const window = new BrowserWindow({
 		width: 1_280,
 		height: 800,
-		webPreferences: { contextIsolation: true, preload: join(__dirname, "../preload/index.js") },
+		webPreferences: { contextIsolation: true, preload: join(__dirname, "../preload/index.cjs") },
+	});
+	window.webContents.on("preload-error", (_event, preloadPath, error) => {
+		process.stderr.write(`Desktop preload failed: ${preloadPath}\n${error.stack}\n`);
 	});
 
 	if (process.env.ELECTRON_RENDERER_URL) {
