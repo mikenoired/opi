@@ -11,6 +11,7 @@
 - `packages/shared/content-types` owns content-type filter normalization; Web retains only icon and translation metadata for its content-type picker.
 - `packages/shared/tag-colors` owns the tag-color palette and index lookup; CSS and Pixi adapters remain in Web.
 - `packages/shared/preferences` owns platform-neutral user-preference types, defaults, and normalization; browser persistence remains in the Web context.
+- `packages/shared/plans` owns plan IDs, limits, metadata, and validation shared by the Web UI and server.
 
 ## Migration progress
 
@@ -19,6 +20,7 @@
 - Completed: Stage 2 (second slice) — moved content-type filtering constants and helpers into `@synapse/shared/content-types`.
 - Completed: Stage 2 (third slice) — moved tag-color palette and lookup into `@synapse/shared/tag-colors`.
 - Completed: Stage 2 (fourth slice) — moved user-preference types, defaults, and normalization into `@synapse/shared/preferences`.
+- Completed: Stage 2 (fifth slice) — moved plan definitions, limits, and validation into `@synapse/shared/plans`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -52,6 +54,10 @@ The palette and numeric index lookup moved to `@synapse/shared/tag-colors`; both
 
 User-preference types, defaults, and validation moved to `@synapse/shared/preferences`. The React context remains in Web because it applies preferences through `window`, `document`, and `localStorage`.
 
+### Plan definitions are shared across Web and server
+
+Plan identifiers, quota limits, display metadata, and validation moved to `@synapse/shared/plans`. They are plain product data used by both the Web settings UI and server-side authorization and usage code; no platform API is involved.
+
 ## Known limitations
 
 - `apps/desktop` and `apps/backend` are directory placeholders, not runnable applications. Their setup belongs to stages 7 and 8.
@@ -65,14 +71,14 @@ User-preference types, defaults, and validation moved to `@synapse/shared/prefer
 
 ## Platform boundaries
 
-| Module              | Boundary | Current contents                                                                                     |
-| ------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
-| `apps/web`          | Web      | Existing browser and co-located server implementation                                                |
-| `apps/desktop`      | Desktop  | Empty placeholder                                                                                    |
-| `apps/backend`      | Backend  | Empty placeholder                                                                                    |
-| `packages/core`     | Core     | Empty public entry point; platform-neutral TypeScript config                                         |
-| `packages/ui`       | Shared   | Existing React UI library                                                                            |
-| `packages/features` | Shared   | Empty public entry point                                                                             |
-| `packages/api`      | Shared   | Empty public entry point                                                                             |
-| `packages/shared`   | Shared   | Domain schemas, preferences, content-type filtering, tag colors, parsing helpers, and public exports |
-| `packages/sync`     | Shared   | Empty public entry point                                                                             |
+| Module              | Boundary | Current contents                                                                                            |
+| ------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `apps/web`          | Web      | Existing browser and co-located server implementation                                                       |
+| `apps/desktop`      | Desktop  | Empty placeholder                                                                                           |
+| `apps/backend`      | Backend  | Empty placeholder                                                                                           |
+| `packages/core`     | Core     | Empty public entry point; platform-neutral TypeScript config                                                |
+| `packages/ui`       | Shared   | Existing React UI library                                                                                   |
+| `packages/features` | Shared   | Empty public entry point                                                                                    |
+| `packages/api`      | Shared   | Empty public entry point                                                                                    |
+| `packages/shared`   | Shared   | Domain schemas, preferences, plans, content-type filtering, tag colors, parsing helpers, and public exports |
+| `packages/sync`     | Shared   | Empty public entry point                                                                                    |
