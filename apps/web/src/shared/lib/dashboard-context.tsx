@@ -1,7 +1,7 @@
+import type { Content } from "@synapse/shared/schemas";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import type { Content } from "@/shared/lib/schemas";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
 import dynamic from "@/shared/router/dynamic";
 

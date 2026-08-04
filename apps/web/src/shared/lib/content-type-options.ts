@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import {
 	FileText,
 	FileUp,
@@ -9,7 +10,6 @@ import {
 } from "lucide-react";
 
 import type { KeysWithoutParams } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
 
 export {
 	documentContentTypes,

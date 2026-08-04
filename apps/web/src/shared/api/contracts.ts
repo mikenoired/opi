@@ -1,3 +1,5 @@
+import type { createContentSchema, updateContentSchema } from "@synapse/shared/schemas";
+import { contentTypeSchema } from "@synapse/shared/schemas";
 import type { z } from "zod";
 
 import type AiUsageRepository from "@/server/repositories/ai-usage.repository";
@@ -6,9 +8,6 @@ import type ContentService from "@/server/services/content.service";
 import type GraphService from "@/server/services/graph.service";
 import type UploadService from "@/server/services/upload.service";
 import type UserService from "@/server/services/user.service";
-import type { createContentSchema, updateContentSchema } from "@/shared/lib/schemas";
-
-import { contentTypeSchema } from "../lib/schemas";
 
 export type ContentListInput = {
 	search?: string;

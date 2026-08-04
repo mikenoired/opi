@@ -1,4 +1,4 @@
-import type { Content } from "@/shared/lib/schemas";
+import type { Content } from "@synapse/shared/schemas";
 
 const documentExtensions = new Set(["pdf", "doc", "docx", "epub", "xlsx", "xls", "csv"]);
 
