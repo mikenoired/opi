@@ -1,3 +1,4 @@
+import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type { Context } from "../../context";
@@ -6,10 +7,6 @@ import { isAutomaticTagColorEnabled, randomTagColor } from "../../lib/tag-colors
 import type { UploadContentType } from "./upload-types";
 
 type DatabaseExecutor = Context["db"];
-
-function normalizeTagTitle(title: string) {
-	return title.trim().toLowerCase();
-}
 
 export class UploadTagService {
 	constructor(
@@ -33,9 +30,7 @@ export class UploadTagService {
 	}
 
 	private async resolveTagTitlesToIds(titles: string[]): Promise<string[]> {
-		const uniqueTitles = Array.from(
-			new Map(titles.map((title) => [normalizeTagTitle(title), title.trim()])).values()
-		).filter(Boolean);
+		const uniqueTitles = uniqueTagTitles(titles);
 		if (!uniqueTitles.length) return [];
 
 		const existingTags = await this.database.query.tags.findMany({

@@ -1,3 +1,4 @@
+import { normalizeTagTitle } from "@synapse/core";
 import type { Content } from "@synapse/shared/schemas";
 import { Input } from "@synapse/ui/components";
 import { useId, useState } from "react";
@@ -35,10 +36,6 @@ interface TagEditorProps {
 // Draft AI tag generation requires text; media images are handled via the
 // `image` field instead, so "media" is allowed here.
 const mediaTypes = new Set<Content["type"]>(["audio", "doc", "pdf", "docx", "epub", "xlsx", "csv"]);
-
-function normalizeTagTitle(title: string) {
-	return title.trim().toLowerCase();
-}
 
 function mergeTags(tags: string[], names: string[]) {
 	return Array.from(

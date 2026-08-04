@@ -33,6 +33,7 @@
 	},
 	"dependencies": {
 		"@scalar/hono-api-reference": "^0.11.12",
+		"@synapse/core": "workspace:*",
 		"@synapse/shared": "workspace:*",
 		"@synapse/ui": "workspace:*",
 		"@tanstack/react-query": "^5.101.0",

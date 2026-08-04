@@ -1,11 +1,8 @@
+import { normalizeTagTitle } from "@synapse/core";
 import type { KeyboardEvent } from "react";
 import { useCallback, useState } from "react";
 
 import type { TagState } from "./types";
-
-function normalizeTagTitle(title: string) {
-	return title.trim().toLowerCase();
-}
 
 export function useTagManager(initialTags: string[] = []) {
 	const [state, setState] = useState<TagState>({

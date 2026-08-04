@@ -1,1 +1,1 @@
-export {};
+export { normalizeTagTitle, uniqueTagTitles } from "./tag";

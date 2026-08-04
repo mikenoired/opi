@@ -43,6 +43,7 @@
 - Completed: Stage 2 (twenty-third slice) — moved platform-neutral content-search text helpers into `@synapse/shared/content-search`.
 - Completed: Stage 2 (twenty-fourth slice) — moved file-type detection constants and helpers into `@synapse/shared/file-types`.
 - Completed: Stage 2 — all identified platform-neutral types, constants, schemas, and helper functions have moved into `@synapse/shared`.
+- Completed: Stage 3 (first slice) — moved tag-title normalization and deduplication rules into `@synapse/core`.
 - In progress: none.
 - Remaining: stages 3–9, in the documented order.
 
@@ -95,6 +96,10 @@ The search-text builder and structured-content text extractor moved to `@synapse
 ### File-type detection is shared; binary parsing remains server-specific
 
 Supported file-type constants and filename/MIME detection moved to `@synapse/shared/file-types`. The server parser retains `Buffer` handling and third-party document parsers, which are platform-specific implementation details.
+
+### Tag-title rules are the first Core model boundary
+
+Case-insensitive tag identity and preservation of the trimmed display title now live in `@synapse/core`. Content creation, uploads, and the Web tag inputs share the same domain rule, while persistence and UI state remain in Web.
 
 ### Server code imports schemas from the shared package directly
 

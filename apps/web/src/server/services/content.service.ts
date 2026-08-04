@@ -1,3 +1,4 @@
+import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
 import { buildContentSearchText } from "@synapse/shared/content-search";
 import { isSupportedFileType } from "@synapse/shared/file-types";
 import type {
@@ -41,10 +42,6 @@ const CONTENT_TYPES_CACHE_TTL_SECONDS = Math.floor(
 );
 const MAX_IMPORT_FILE_SIZE = 50 * 1024 * 1024;
 const LIST_TEXT_PREVIEW_CHARS = 1_200;
-
-function normalizeTagTitle(title: string) {
-	return title.trim().toLowerCase();
-}
 
 export default class ContentService {
 	private repo: ContentRepository;
@@ -647,9 +644,7 @@ export default class ContentService {
 	}
 
 	private async resolveTagTitlesToIds(repo: ContentRepository, titles: string[]): Promise<string[]> {
-		const uniqueTitles = Array.from(
-			new Map(titles.map((title) => [normalizeTagTitle(title), title.trim()])).values()
-		).filter(Boolean);
+		const uniqueTitles = uniqueTagTitles(titles);
 		if (uniqueTitles.length === 0) return [];
 
 		const existing = await repo.getTagsByTitle(uniqueTitles);

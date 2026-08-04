@@ -1,3 +1,4 @@
+import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
 import type { createContentSchema, updateContentSchema } from "@synapse/shared/schemas";
 import { and, asc, desc, eq, gt, ilike, inArray, isNull, lt, lte, ne, or, type SQL, sql } from "drizzle-orm";
 import type z from "zod";
@@ -13,10 +14,6 @@ type DatabaseExecutor = Context["db"];
 const LIST_CONTENT_PREVIEW_CHARS = 6_000;
 
 type ContentType = z.infer<typeof createContentSchema>["type"];
-
-function normalizeTagTitle(title: string) {
-	return title.trim().toLowerCase();
-}
 
 const contentListColumns = {
 	id: content.id,
@@ -632,9 +629,7 @@ export default class ContentRepository {
 	async createTags(titles: { title: string }[]) {
 		requireAuth(this.ctx);
 
-		const cleanTitles = Array.from(
-			new Map(titles.map((tag) => [normalizeTagTitle(tag.title), tag.title.trim()])).values()
-		).filter(Boolean);
+		const cleanTitles = uniqueTagTitles(titles.map((tag) => tag.title));
 		if (!cleanTitles.length) return [];
 		const automaticColorEnabled = await isAutomaticTagColorEnabled(this.database, this.ctx.user.id);
 
