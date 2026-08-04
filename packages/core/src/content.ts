@@ -186,6 +186,28 @@ export function groupContentSuggestions(tags: SuggestedContentTag[], items: Cont
 	return Array.from(groups.values());
 }
 
+export function groupTagContentPreviews(
+	rows: Array<{ id: string; tagColor: number; tagId: string; tagTitle: string }>,
+	items: Content[],
+	limit = 3
+) {
+	const itemById = new Map(items.map((item) => [item.id, item]));
+	const groups = new Map<string, { color: number; id: string; title: string; items: Content[] }>();
+	for (const row of rows) {
+		const item = itemById.get(row.id);
+		if (!item) continue;
+		const group = groups.get(row.tagId) ?? {
+			color: row.tagColor,
+			id: row.tagId,
+			title: row.tagTitle,
+			items: [],
+		};
+		if (group.items.length < limit) group.items.push(item);
+		groups.set(row.tagId, group);
+	}
+	return Array.from(groups.values());
+}
+
 export function attachContentTags(items: Content[], relations: ContentTagRelation[]): Content[] {
 	const byContent = new Map<string, { ids: string[]; titles: string[] }>();
 

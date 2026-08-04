@@ -52,6 +52,7 @@
 - Completed: Stage 3 (sixth slice) — moved storage-record to Content-model mapping into `@synapse/core`.
 - Completed: Stage 3 (seventh slice) — moved Content tag-relation attachment into `@synapse/core`.
 - Completed: Stage 3 (eighth slice) — moved Content suggestion grouping into `@synapse/core`.
+- Completed: Stage 3 (ninth slice) — moved tag-content preview grouping into `@synapse/core`.
 - In progress: Stage 3 — the Content model is being separated incrementally; only platform-neutral rules and payload construction have moved so far.
 - Remaining: stages 3–9, in the documented order.
 

@@ -1,6 +1,7 @@
 import {
 	attachContentTags,
 	groupContentSuggestions,
+	groupTagContentPreviews,
 	mapContentRecord,
 	normalizeTagTitle,
 	type SuggestedContentTag,
@@ -521,29 +522,7 @@ export default class ContentService {
 
 		const uniqueRows = Array.from(new Map(previewRows.map((row) => [row.id, row as ContentRow])).values());
 		const items = await this.attachTagsToContent(uniqueRows, { previewContent: true });
-		const itemById = new Map(items.map((item) => [item.id, item]));
-		const tagsMap = new Map<string, { color: number; id: string; title: string; items: Content[] }>();
-
-		for (const row of previewRows) {
-			const item = itemById.get(row.id);
-			if (!item) continue;
-
-			if (!tagsMap.has(row.tagId)) {
-				tagsMap.set(row.tagId, {
-					color: row.tagColor,
-					id: row.tagId,
-					items: [],
-					title: row.tagTitle,
-				});
-			}
-
-			const bucket = tagsMap.get(row.tagId)!;
-			if (bucket.items.length < 3) {
-				bucket.items.push(item);
-			}
-		}
-
-		const result = Array.from(tagsMap.values());
+		const result = groupTagContentPreviews(previewRows, items);
 		await this.ctx.cache.setJSON(cacheKey, result, TAGS_CACHE_TTL_SECONDS);
 		return result;
 	}
@@ -562,16 +541,9 @@ export default class ContentService {
 		);
 		const uniqueRows = Array.from(new Map(previewRows.map((row) => [row.id, row as ContentRow])).values());
 		const contentItems = await this.attachTagsToContent(uniqueRows, { previewContent: true });
-		const itemById = new Map(contentItems.map((item) => [item.id, item]));
-		const previewByTag = new Map<string, Content[]>();
-
-		for (const row of previewRows) {
-			const item = itemById.get(row.id);
-			if (!item) continue;
-			const items = previewByTag.get(row.tagId) ?? [];
-			if (items.length < 3) items.push(item);
-			previewByTag.set(row.tagId, items);
-		}
+		const previewByTag = new Map(
+			groupTagContentPreviews(previewRows, contentItems).map((group) => [group.id, group.items])
+		);
 
 		const last = pageTags[pageTags.length - 1];
 		return {
