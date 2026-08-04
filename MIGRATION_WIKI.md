@@ -41,6 +41,7 @@
 - Completed: Stage 2 (twenty-first slice) — migrated animation configuration consumers and removed the Web compatibility wrapper.
 - Completed: Stage 2 (twenty-second slice) — migrated user-preference consumers and removed the Web compatibility wrapper.
 - Completed: Stage 2 (twenty-third slice) — moved platform-neutral content-search text helpers into `@synapse/shared/content-search`.
+- Completed: Stage 2 (twenty-fourth slice) — moved file-type detection constants and helpers into `@synapse/shared/file-types`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -89,6 +90,10 @@ The sidebar transition values moved to `@synapse/shared/animations`. They are se
 ### Content-search text extraction is shared
 
 The search-text builder and structured-content text extractor moved to `@synapse/shared/content-search`. They only process strings and JSON, so the server services and future platforms can use them without a platform dependency.
+
+### File-type detection is shared; binary parsing remains server-specific
+
+Supported file-type constants and filename/MIME detection moved to `@synapse/shared/file-types`. The server parser retains `Buffer` handling and third-party document parsers, which are platform-specific implementation details.
 
 ### Server code imports schemas from the shared package directly
 

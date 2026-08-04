@@ -8,6 +8,7 @@
 		"./animations": "./src/animations.ts",
 		"./content-search": "./src/content-search.ts",
 		"./content-types": "./src/content-types.ts",
+		"./file-types": "./src/file-types.ts",
 		"./formatting": "./src/formatting.ts",
 		"./plans": "./src/plans.ts",
 		"./preferences": "./src/preferences.ts",

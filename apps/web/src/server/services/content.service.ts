@@ -1,4 +1,5 @@
 import { buildContentSearchText } from "@synapse/shared/content-search";
+import { isSupportedFileType } from "@synapse/shared/file-types";
 import type {
 	Content,
 	CreateContent,
@@ -26,7 +27,7 @@ import {
 	extractOwnedNoteImages,
 	prepareNoteImages,
 } from "../lib/note-images";
-import { isSupportedFileType, parseFile } from "../parsers";
+import { parseFile } from "../parsers";
 import ContentRepository from "../repositories/content.repository";
 
 type ContentSelect = typeof contentTable.$inferSelect;
