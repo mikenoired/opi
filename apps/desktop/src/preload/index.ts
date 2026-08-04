@@ -18,5 +18,12 @@ contextBridge.exposeInMainWorld("synapseDesktop", {
 			url?: string;
 		}) => ipcRenderer.invoke("library:save", input),
 	},
+	sync: {
+		deleteRemote: (id: string) => ipcRenderer.invoke("sync:delete-remote", id),
+		login: (input: { apiUrl: string; email: string; password: string }) =>
+			ipcRenderer.invoke("sync:login", input),
+		session: () => ipcRenderer.invoke("sync:session"),
+		syncAll: () => ipcRenderer.invoke("sync:all"),
+	},
 	platform: process.platform,
 });

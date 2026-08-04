@@ -10,6 +10,7 @@ export interface LocalItem {
 	content: string;
 	createdAt: string;
 	id: string;
+	remoteId?: string;
 	syncState: SyncState;
 	tags: string[];
 	title: string;
@@ -84,6 +85,16 @@ export class LocalLibraryRepository {
 		const data = await this.read();
 		data.items = data.items.filter((item) => item.id !== id);
 		await this.write(data);
+	}
+
+	async updateSync(id: string, input: Pick<LocalItem, "remoteId" | "syncState">): Promise<LocalItem> {
+		const data = await this.read();
+		const existing = data.items.find((item) => item.id === id);
+		if (!existing) throw new Error("Local item not found");
+		const item = { ...existing, ...input, updatedAt: new Date().toISOString() };
+		data.items = data.items.map((candidate) => (candidate.id === id ? item : candidate));
+		await this.write(data);
+		return item;
 	}
 
 	async getSettings(): Promise<LocalSettings> {

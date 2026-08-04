@@ -32,6 +32,16 @@ declare global {
 				statistics(): Promise<LocalStatistics>;
 				updateSettings(settings: { syncPolicy?: SyncPolicy }): Promise<{ syncPolicy: SyncPolicy }>;
 			};
+			sync: {
+				deleteRemote(id: string): Promise<void>;
+				login(input: {
+					apiUrl: string;
+					email: string;
+					password: string;
+				}): Promise<{ email: string; eligible: boolean; plan: string }>;
+				session(): Promise<{ email: string; eligible: boolean; plan: string } | undefined>;
+				syncAll(): Promise<{ failed: number; synced: number }>;
+			};
 			platform: string;
 		};
 	}
@@ -45,12 +55,15 @@ let items: LocalItem[] = [];
 let editingId: string | undefined;
 let statistics: LocalStatistics | undefined;
 let syncPolicy: SyncPolicy = "manual";
+let session: { email: string; eligible: boolean; plan: string } | undefined;
+let notice = "";
 
 async function refresh(search?: string): Promise<void> {
-	[items, statistics, { syncPolicy }] = await Promise.all([
+	[items, statistics, { syncPolicy }, session] = await Promise.all([
 		window.synapseDesktop.library.list(search),
 		window.synapseDesktop.library.statistics(),
 		window.synapseDesktop.library.settings(),
+		window.synapseDesktop.sync.session(),
 	]);
 	render();
 }
@@ -80,8 +93,9 @@ function render(): void {
 					${items.length ? `<ul>${items.map(itemCard).join("")}</ul>` : '<p class="empty">Здесь появятся ваши локальные материалы.</p>'}
 				</section>
 			</section>
-			<section class="card settings"><div><h2>Синхронизация</h2><p>Политика сохранена локально. Подключение Synapse Sync появится после входа в аккаунт.</p></div>
+			<section class="card settings"><div><h2>Synapse Sync</h2><p>${escapeHtml(notice || (session ? `${session.email} · ${session.eligible ? `доступен (${session.plan})` : "недоступен на текущем плане"}` : "Войдите в Synapse, чтобы синхронизировать очередь."))}</p></div>
 				<label class="toggle"><input id="sync-policy" type="checkbox" ${syncPolicy === "automatic" ? "checked" : ""} /> Автоматически ставить новые материалы в очередь</label>
+				${session ? `<button id="sync-all" ${session.eligible ? "" : "disabled"}>Синхронизировать очередь</button>` : `<form id="sync-login" class="sync-login"><input name="apiUrl" required placeholder="http://localhost:3000/api" /><input name="email" type="email" required placeholder="email" /><input name="password" type="password" required placeholder="пароль" /><button>Войти</button></form>`}
 			</section>
 		</main>`;
 
@@ -100,6 +114,30 @@ function render(): void {
 		await window.synapseDesktop.library.updateSettings({
 			syncPolicy: (event.target as HTMLInputElement).checked ? "automatic" : "manual",
 		});
+		await refresh();
+	});
+	document.querySelector<HTMLFormElement>("#sync-login")?.addEventListener("submit", async (event) => {
+		event.preventDefault();
+		const values = new FormData(event.currentTarget as HTMLFormElement);
+		try {
+			session = await window.synapseDesktop.sync.login({
+				apiUrl: String(values.get("apiUrl")),
+				email: String(values.get("email")),
+				password: String(values.get("password")),
+			});
+			notice = "Вход выполнен";
+		} catch (error) {
+			notice = error instanceof Error ? error.message : "Не удалось войти";
+		}
+		render();
+	});
+	document.querySelector("#sync-all")?.addEventListener("click", async () => {
+		try {
+			const result = await window.synapseDesktop.sync.syncAll();
+			notice = `Синхронизировано: ${result.synced}; ошибок: ${result.failed}`;
+		} catch (error) {
+			notice = error instanceof Error ? error.message : "Синхронизация не удалась";
+		}
 		await refresh();
 	});
 	document.querySelectorAll<HTMLButtonElement>("[data-edit]").forEach((button) =>
