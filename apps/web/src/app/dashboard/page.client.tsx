@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import type { DragEvent } from "react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -10,7 +11,6 @@ import {
 } from "@/shared/lib/content-type-options";
 import { useDashboard } from "@/shared/lib/dashboard-context";
 import { useI18n } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
 import { usePathname, useRouter, useSearchParams } from "@/shared/router/navigation";
 import { useModal } from "@/widgets/modals/context/modal-context";

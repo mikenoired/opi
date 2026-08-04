@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Skeleton } from "@synapse/ui/components";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -6,7 +7,6 @@ import { TagStack } from "@/entities/item/ui/tag-stack";
 import { api } from "@/shared/api/hooks";
 import { useInfiniteScroll } from "@/shared/hooks/use-infinite-scroll";
 import { useDashboard } from "@/shared/lib/dashboard-context";
-import type { Content } from "@/shared/lib/schemas";
 import { getTagColor, getTagColorStyle } from "@/shared/lib/tag-colors";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
 import Link from "@/shared/router/link";

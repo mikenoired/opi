@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Check, Palette, Slash } from "lucide-react";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -7,7 +8,6 @@ import { api } from "@/shared/api/hooks";
 import type { ContentListQueryInput } from "@/shared/lib/content-query-sync";
 import { useDashboard } from "@/shared/lib/dashboard-context";
 import { useI18n } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
 import { getTagColor, getTagColorStyle, TAG_COLOR_PALETTE } from "@/shared/lib/tag-colors";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
 import { useRouter } from "@/shared/router/navigation";

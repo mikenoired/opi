@@ -1,7 +1,7 @@
+import type { Content } from "@synapse/shared/schemas";
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "@/shared/api/hooks";
-import type { Content } from "@/shared/lib/schemas";
 import { useModal } from "@/widgets/modals/context/modal-context";
 
 import { createGraph, type GraphInput } from "./graph";
