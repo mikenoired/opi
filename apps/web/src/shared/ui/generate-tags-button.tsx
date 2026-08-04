@@ -1,10 +1,10 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Button } from "@synapse/ui/components";
 import { Sparkles } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { api } from "@/shared/api/hooks";
 import { useI18n } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
 
 export interface SuggestedTag {
 	id: string;

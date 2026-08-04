@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Button, Input } from "@synapse/ui/components";
 import type { JSONContent } from "@tiptap/core";
 import { Maximize, Minimize, Plus, X } from "lucide-react";
@@ -5,7 +6,6 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 import { api } from "@/shared/api/hooks";
-import type { Content } from "@/shared/lib/schemas";
 import { TagEditor } from "@/shared/ui/tag-editor";
 import { Editor } from "@/widgets/editor/ui/editor";
 

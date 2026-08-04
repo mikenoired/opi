@@ -1,9 +1,9 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Input } from "@synapse/ui/components";
 import { useId, useState } from "react";
 
 import { api } from "@/shared/api/hooks";
 import { useI18n } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
 import { ContentTag } from "@/shared/ui/content-tag";
 
 import { GenerateTagsButton, type SuggestedTag } from "./generate-tags-button";

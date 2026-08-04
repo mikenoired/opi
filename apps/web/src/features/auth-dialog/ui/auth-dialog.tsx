@@ -1,10 +1,10 @@
+import { authSchema } from "@synapse/shared/schemas";
 import { Button, Input, Label, Modal } from "@synapse/ui/components";
 import { X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { useAuth } from "@/shared/lib/auth-context";
-import { authSchema } from "@/shared/lib/schemas";
 
 interface AuthDialogProps {
 	open: boolean;

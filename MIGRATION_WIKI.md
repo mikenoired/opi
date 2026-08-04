@@ -7,7 +7,7 @@
 - `apps/desktop` and `apps/backend` are empty workspace placeholders; no platform code has moved into them.
 - `packages/ui` and `packages/tsconfig` predate this migration task.
 - `packages/core`, `packages/features`, `packages/api`, and `packages/sync` have only a package manifest, a platform-neutral TypeScript configuration, and an empty public entry point.
-- `packages/shared` owns the platform-neutral domain schemas and types; Web retains a compatibility re-export at `src/shared/lib/schemas.ts`.
+- `packages/shared` owns the platform-neutral domain schemas and types; all Web consumers import them directly.
 - `packages/shared/content-types` owns content-type filter normalization; Web retains only icon and translation metadata for its content-type picker.
 - `packages/shared/tag-colors` owns the tag-color palette and index lookup; CSS and Pixi adapters remain in Web.
 - `packages/shared/preferences` owns platform-neutral user-preference types, defaults, and normalization; browser persistence remains in the Web context.
@@ -35,6 +35,7 @@
 - Completed: Stage 2 (fifteenth slice) — updated the add-content feature UI to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (sixteenth slice) — updated Web foundation modules to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (seventeenth slice) — updated legacy modal orchestration to import schemas from `@synapse/shared/schemas`.
+- Completed: Stage 2 (eighteenth slice) — migrated all remaining Web schema consumers and removed the compatibility adapter.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -54,7 +55,7 @@ Stage 1 did not move any implementation from `apps/web`; keeping it untouched pr
 
 ### Domain schemas belong to `@synapse/shared`
 
-The former Web schema module has been moved to `@synapse/shared/schemas`. It only imports Zod and uses no platform APIs, so it can be shared by web, desktop, and backend. A Web re-export remains temporarily to avoid a mass import rewrite; future slices should replace callers incrementally with the package import and remove the adapter once none remain.
+The former Web schema module has been moved to `@synapse/shared/schemas`. It only imports Zod and uses no platform APIs, so it can be shared by web, desktop, and backend. All Web consumers now import the package directly, and the temporary re-export has been removed.
 
 ### Content-type filter logic is shared; presentation remains Web-specific
 
@@ -128,8 +129,8 @@ The legacy modal context and add-content modal now import content types from `@s
 
 ## Next recommended tasks
 
-1. Replace another cohesive client-side group of Web schema imports with `@synapse/shared/schemas`, then remove the compatibility adapter once all callers have migrated.
-2. Inventory another pure Stage 2 utility for migration; retain code using browser APIs or rendering libraries in Web.
+1. Inventory another pure Stage 2 utility for migration; retain code using browser APIs or rendering libraries in Web.
+2. Assess the remaining shared Web utilities and identify the next platform-neutral module that can move without changing behavior.
 
 ## Platform boundaries
 
