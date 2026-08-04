@@ -1,4 +1,4 @@
-import type { Content } from "@/shared/lib/schemas";
+import type { Content } from "@synapse/shared/schemas";
 
 export interface TodoItem {
 	text: string;

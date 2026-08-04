@@ -1,7 +1,6 @@
+import type { Content } from "@synapse/shared/schemas";
 import type { ReactNode } from "react";
 import { createContext, useContext } from "react";
-
-import type { Content } from "@/shared/lib/schemas";
 
 import { useContentForm } from "./use-content-form";
 import { useFormSubmission } from "./use-form-submission";

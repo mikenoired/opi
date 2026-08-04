@@ -1,8 +1,8 @@
+import type { Content } from "@synapse/shared/schemas";
 import { useCallback } from "react";
 import toast from "react-hot-toast";
 
 import { api } from "@/shared/api/hooks";
-import type { Content } from "@/shared/lib/schemas";
 
 interface UploadedFileInfo {
 	objectName: string;

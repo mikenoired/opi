@@ -31,6 +31,7 @@
 - Completed: Stage 2 (eleventh slice) — updated Web dashboard route components to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (twelfth slice) — updated Web viewer modal components to import schemas from `@synapse/shared/schemas`.
 - Completed: Stage 2 (thirteenth slice) — updated legacy modal editor forms to import schemas from `@synapse/shared/schemas`.
+- Completed: Stage 2 (fourteenth slice) — updated the add-content feature model layer to import schemas from `@synapse/shared/schemas`.
 - In progress: none.
 - Remaining: stages 2–9, in the documented order.
 
@@ -99,6 +100,10 @@ The unified viewer and its detail panel now import their content types and parsi
 ### Legacy modal editor forms import schemas from the shared package directly
 
 The legacy modal's audio, document, link, media, note, todo, and content-type forms now import content types directly from `@synapse/shared/schemas`. The modal's orchestration layer and unrelated feature components are intentionally left for later slices.
+
+### Add-content feature model imports schemas from the shared package directly
+
+The add-content context, types, and form/upload/submission hooks now import content types from `@synapse/shared/schemas`. The feature's dialog and UI components remain a separate migration slice.
 
 ## Known limitations
 

@@ -1,6 +1,5 @@
+import type { Content } from "@synapse/shared/schemas";
 import { useCallback, useState } from "react";
-
-import type { Content } from "@/shared/lib/schemas";
 
 import type { ContentFormState } from "./types";
 

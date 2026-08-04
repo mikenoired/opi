@@ -1,8 +1,8 @@
+import type { Content } from "@synapse/shared/schemas";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { api } from "@/shared/api/hooks";
-import type { Content } from "@/shared/lib/schemas";
 
 export function useDocumentUpload() {
 	const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
