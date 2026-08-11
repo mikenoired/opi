@@ -172,6 +172,18 @@ describe.serial("API integration", () => {
 		expect(await db.select().from(content).where(eq(content.id, item.id))).toHaveLength(0);
 	});
 
+	test("rejects more than ten tags for every content mutation route", async () => {
+		const account = await register("tag-limit");
+		const tags = Array.from({ length: 11 }, (_, index) => `tag-${index}`);
+		const created = await request("POST", "/content", {
+			body: note("Too many tags", tags),
+			token: account.token,
+		});
+
+		expect(created.response.status).toBe(400);
+		expect(created.body.fieldErrors).not.toBeNull();
+	});
+
 	test("returns complete note content from the detail endpoint", async () => {
 		const account = await register("note-detail");
 		const content = JSON.stringify({

@@ -1,4 +1,5 @@
 import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
+import { MAX_TAGS_PER_CONTENT } from "@synapse/shared/schemas";
 import { Input, Select, SelectContent, SelectItem, SelectTrigger } from "@synapse/ui/components";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
@@ -15,8 +16,10 @@ export interface TagInputProps {
 	action?: ReactNode;
 	disabled?: boolean;
 	inputClassName?: string;
+	maxTags?: number;
 	onTagsChange(tags: string[]): void;
 	placeholder?: string;
+	limitMessage?: string;
 	suggestions?: TagSuggestion[];
 	tags: string[];
 }
@@ -30,12 +33,15 @@ export function TagInput({
 	action,
 	disabled = false,
 	inputClassName,
+	limitMessage = `Можно добавить не более ${MAX_TAGS_PER_CONTENT} тегов`,
+	maxTags = MAX_TAGS_PER_CONTENT,
 	onTagsChange,
 	placeholder = "+ Добавить тег",
 	suggestions = [],
 	tags,
 }: TagInputProps) {
 	const [currentTag, setCurrentTag] = useState("");
+	const [limitError, setLimitError] = useState("");
 	const selectedTags = new Set(tags.map(normalizeTagTitle));
 	const colorByTitle = new Map(suggestions.map((tag) => [normalizeTagTitle(tag.title), tag.color ?? 0]));
 	const availableSuggestions = useMemo(() => {
@@ -47,22 +53,35 @@ export function TagInput({
 	}, [currentTag, selectedTags, suggestions]);
 	const addTag = () => {
 		if (!currentTag.trim()) return;
+		if (tags.length >= maxTags) {
+			setLimitError(limitMessage);
+			return;
+		}
 		const normalized = normalizeTagTitle(currentTag);
 		// When a tag already exists, keep its established spelling. Tag identity
 		// remains case-insensitive, while newly created tags retain user casing.
 		const existing = suggestions.find((tag) => normalizeTagTitle(tag.title) === normalized);
 		const nextTags = mergeTags(tags, [existing?.title ?? currentTag]);
-		if (nextTags.length !== tags.length) onTagsChange(nextTags);
+		if (nextTags.length !== tags.length) {
+			onTagsChange(nextTags);
+			setLimitError("");
+		}
 		setCurrentTag("");
 	};
 	const selectTag = (id: string) => {
 		const tag = availableSuggestions.find((candidate) => candidate.id === id);
 		if (!tag) return;
+		if (tags.length >= maxTags) {
+			setLimitError(limitMessage);
+			return;
+		}
 		onTagsChange(mergeTags(tags, [tag.title]));
+		setLimitError("");
 		setCurrentTag("");
 	};
 	const removeTag = (tagToRemove: string) => {
 		onTagsChange(tags.filter((tag) => normalizeTagTitle(tag) !== normalizeTagTitle(tagToRemove)));
+		setLimitError("");
 	};
 
 	return (
@@ -104,6 +123,11 @@ export function TagInput({
 				)}
 			</div>
 			{action}
+			{limitError && (
+				<p className="w-full text-sm text-destructive" role="status">
+					{limitError}
+				</p>
+			)}
 		</div>
 	);
 }

@@ -1,5 +1,6 @@
 import { parseMediaJson } from "@synapse/core";
 import { extractContentText } from "@synapse/shared/content-search";
+import { MAX_TAGS_PER_CONTENT } from "@synapse/shared/schemas";
 import { z } from "zod";
 
 import { aiConfig, computeCostUsd } from "../ai/config";
@@ -13,13 +14,12 @@ import AiUsageRepository from "../repositories/ai-usage.repository";
 import ContentRepository from "../repositories/content.repository";
 
 const MAX_CONTENT_CHARS = 4000;
-const MAX_TAGS_TOTAL = 6;
 const TAG_NAME_MIN = 1;
 const TAG_NAME_MAX = 50;
 
 const tagSuggestionResponseSchema = z.object({
-	existing_tag_ids: z.array(z.string()).max(MAX_TAGS_TOTAL).default([]),
-	new_tag_names: z.array(z.string()).max(MAX_TAGS_TOTAL).default([]),
+	existing_tag_ids: z.array(z.string()).max(MAX_TAGS_PER_CONTENT).default([]),
+	new_tag_names: z.array(z.string()).max(MAX_TAGS_PER_CONTENT).default([]),
 });
 
 export interface SuggestTagsDraftInput {
@@ -130,7 +130,7 @@ function dedupeTagSuggestions(
 
 	const newTags: string[] = [];
 	for (const raw of parsed.new_tag_names) {
-		if (existing.length + newTags.length >= MAX_TAGS_TOTAL) break;
+		if (existing.length + newTags.length >= MAX_TAGS_PER_CONTENT) break;
 		const name = sanitizeTagName(raw);
 		if (!name) continue;
 		const key = name.toLowerCase();

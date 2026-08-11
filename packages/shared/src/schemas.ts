@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const MAX_TAGS_PER_CONTENT = 10;
+
 export const contentTypeSchema = z.enum([
 	"note",
 	"media",
@@ -132,8 +134,8 @@ export const createContentSchema = z.object({
 	type: contentTypeSchema,
 	title: z.string().optional(),
 	content: z.string(),
-	tag_ids: z.array(z.string()).optional(),
-	tags: z.array(z.string()).optional(),
+	tag_ids: z.array(z.string()).max(MAX_TAGS_PER_CONTENT).optional(),
+	tags: z.array(z.string()).max(MAX_TAGS_PER_CONTENT).optional(),
 	url: z.string().optional(),
 	media_url: z.string().optional(),
 	media_type: z.enum(["image", "video"]).optional().default("image"),

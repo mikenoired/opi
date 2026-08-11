@@ -8,6 +8,7 @@ import {
 	authSchema,
 	contentTypeSchema,
 	createContentSchema,
+	MAX_TAGS_PER_CONTENT,
 	updateContentSchema,
 } from "@synapse/shared/schemas";
 import { Hono } from "hono";
@@ -60,7 +61,7 @@ const uploadInput = z
 			.transform((value) => value || undefined)
 			.optional()
 			.nullable(),
-		tags: z.array(z.string().trim()).optional(),
+		tags: z.array(z.string().trim()).max(MAX_TAGS_PER_CONTENT).optional(),
 		makeTrack: z.boolean().optional(),
 	})
 	.transform(({ files, title, tags, makeTrack }) => ({
@@ -437,7 +438,7 @@ export const api = new Hono()
 					c.req.raw,
 					z.object({
 						title: z.string().optional(),
-						tags: z.array(z.string()).optional(),
+						tags: z.array(z.string()).max(MAX_TAGS_PER_CONTENT).optional(),
 						file: z.object({
 							name: z.string(),
 							type: z.string(),
