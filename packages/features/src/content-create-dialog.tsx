@@ -4,7 +4,7 @@ import type { Content } from "@synapse/shared/schemas";
 import { Button, Checkbox, Input, Label } from "@synapse/ui/components";
 import type { JSONContent } from "@tiptap/core";
 import { Plus, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ContentTypeHeader, ContentTypePicker, type ContentTypePickerOption } from "./content-type-picker";
 import { BaseModal } from "./dialogs/base-modal";
@@ -21,6 +21,8 @@ export interface ContentCreateDialogStrings {
 	addTag: string;
 	addTodo: string;
 	cancel: string;
+	changeTypeDescription: string;
+	changeTypeTitle: string;
 	chooseFiles: string;
 	contentRequired: string;
 	create: string;
@@ -41,7 +43,6 @@ export interface ContentCreateDialogStrings {
 	save: string;
 	suggestTags: string;
 	suggestingTags: string;
-	suitable: string;
 	tags: string;
 	title: string;
 	titleOptional: string;
@@ -61,6 +62,8 @@ const defaultStrings: ContentCreateDialogStrings = {
 	addTag: "+ Добавить тег",
 	addTodo: "Добавить",
 	cancel: "Отмена",
+	changeTypeDescription: "Несохранённые изменения будут удалены. Перейти к выбору другого типа?",
+	changeTypeTitle: "Сменить тип материала?",
 	chooseFiles: "Выбрать файлы",
 	contentRequired: "Добавьте содержимое заметки",
 	create: "Создать",
@@ -81,7 +84,6 @@ const defaultStrings: ContentCreateDialogStrings = {
 	save: "Сохранить",
 	suggestTags: "AI-теги",
 	suggestingTags: "Генерация…",
-	suitable: "Подходит",
 	tags: "Теги",
 	title: "Заголовок",
 	titleOptional: "Заголовок (необязательно)",
@@ -138,14 +140,17 @@ export function ContentCreateDialog({
 	const [files, setFiles] = useState<File[]>([]);
 	const [makeTrack, setMakeTrack] = useState(false);
 	const [saving, setSaving] = useState(false);
-	const [confirmClose, setConfirmClose] = useState(false);
+	const [confirmAction, setConfirmAction] = useState<"close" | "changeType" | null>(null);
+	const [ignorePreloadedFiles, setIgnorePreloadedFiles] = useState(false);
+	const initializedOpenRef = useRef(false);
 	const activePreloadedFiles = useMemo(
-		() => (type && type === suggestedType ? preloadedFiles : []),
-		[preloadedFiles, suggestedType, type]
+		() => (!ignorePreloadedFiles && type && type === suggestedType ? preloadedFiles : []),
+		[ignorePreloadedFiles, preloadedFiles, suggestedType, type]
 	);
 
 	useEffect(() => {
 		if (!open) {
+			initializedOpenRef.current = false;
 			setType(null);
 			setIsFullScreen(false);
 			setTitle("");
@@ -157,10 +162,14 @@ export function ContentCreateDialog({
 			setParsedDescription(undefined);
 			setFiles([]);
 			setMakeTrack(false);
+			setIgnorePreloadedFiles(false);
 			return;
 		}
+		if (initializedOpenRef.current) return;
+		initializedOpenRef.current = true;
 		setType(suggestedType ?? null);
 		setTags(initialTags);
+		setIgnorePreloadedFiles(false);
 	}, [initialTags, open, suggestedType]);
 
 	useEffect(() => {
@@ -174,24 +183,47 @@ export function ContentCreateDialog({
 		setFiles((current) => [...current, ...accepted]);
 	};
 	const isDirty = Boolean(
-		title.trim() ||
-		url.trim() ||
+		title ||
+		url ||
 		files.length ||
-		note?.content?.length ||
+		hasMeaningfulNoteContent(note) ||
 		todos.length ||
-		tags.some((tag) => !initialTags.some((initialTag) => initialTag === tag))
+		todoInput ||
+		makeTrack ||
+		!sameTags(tags, initialTags)
 	);
+	const resetDraft = () => {
+		// The parent keeps dropped files until the modal closes. Do not hydrate them
+		// again when the user picks another type after explicitly discarding a draft.
+		setIgnorePreloadedFiles(true);
+		setType(null);
+		setIsFullScreen(false);
+		setTitle("");
+		setTags(initialTags);
+		setNote(null);
+		setTodos([]);
+		setTodoInput("");
+		setUrl("");
+		setParsedDescription(undefined);
+		setFiles([]);
+		setMakeTrack(false);
+	};
 	const requestClose = () => {
 		if (saving) return;
-		if (isDirty) setConfirmClose(true);
+		if (isDirty) setConfirmAction("close");
 		else onOpenChange(false);
+	};
+	const requestTypeChange = () => {
+		if (saving) return;
+		if (isDirty) setConfirmAction("changeType");
+		else resetDraft();
 	};
 	const save = async () => {
 		if (!type || saving) return;
 		setSaving(true);
 		try {
 			if (type === "note") {
-				if (!note?.content?.length) return fail(strings.contentRequired);
+				if (!hasMeaningfulNoteContent(note)) return fail(strings.contentRequired);
 				onContentAdded?.(
 					await client.content.create({
 						content: JSON.stringify(note),
@@ -288,7 +320,7 @@ export function ContentCreateDialog({
 				{type && (
 					<ContentTypeHeader
 						isFullScreen={isFullScreen}
-						onBack={() => setType(null)}
+						onBack={requestTypeChange}
 						onToggleFullScreen={() => setIsFullScreen((value) => !value)}
 						options={options}
 						strings={{ fullScreen: strings.fullScreen, windowed: strings.windowed }}
@@ -299,11 +331,9 @@ export function ContentCreateDialog({
 					<ContentTypePicker
 						onSelect={setType}
 						options={options}
-						suggestedType={suggestedType}
 						strings={{
 							description: strings.description,
 							eyebrow: strings.eyebrow,
-							suitable: strings.suitable,
 							title: strings.typePickerTitle,
 						}}
 					/>
@@ -326,7 +356,7 @@ export function ContentCreateDialog({
 									/>
 									<div className="mt-3">
 										<DraftTagInput
-											aiDisabled={saving || !note?.content?.length}
+											aiDisabled={saving || !hasMeaningfulNoteContent(note)}
 											content={JSON.stringify(note ?? { content: [], type: "doc" })}
 											disabled={saving}
 											onError={fail}
@@ -409,11 +439,19 @@ export function ContentCreateDialog({
 			<ConfirmDialog
 				cancelText={strings.cancel}
 				confirmText={strings.discard}
-				description={strings.unsavedDescription}
-				onConfirm={() => onOpenChange(false)}
-				onOpenChange={setConfirmClose}
-				open={confirmClose}
-				title={strings.unsavedTitle}
+				description={
+					confirmAction === "changeType" ? strings.changeTypeDescription : strings.unsavedDescription
+				}
+				onConfirm={() => {
+					if (confirmAction === "changeType") resetDraft();
+					else onOpenChange(false);
+					setConfirmAction(null);
+				}}
+				onOpenChange={(open) => {
+					if (!open) setConfirmAction(null);
+				}}
+				open={confirmAction !== null}
+				title={confirmAction === "changeType" ? strings.changeTypeTitle : strings.unsavedTitle}
 			/>
 		</>
 	);
@@ -714,6 +752,19 @@ function FileForm({
 
 function isDocument(type: Content["type"]): boolean {
 	return ["doc", "pdf", "docx", "epub", "xlsx", "csv"].includes(type);
+}
+
+function hasMeaningfulNoteContent(document: JSONContent | null): boolean {
+	const visit = (node: JSONContent): boolean => {
+		if (node.type === "text") return Boolean(node.text);
+		if (node.type && !["doc", "paragraph", "hardBreak"].includes(node.type)) return true;
+		return node.content?.some(visit) ?? false;
+	};
+	return document?.content?.some(visit) ?? false;
+}
+
+function sameTags(left: string[], right: string[]): boolean {
+	return left.length === right.length && left.every((tag) => right.includes(tag));
 }
 
 function DraftTagInput({

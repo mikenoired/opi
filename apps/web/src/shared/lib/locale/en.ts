@@ -128,7 +128,6 @@ export const en = {
 	"session.title": "Current session",
 	"storage.local": "Local storage",
 	"storage.used": "Used",
-	"suitable": "Suggested",
 	"tags": "Tags",
 	"tagColor.none": "No color",
 	"tagColor.option": "Color {number}",

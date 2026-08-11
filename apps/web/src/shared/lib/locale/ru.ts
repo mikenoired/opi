@@ -132,7 +132,6 @@ export const ru: TranslationMap = {
 	"session.title": "Текущая сессия",
 	"storage.local": "Локальное хранилище",
 	"storage.used": "Использовано",
-	"suitable": "Подходит",
 	"tags": "Теги",
 	"tagColor.none": "Без цвета",
 	"tagColor.option": "Цвет {number}",
