@@ -1,5 +1,5 @@
 {
-	"extends": "@synapse/tsconfig/base.json",
+	"extends": "@synapse/tsconfig/react-library.json",
 	"compilerOptions": {
 		"target": "ES2022",
 		"lib": ["DOM", "ES2022"],
@@ -7,5 +7,5 @@
 		"noEmit": true,
 		"types": ["bun", "node"]
 	},
-	"include": ["src/**/*.ts"]
+	"include": ["src/**/*.ts", "src/**/*.tsx"]
 }

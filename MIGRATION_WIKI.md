@@ -3,11 +3,13 @@
 ## Current architecture
 
 - The repository is a Bun workspace with `apps/*` and `packages/*` workspaces.
-- `apps/web` is the browser application and retains the product UI, client routing, and typed API client.
+- `apps/web` is the browser composition root: routing, REST adapter and browser-only providers. Legacy route/dialog assemblies are being reduced while extracted visuals live in `@synapse/features`.
 - `apps/desktop` is now a runnable Electron application built with Electron Vite. It owns its Electron main/preload boundaries and a filesystem-backed `DesktopStorageProvider` for local Core object storage in Electron `userData`.
 - `apps/backend` is a runnable Bun/Hono application. It owns the HTTP API, services, repositories, database schema and migrations, server-side parsing/AI integrations, Redis/MinIO infrastructure, and Backend Core adapters.
 - `packages/ui` and `packages/tsconfig` predate this migration task.
-- `packages/features`, `packages/api`, and `packages/sync` have only a package manifest, a platform-neutral TypeScript configuration, and an empty public entry point.
+- `packages/api` owns the transport-neutral `SynapseClient` contract shared by product UI and platform adapters.
+- `packages/features` is the shared React UI-core. It owns common styles, runtime DI/configuration contracts, declarative navigation/settings shell, content cards/filter/grid/suggestions/workspace, rich-text editor/renderer, media player, content-input controls, shared dialogs and settings visuals. It has no REST, IPC or Electron dependency.
+- `packages/sync` has a package manifest, platform-neutral TypeScript configuration, and an empty public entry point.
 - `packages/core` now owns platform-neutral Content service orchestration: queries, tag-title resolution, Content↔tag graph-relation writes, persistence-deletion ordering, and explicit provider contracts, plus serialized Content payload construction and media/audio/link model parsing.
 - `apps/backend` provides named Core adapters over its Drizzle repositories/graph persistence and MinIO object storage. Its Content service calls Core operations through those adapters while retaining transactions, cache policy, API validation, parsing, and file policy.
 - `packages/shared` owns the platform-neutral domain schemas and types; all Web consumers import them directly.
@@ -76,6 +78,7 @@
 - Completed: Stage 7 — prepared a runnable Electron Desktop application and its local Core storage adapter without moving Backend responsibilities or introducing synchronization.
 - Completed: Stage 8 — moved the Bun/Hono API, services, repositories, infrastructure, database schema/migrations, server tests, and Backend Core adapters from Web to the runnable `apps/backend` application. Web consumes only type-only public Backend API contracts and proxies `/api` to Backend in local development.
 - Completed: Stage 9 — synchronization changes are published through the Core `SyncProvider`, delivered by Backend SSE, and applied by Web through query invalidation.
+- In progress: UI unification — introduced the `@synapse/api` transport-neutral client contract and `@synapse/features/runtime` provider/configuration boundary; moved canonical styles, application shell/sidebar, settings shell, content cards/filter/grid/suggestions/workspace, authentication and settings visuals out of platform ownership. Navigation and settings tabs are built from serializable common-plus-platform configuration. `ContentCreateDialog` is now the shared creation/import orchestrator for note, task, link, media, audio, and document flows; Web provides REST and Desktop provides typed IPC/local-object-storage implementations of the same client operations. The Electron renderer now composes those shared assemblies, persists the same preference contract locally, and exposes it through IPC rather than maintaining a separate preference model.
 
 ## Decisions
 
@@ -195,9 +198,13 @@ Core now owns the ordering for appending or replacing Content↔tag relations, i
 
 `WebCoreContentProvider` maps the existing Web Content repository to the Core Content, graph, and tag-title ports. It is constructed with a transaction-scoped repository for mutations, preserving the original transaction boundary. `WebStorageProvider` maps Core's storage port to MinIO and is used for Content media/audio cleanup; MinIO's validation, naming, and public URL policy stay in the adapter. Core workflows no longer receive anonymous Web adapter objects from `ContentService`.
 
-### Desktop owns Electron, local object persistence, and a local-library baseline
+### Desktop owns Electron, local object persistence, and the local-first adapter
 
-`apps/desktop` is a separate Electron Vite application with an isolated preload bridge. `DesktopStorageProvider` implements the existing Core `StorageProvider` using Electron's per-user data directory and serves resulting object URLs through the main-process-only `synapse-object://` protocol. Object identifiers are generated and path-validated in the adapter, preserving the Core rule that storage naming and URL policy are platform concerns. The main process now also owns a small, atomic JSON-backed local library and exposes only explicit CRUD, settings, and statistics IPC calls. The renderer can create, edit, search, tag, and delete local notes, links, and tasks; its sync policy is persisted and automatic mode visibly queues newly saved items. This is a deliberate desktop-owned baseline, not a substitute for the full Core Content/graph repository.
+`apps/desktop` is a separate Electron Vite application with an isolated preload bridge. `DesktopStorageProvider` implements the existing Core `StorageProvider` using Electron's per-user data directory and serves resulting object URLs through the main-process-only `synapse-object://` protocol. The main process imports text, media, audio, and document files into that storage and owns a versioned, atomically written local Content projection (including tags and graph derivation), a durable outbox, cursor and conflict copies. Version 1 library data is migrated on read without losing existing notes, links or tasks. Binary-backed entries are deliberately local-only until the durable protocol gains object transfer; the renderer only binds that IPC implementation to shared UI assemblies.
+
+### Desktop preferences implement the same client contract
+
+The Electron local library persists `UserPreferences` next to color scheme and sync policy, normalizes them with the shared preference module, and exposes them through typed IPC. Its `SynapseClient` therefore implements the same `account.getPreferences` and `account.updatePreferences` operations as Web instead of returning defaults. Common account, appearance, media, AI-status and local-sync panels can be composed from the same settings shell; local-sync remains a declarative Desktop extension.
 
 ### Content suggestion grouping is Core-owned
 
@@ -263,31 +270,68 @@ The co-located Web server was moved intact into `apps/backend`, including its AP
 
 The landing page chooses a recommended installer locally from the browser user agent and still displays all platform choices. Installer URL and version are optional Vite build variables (`VITE_DESKTOP_MACOS_URL`, `VITE_DESKTOP_WINDOWS_URL`, `VITE_DESKTOP_LINUX_URL`, and `VITE_DESKTOP_VERSION`); without a published signed build, the page explicitly says it is not yet available. iOS and Android are visibly marked as in development with no download action.
 
+### Shared React UI does not belong in the existing Core package
+
+`@synapse/core` remains headless, with no React or DOM dependency. `@synapse/features` is the physical UI-core: it contains pages, dialogs, layouts, visual hooks, styles, and the runtime provider used by every client renderer. This preserves a clean Core boundary for Backend and future native/mobile clients while Web and Electron use one React UI implementation.
+
+### Product UI depends on a client port, not HTTP or IPC
+
+`@synapse/api` defines `SynapseClient`, including account, Content, graph, AI and synchronization operations using domain values only. `@synapse/features/runtime` receives its implementation plus capabilities and a declarative platform configuration. Shared UI cannot import `fetch`, endpoint details, Electron preload globals, or IPC channel names.
+
+### Platform extensions are declarative and cannot inject JSX
+
+Navigation and settings configurations use stable IDs, serializable visibility conditions, semantic icon IDs, capability checks and predefined control schemas. Arbitrary render callbacks and ReactNode values are intentionally excluded: allowing them would recreate Web/Desktop UI forks. New visual controls must be implemented once in `@synapse/features` and referenced by configuration.
+
+### Content creation is a shared UI flow over the Content client port
+
+`ContentCreateDialog` owns the type picker, note/task/link entry, tag input, rich-text editor, file drop zones, link validation, draft AI-tag suggestion, and persistence orchestration. It calls only `SynapseClient.content.create`, `parseLink`, `upload`, `importFile`, and `ai.suggestTags`; it has no REST, tRPC, Electron, or platform-global dependency. Link parsing is a shared safe fallback: it validates an HTTP(S) URL and derives a hostname title without server-side fetching of an untrusted address. Web maps the persistence calls to its HTTP API. Desktop serializes selected renderer `File` objects as `BinaryFile` values over its isolated preload bridge; the main process persists them to local object storage and creates the same Content models with the selected title, tags, and audio-track option. Its authenticated main-process sync bridge also implements the AI usage/tag-suggestion calls, so tokens never enter the renderer. This replaces the former Desktop `setEditing("new")` shortcut and removes the duplicate Web add forms.
+
+### Graph visualization is one interactive surface
+
+`GraphSurface` owns the SVG relationship map, tag/content nodes, pan and zoom controls, keyboard activation, and the empty state. It receives only graph DTOs, tag colours, translated labels, and click/hover callbacks. Web keeps route navigation and preview positioning in its adapter; Desktop supplies its local derived graph through `LibraryWorkspace`. The former Web-only Pixi renderer and Desktop text-summary fallback are removed, so graph appearance and interactions now evolve in one package.
+
+### Sync conflict policy preserves local work
+
+When a local Desktop mutation has an obsolete server revision, the server version is applied as authoritative. The Desktop adapter retains the local mutation as a separate local-only conflict copy and returns a typed `SyncConflict`; it never discards local data silently. `sync_entities`, `sync_changes`, and idempotency receipts provide the server-side durable cursor/retry protocol. Ordinary Web writes are reconciled into that journal during the next pull, so delivery does not rely on SSE.
+
 ## Known limitations
 
-- Desktop has a functional local-library UI for notes, links, and tasks, but it does not yet support media/document import, the graph view, account authentication, or full Web feature parity.
+- Desktop has a shared local-library workspace with the common creation/import dialog, interactive graph surface, tags, account-gated synchronization, conflict visibility and common account, appearance, media, AI-status and local-sync settings visuals. Arbitrary local binary media/document import remains pending object-manifest transfer support.
 - Web and Backend are separate runtime processes. Production deployments must set `VITE_API_URL` to the Backend `/api` origin and configure `CORS_ORIGIN` accordingly; local Vite development uses the configured `/api` proxy.
 - Content persistence, graph storage, cache ownership, and file cleanup remain implemented by Backend adapters. Their Core integration is complete for the existing Content service; other Backend services are intentionally out of scope because they do not implement a migrated Core workflow.
 - Existing UI and TypeScript packages were already present and have not been reorganized as part of this task.
 - No Collection domain model or persistence exists in the current product. Stage 3 therefore migrates the complete set of existing domain models without inventing a feature solely to match the target architecture.
-- Desktop's local library has a persisted sync-policy and queue state, but no remote transfer implementation. Backend now exposes paid-plan eligibility, but it still has no durable remote sync protocol, cursor, conflict handling, or object-transfer lifecycle for Desktop; queued state must not be presented as completed synchronization.
+- Desktop sync is a subscription-gated authenticated protocol: it pulls an ordered journal, pushes idempotent durable outbox mutations and preserves local conflict copies when the server wins. The remaining gap is binary object-transfer lifecycle, not Content metadata synchronization.
 
 ## Next recommended tasks
 
-1. Replace the Desktop JSON library with a complete local Content/graph repository and migration layer; add media/document import and graph projection.
-2. Define and implement Backend entitlement, durable remote sync outbox/cursor, conflict handling, and object transfers before enabling any Desktop upload control.
-3. Add packaged, signed releases and connect the Web download landing section to published release metadata.
+1. Move the remaining canonical Web viewer/editor route assemblies into `@synapse/features`, replacing Web API/router/context imports with runtime ports.
+2. Add object-manifest, resumable binary transfer and quota lifecycle to the existing durable sync protocol.
+3. Remove the remaining transitional renderer bindings now covered by `SynapseClient` adapters.
+4. Enforce architecture-boundary checks for platform globals and run the complete integration suite against migration `0002_durable_sync_journal.sql`.
 
 ## Platform boundaries
 
-| Module              | Boundary | Current contents                                                                                                                                                                                                                |
-| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`          | Web      | Browser UI, routing, API client, and a local-development `/api` proxy                                                                                                                                                           |
-| `apps/desktop`      | Desktop  | Electron main/preload bootstrap, `synapse-object://` protocol, filesystem-backed Core `StorageProvider`, JSON local library, explicit IPC bridge, and local-library UI                                                          |
-| `apps/backend`      | Backend  | Runnable Bun/Hono API; services, repositories, DB schema/migrations, parsers, AI, Redis/MinIO, and Core persistence/storage adapters                                                                                            |
-| `packages/core`     | Core     | Content, graph, storage, and sync provider contracts; tag identity/title resolution; Content relation/deletion and query orchestration; serialized Content payloads/projections; User mapping/preferences; Note image ownership |
-| `packages/ui`       | Shared   | Existing React UI library                                                                                                                                                                                                       |
-| `packages/features` | Shared   | Empty public entry point                                                                                                                                                                                                        |
-| `packages/api`      | Shared   | Empty public entry point                                                                                                                                                                                                        |
-| `packages/shared`   | Shared   | Domain schemas, preferences, plans, formatting, animation config, content-type filtering, tag colors, parsing helpers, and public exports                                                                                       |
-| `packages/sync`     | Shared   | Platform-neutral sync event envelope and subscription boundary; Backend adapter and Web SSE consumer remain platform-owned                                                                                                      |
+| Module              | Boundary  | Current contents                                                                                                                                                                                                                |
+| ------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`          | Web       | Browser adapters, browser-history bootstrap, Web configuration, a local-development `/api` proxy, and legacy UI being extracted                                                                                                 |
+| `apps/desktop`      | Desktop   | Electron main/preload bootstrap, `synapse-object://` protocol, filesystem-backed Core `StorageProvider`, JSON local library, explicit IPC bridge, and transitional local-library renderer UI                                    |
+| `apps/backend`      | Backend   | Runnable Bun/Hono API; services, repositories, DB schema/migrations, parsers, AI, Redis/MinIO, and Core persistence/storage adapters                                                                                            |
+| `packages/core`     | Core      | Content, graph, storage, and sync provider contracts; tag identity/title resolution; Content relation/deletion and query orchestration; serialized Content payloads/projections; User mapping/preferences; Note image ownership |
+| `packages/ui`       | Shared    | Existing React UI library                                                                                                                                                                                                       |
+| `packages/features` | Shared UI | Common React product UI, styles, layouts, dialog shell, visual primitives, and the dependency-injection/configuration runtime                                                                                                   |
+| `packages/api`      | Shared    | Transport-neutral client contracts consumed by shared UI and implemented by platform adapters                                                                                                                                   |
+| `packages/shared`   | Shared    | Domain schemas, preferences, plans, formatting, animation config, content-type filtering, tag colors, parsing helpers, and public exports                                                                                       |
+| `packages/sync`     | Shared    | Platform-neutral sync event envelope and subscription boundary; Backend adapter and Web SSE consumer remain platform-owned                                                                                                      |
+
+## UI-unification acceptance list
+
+- [x] Desktop media storage is presented in **Media**; Synapse Sync now sits beneath the shared Synapse session in **Profile**.
+- [x] Web and Desktop use the shared media card/viewer surface. The fullscreen viewer keeps media edges square.
+- [x] Browser and Electron share the file-family policy for drag-and-drop and clipboard paste.
+- [x] Electron uses an OS-integrated title bar, follows the selected theme, and maps native File/Edit menus to Add content and Settings.
+- [x] Desktop tags and graph are rendered by the shared workspace components.
+- [x] Closing a changed creation/editor dialog requires an explicit discard confirmation.
+- [x] Tag entry commits on Space or Enter, resolves existing tags case-insensitively, preserves display casing, and uses the product Select instead of a native datalist. Suggestions are alphabetical when unfiltered and scroll after ten visible rows.
+
+Deferred product work is tracked in `TODO.md`, so it does not expand the current Web-as-source-of-truth migration.

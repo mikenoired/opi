@@ -92,6 +92,12 @@ export default class ContentRepository {
 		return data;
 	}
 
+	/** No preview truncation: initial Desktop synchronization needs canonical content. */
+	async getAllForSync() {
+		requireAuth(this.ctx);
+		return this.database.select().from(content).where(eq(content.userId, this.ctx.user!.id));
+	}
+
 	async getSuggestionTagPriorities(tagIds: string[]) {
 		requireAuth(this.ctx);
 		if (tagIds.length === 0) return [];

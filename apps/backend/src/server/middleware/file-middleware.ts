@@ -41,6 +41,7 @@ const DEFAULT_CONFIG: FileValidationConfig = {
 		".wav",
 		".ogg",
 		".opus",
+		".webm",
 	],
 	allowedMimeTypes: [
 		"image/jpeg",
@@ -54,6 +55,7 @@ const DEFAULT_CONFIG: FileValidationConfig = {
 		"video/quicktime",
 		"video/x-msvideo",
 		"video/x-matroska",
+		"video/webm",
 		"audio/mpeg",
 		"audio/mp4",
 		"audio/x-m4a",
@@ -62,6 +64,7 @@ const DEFAULT_CONFIG: FileValidationConfig = {
 		"audio/wav",
 		"audio/ogg",
 		"audio/opus",
+		"audio/webm",
 	],
 	scanForMalware: true,
 	checkMagicBytes: true,
@@ -81,18 +84,20 @@ const MAGIC_BYTES: Record<string, Buffer[]> = {
 	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
 		Buffer.from([0x50, 0x4b, 0x03, 0x04]), // ZIP signature (DOCX based on ZIP)
 	],
-	"video/mp4": [Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32])], // mp4 ftyp
-	"video/quicktime": [Buffer.from([0x00, 0x00, 0x00, 0x14, 0x66, 0x74, 0x79, 0x70, 0x71, 0x74, 0x20, 0x20])], // mov ftyp
-	"video/x-msvideo": [Buffer.from([0x52, 0x49, 0x46, 0x46])], // avi RIFF
+	"video/mp4": [], // ISO BMFF; the size and brand vary between valid files
+	"video/quicktime": [], // ISO BMFF; the size and brand vary between valid files
+	"video/x-msvideo": [], // RIFF/AVI is identified by the form type at byte 8
 	"video/x-matroska": [Buffer.from([0x1a, 0x45, 0xdf, 0xa3])], // mkv EBML
+	"video/webm": [Buffer.from([0x1a, 0x45, 0xdf, 0xa3])], // WebM is an EBML container
 	"audio/mpeg": [Buffer.from([0x49, 0x44, 0x33]), Buffer.from([0xff, 0xfb])], // ID3 or MP3 frame
-	"audio/mp4": [Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70])], // mp4 ftyp
-	"audio/x-m4a": [Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70])],
+	"audio/mp4": [], // ISO BMFF; the size and brand vary between valid files
+	"audio/x-m4a": [],
 	"audio/aac": [Buffer.from([0xff, 0xf1]), Buffer.from([0xff, 0xf9])], // ADTS
 	"audio/flac": [Buffer.from([0x66, 0x4c, 0x61, 0x43])], // fLaC
-	"audio/wav": [Buffer.from([0x52, 0x49, 0x46, 0x46])], // RIFF (WAVE)
+	"audio/wav": [], // RIFF/WAVE is identified by the form type at byte 8
 	"audio/ogg": [Buffer.from([0x4f, 0x67, 0x67, 0x53])], // OggS
 	"audio/opus": [Buffer.from([0x4f, 0x67, 0x67, 0x53])], // OggS (Opus in Ogg)
+	"audio/webm": [Buffer.from([0x1a, 0x45, 0xdf, 0xa3])], // WebM is an EBML container
 };
 
 const MALWARE_PATTERNS = [
@@ -121,6 +126,23 @@ export function sanitizeFileName(fileName: string): string {
 	); // Limit length
 }
 
+function matchesMagicBytes(file: Buffer, contentType: string): boolean | undefined {
+	if (contentType === "audio/wav")
+		return (
+			file.subarray(0, 4).equals(Buffer.from("RIFF")) && file.subarray(8, 12).equals(Buffer.from("WAVE"))
+		);
+	if (contentType === "video/x-msvideo")
+		return (
+			file.subarray(0, 4).equals(Buffer.from("RIFF")) && file.subarray(8, 12).equals(Buffer.from("AVI "))
+		);
+	if (contentType === "audio/mp4" || contentType === "audio/x-m4a" || contentType === "video/mp4")
+		return file.subarray(4, 8).equals(Buffer.from("ftyp"));
+	if (contentType === "video/quicktime") return file.subarray(4, 8).equals(Buffer.from("ftyp"));
+	const signatures = MAGIC_BYTES[contentType];
+	if (!signatures || signatures.length === 0) return undefined;
+	return signatures.some((signature) => file.subarray(0, signature.length).equals(signature));
+}
+
 function detectMimeTypeByMagicBytes(file: Buffer): string | undefined {
 	for (const [mimeType, signatures] of Object.entries(MAGIC_BYTES)) {
 		if (signatures.length === 0) continue; // Skip types without magic bytes
@@ -145,24 +167,6 @@ function scanForMalwarePatterns(file: Buffer): string[] {
 	}
 
 	return foundPatterns;
-}
-
-function isPolyglotFile(file: Buffer): boolean {
-	// Check if the file is of multiple types
-	const detectedTypes: string[] = [];
-
-	for (const [mimeType, signatures] of Object.entries(MAGIC_BYTES)) {
-		if (signatures.length === 0) continue;
-
-		for (const signature of signatures) {
-			if (file.subarray(0, signature.length).equals(signature)) {
-				detectedTypes.push(mimeType);
-				break;
-			}
-		}
-	}
-
-	return detectedTypes.length > 1;
 }
 
 function hasEmbeddedExecutable(file: Buffer): boolean {
@@ -261,15 +265,12 @@ export async function validateFile(
 		// 5. Check magic bytes
 		let detectedMimeType: string | undefined;
 		if (fullConfig.checkMagicBytes) {
-			detectedMimeType = detectMimeTypeByMagicBytes(file);
+			const matches = matchesMagicBytes(file, contentType);
+			detectedMimeType = matches ? contentType : detectMimeTypeByMagicBytes(file);
 
-			if (detectedMimeType && detectedMimeType !== contentType) {
-				errors.push(
-					`MIME type does not match file content. Expected: ${contentType}, detected: ${detectedMimeType}`
-				);
-			}
-
-			if (!detectedMimeType && contentType !== "text/plain") {
+			if (matches === false) {
+				errors.push(`MIME type does not match file content: ${contentType}`);
+			} else if (matches === undefined && contentType !== "text/plain") {
 				warnings.push("Failed to determine file type by magic bytes");
 			}
 		}
@@ -283,11 +284,6 @@ export async function validateFile(
 		}
 
 		// 7. Additional security checks
-
-		// Check for polyglot files (files that are valid as multiple types)
-		if (isPolyglotFile(file)) {
-			errors.push("Polyglot file detected (potentially dangerous)");
-		}
 
 		// Check for embedded executable files
 		if (hasEmbeddedExecutable(file)) {

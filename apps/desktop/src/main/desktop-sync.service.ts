@@ -1,4 +1,13 @@
-import type { LocalItem, LocalLibraryRepository } from "./local-library.repository";
+import type {
+	AiTagsInput,
+	AiTagsResult,
+	AiUsage,
+	SyncPullResult,
+	SyncPushResult,
+	SyncRunResult,
+} from "@synapse/api";
+
+import type { LocalLibraryRepository } from "./local-library.repository";
 
 export interface DesktopSyncSession {
 	email: string;
@@ -11,7 +20,11 @@ interface LoginResponse {
 	user: { email: string };
 }
 
-/** Desktop-owned HTTP adapter. Tokens stay in the main process and are never exposed to the renderer. */
+/**
+ * Desktop-owned HTTP transport. The renderer neither sees a bearer token nor
+ * decides how a conflict is resolved; it only observes the durable result
+ * through the platform client.
+ */
 export class DesktopSyncService {
 	private token?: string;
 	private apiUrl?: string;
@@ -36,46 +49,87 @@ export class DesktopSyncService {
 		return this.session;
 	}
 
-	async syncAll(): Promise<{ failed: number; synced: number }> {
+	logout(): void {
+		this.apiUrl = undefined;
+		this.session = undefined;
+		this.token = undefined;
+	}
+
+	async syncAll(): Promise<SyncRunResult> {
 		if (!this.session?.eligible) throw new Error("Synapse Sync доступен на платных планах");
 		let failed = 0;
 		let synced = 0;
-		for (const item of await this.library.list()) {
-			if (item.syncState === "synced" || item.syncState === "remote-deleted") continue;
+		const conflicts: SyncRunResult["conflicts"] = [];
+
+		// Pull first: this enforces server-wins before an offline mutation can
+		// overwrite a newer remote version.
+		conflicts.push(...(await this.pullRemoteChanges()));
+
+		for (const entry of await this.library.getPendingOperations()) {
 			try {
-				await this.syncItem(item);
-				synced++;
+				const result = await this.request<SyncPushResult>("/sync/push", { mutations: [entry.mutation] });
+				const outcome = result.outcomes[0];
+				if (!outcome) throw new Error("Sync server returned no mutation outcome");
+				if (outcome.status === "conflict") {
+					if (!outcome.content) throw new Error("Sync conflict has no server content");
+					const conflictCopyId = await this.library.resolveConflict(
+						entry.id,
+						outcome.content,
+						outcome.revision
+					);
+					conflicts.push({
+						conflictCopyId,
+						entityId: outcome.content.id,
+						localUpdatedAt: new Date().toISOString(),
+						remote: outcome.content,
+						remoteUpdatedAt: outcome.content.updated_at,
+						resolution: "server-wins-local-copy",
+					});
+					continue;
+				}
+				await this.library.acknowledgeOperation(entry.id, outcome.content, outcome.revision, outcome.deleted);
+				synced += 1;
 			} catch {
-				await this.library.updateSync(item.id, { remoteId: item.remoteId, syncState: "failed" });
-				failed++;
+				await this.library.markOperationFailed(entry.id);
+				failed += 1;
 			}
 		}
-		return { failed, synced };
+
+		conflicts.push(...(await this.pullRemoteChanges()));
+		return { conflicts, failed, synced };
 	}
 
-	async deleteRemote(id: string): Promise<void> {
-		const item = (await this.library.list()).find((candidate) => candidate.id === id);
-		if (!item?.remoteId) throw new Error("Материал ещё не загружен в Synapse Sync");
-		await this.request(`/content/${item.remoteId}`, undefined, "DELETE");
-		await this.library.updateSync(item.id, { remoteId: item.remoteId, syncState: "remote-deleted" });
+	getAiUsage(): Promise<AiUsage> {
+		return this.request<AiUsage>("/ai/usage", undefined, "GET");
 	}
 
-	private async syncItem(item: LocalItem): Promise<void> {
-		const body = {
-			content: item.content,
-			tags: item.tags,
-			title: item.title,
-			type: item.type,
-			url: item.url,
-		};
-		const remote = item.remoteId
-			? await this.request<{ id: string }>(
-					`/content/${item.remoteId}`,
-					{ ...body, id: item.remoteId },
-					"PATCH"
-				)
-			: await this.request<{ id: string }>("/content", body);
-		await this.library.updateSync(item.id, { remoteId: remote.id, syncState: "synced" });
+	suggestTags(input: AiTagsInput): Promise<AiTagsResult> {
+		return this.request<AiTagsResult>("/ai/tags", input);
+	}
+
+	private async pullRemoteChanges(): Promise<SyncRunResult["conflicts"]> {
+		const cursor = await this.library.getSyncCursor();
+		const result = await this.request<SyncPullResult>(
+			`/sync/pull${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
+			undefined,
+			"GET"
+		);
+		const conflicts: SyncRunResult["conflicts"] = [];
+		for (const change of result.changes) {
+			const conflictCopyId = await this.library.applyRemoteChange(change);
+			if (conflictCopyId && change.content) {
+				conflicts.push({
+					conflictCopyId,
+					entityId: change.entityId,
+					localUpdatedAt: new Date().toISOString(),
+					remote: change.content,
+					remoteUpdatedAt: change.content.updated_at,
+					resolution: "server-wins-local-copy",
+				});
+			}
+		}
+		await this.library.setSyncCursor(result.cursor);
+		return conflicts;
 	}
 
 	private async request<T>(path: string, body?: unknown, method = "POST"): Promise<T> {

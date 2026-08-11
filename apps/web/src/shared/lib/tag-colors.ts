@@ -14,8 +14,3 @@ export function getTagColorStyle(color?: number | null): CSSProperties | undefin
 		"borderColor": `${value}58`,
 	} as CSSProperties;
 }
-
-export function tagColorToPixi(color?: number | null) {
-	const value = getTagColor(color);
-	return value ? Number.parseInt(value.slice(1), 16) : undefined;
-}

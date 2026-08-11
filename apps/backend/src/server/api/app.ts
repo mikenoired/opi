@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -26,6 +27,7 @@ import AiUsageRepository from "../repositories/ai-usage.repository";
 import AiTaggingService from "../services/ai-tagging.service";
 import AuthService from "../services/auth.service";
 import ContentService from "../services/content.service";
+import { DurableSyncService } from "../services/durable-sync.service";
 import GraphService from "../services/graph.service";
 import UploadService from "../services/upload.service";
 import UserService from "../services/user.service";
@@ -93,6 +95,23 @@ const aiInput = z.discriminatedUnion("mode", [
 	z.object({ mode: z.literal("existing"), contentId: z.string().min(1) }),
 ]);
 const sessionInput = z.object({ token: z.string().min(1), refreshToken: z.string().optional() });
+const syncMutationInput = z
+	.object({
+		baseRevision: z.number().int().positive().optional(),
+		clientMutationId: z.string().uuid(),
+		content: createContentSchema.optional(),
+		kind: z.enum(["delete", "upsert"]),
+		remoteId: z.string().uuid().optional(),
+	})
+	.superRefine((value, context) => {
+		if (value.kind === "upsert" && !value.content) {
+			context.addIssue({ code: "custom", message: "Content is required for an upsert" });
+		}
+		if (value.kind === "delete" && !value.remoteId) {
+			context.addIssue({ code: "custom", message: "A remote ID is required for a delete" });
+		}
+	});
+const syncPushInput = z.object({ mutations: z.array(syncMutationInput).min(1).max(100) });
 const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
 	.split(",")
 	.map((origin) => origin.trim())
@@ -125,6 +144,33 @@ async function body<T extends z.ZodType>(request: Request, schema: T): Promise<z
 	return result.data;
 }
 
+async function uploadBody(request: Request): Promise<z.output<typeof uploadInput>> {
+	if (!request.headers.get("content-type")?.startsWith("multipart/form-data")) {
+		return body(request, uploadInput);
+	}
+
+	const form = await request.formData();
+	const files = await Promise.all(
+		form
+			.getAll("files")
+			.filter((value): value is File => value instanceof File)
+			.map(async (file) => ({
+				content: Buffer.from(await file.arrayBuffer()).toString("base64"),
+				name: file.name,
+				size: file.size,
+				type: file.type || "application/octet-stream",
+			}))
+	);
+	const parsed = uploadInput.safeParse({
+		files,
+		makeTrack: form.get("makeTrack") === "true",
+		tags: form.getAll("tags").filter((value): value is string => typeof value === "string"),
+		title: typeof form.get("title") === "string" ? form.get("title") : undefined,
+	});
+	if (!parsed.success) throw new ApiError("BAD_REQUEST", "Invalid request", z.treeifyError(parsed.error));
+	return parsed.data;
+}
+
 function query<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
 	const result = schema.safeParse(value);
 	if (!result.success)
@@ -136,6 +182,12 @@ function query<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
 // they only consume the request headers exposed by the standard Fetch Request.
 function serviceContext(context: import("./context").ApiContext): Context {
 	return context as unknown as Context;
+}
+
+/** Entitlement is enforced server-side; a Desktop client hint is never authorization. */
+async function requireSyncSubscription(context: Context): Promise<void> {
+	const user = await new UserService(context).getUser();
+	if (!canUseSynapseSync(user.plan)) throw new ApiError("FORBIDDEN", "Synapse Sync requires a paid plan");
 }
 
 export const api = new Hono()
@@ -218,11 +270,29 @@ export const api = new Hono()
 			});
 		});
 	})
+	.get("/sync/pull", requireAuth, rateLimit("query"), async (c) => {
+		const context = serviceContext(c.get("apiContext"));
+		await requireSyncSubscription(context);
+		return c.json(await new DurableSyncService(context).pull(c.req.query("cursor")));
+	})
+	.post("/sync/push", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
+		const context = serviceContext(c.get("apiContext"));
+		await requireSyncSubscription(context);
+		return c.json(
+			await new DurableSyncService(context).push((await body(c.req.raw, syncPushInput)).mutations)
+		);
+	})
 	.get("/files/*", rateLimit("query"), async (c) => {
 		const requestPath = new URL(c.req.url).pathname;
 		const filesPathIndex = requestPath.indexOf("/files/");
-		const objectName =
+		const encodedObjectName =
 			filesPathIndex >= 0 ? requestPath.slice(filesPathIndex + "/files/".length).replace(/^\/+/, "") : "";
+		let objectName: string;
+		try {
+			objectName = decodeURIComponent(encodedObjectName);
+		} catch {
+			throw new ApiError("BAD_REQUEST", "Invalid file path");
+		}
 		const user = c.get("apiContext").user ?? getUserFromTokens(c.req.query("token"));
 		const [, ownerId] = objectName.split("/");
 
@@ -380,7 +450,7 @@ export const api = new Hono()
 		)
 	)
 	.post("/upload", requireAuth, protectMutation, rateLimit("mutation"), async (c) =>
-		c.json(await new UploadService(c.get("apiContext")).handleUpload(await body(c.req.raw, uploadInput)))
+		c.json(await new UploadService(c.get("apiContext")).handleUpload(await uploadBody(c.req.raw)))
 	)
 	.get("/user", requireAuth, rateLimit("query"), async (c) =>
 		c.json(await new UserService(c.get("apiContext")).getUser())

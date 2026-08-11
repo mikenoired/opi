@@ -1,10 +1,9 @@
+import { GraphSurface } from "@synapse/features";
 import type { Content } from "@synapse/shared/schemas";
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "@/shared/api/hooks";
 import { useModal } from "@/widgets/modals/context/modal-context";
-
-import { createGraph, type GraphInput } from "./graph";
 
 const ItemPreview = lazy(() => import("@/entities/item/ui/item"));
 
@@ -28,12 +27,14 @@ interface HoverState {
 }
 
 export default function GraphClient({ nodes, edges }: { nodes: Node[]; edges: Edge[] }) {
-	const graphRef = useRef<HTMLDivElement>(null);
 	const previewRef = useRef<HTMLDivElement>(null);
 	const { data: currentTags = [] } = api.content.getTags.useQuery(undefined, {
 		refetchOnMount: true,
 	});
-	const graphData = useGraphData(nodes, edges, currentTags);
+	const tagColors = useMemo(
+		() => Object.fromEntries(currentTags.map((tag) => [tag.id, tag.color])),
+		[currentTags]
+	);
 	const { openModal } = useModal();
 	const utils = api.useUtils();
 	const deleteMutation = api.content.delete.useMutation();
@@ -152,16 +153,6 @@ export default function GraphClient({ nodes, edges }: { nodes: Node[]; edges: Ed
 		return () => observer.disconnect();
 	}, [hoverState, hoveredItem]);
 
-	useEffect(() => {
-		if (!graphRef.current) return;
-		const graph = createGraph(graphRef.current, graphData, {
-			onNodeClick: handleNodeClick,
-			onNodeHover: handleNodeHover,
-			onNodeLeave: handleNodeLeave,
-		});
-		return () => graph.destroy();
-	}, [graphData, handleNodeClick, handleNodeHover, handleNodeLeave]);
-
 	const previewPosition = useMemo(() => {
 		if (!hoverState) return null;
 		return calculatePreviewPosition(hoverState.x, hoverState.y, previewSize);
@@ -169,7 +160,14 @@ export default function GraphClient({ nodes, edges }: { nodes: Node[]; edges: Ed
 
 	return (
 		<div className="h-[calc(100vh-6rem)] w-full overflow-hidden p-4">
-			<div ref={graphRef} className="h-full w-full overflow-hidden rounded border bg-background" />
+			<GraphSurface
+				edges={edges}
+				nodes={nodes}
+				onNodeClick={(node) => void handleNodeClick(node.id, node.type)}
+				onNodeHover={(node, x, y) => (node ? handleNodeHover(node.id, x, y) : handleNodeLeave())}
+				strings={{ empty: "Граф пока пуст", zoomIn: "Увеличить", zoomOut: "Уменьшить" }}
+				tagColors={tagColors}
+			/>
 			{hoverState && previewPosition && (
 				<div
 					ref={previewRef}
@@ -252,45 +250,4 @@ function getTypeLabel(type: string) {
 		tag: "Тег",
 	};
 	return typeMap[type] || type;
-}
-
-function useGraphData(nodes: Node[], edges: Edge[], tags: Array<{ color: number; id: string }>) {
-	return useMemo<GraphInput>(() => {
-		const colorByTagId = new Map(tags.map((tag) => [tag.id, tag.color]));
-		const byId = new Map(
-			nodes.map((node) => {
-				const tagId = getTagId(node);
-				return [
-					node.id,
-					{
-						color: tagId ? (colorByTagId.get(tagId) ?? node.color) : node.color,
-						id: node.id,
-						label: node.content || "Без названия",
-						links: [] as string[],
-						type: node.type,
-						href: getTagHref(node),
-					},
-				] as const;
-			})
-		);
-
-		for (const edge of edges) {
-			if (!edge.fromNode || !edge.toNode) continue;
-			const source = byId.get(edge.fromNode);
-			if (source && byId.has(edge.toNode)) source.links.push(edge.toNode);
-		}
-
-		return { nodes: [...byId.values()] };
-	}, [nodes, edges, tags]);
-}
-
-function getTagId(node: Node) {
-	if (node.type !== "tag") return undefined;
-	if (!node.metadata || typeof node.metadata !== "object" || !("tag_id" in node.metadata)) return undefined;
-	return typeof node.metadata.tag_id === "string" ? node.metadata.tag_id : undefined;
-}
-
-function getTagHref(node: Node) {
-	const tagId = getTagId(node);
-	return tagId ? `/tags/${tagId}` : undefined;
 }

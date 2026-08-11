@@ -14,7 +14,7 @@
 		"check": "bun run lint && bun run format:check && bun run typecheck && bun run test:all",
 		"format": "bun x oxfmt --config .oxfmtrc.json --write .",
 		"format:check": "bun x oxfmt --config .oxfmtrc.json --check .",
-		"lint": "bun run lint:js",
+		"lint": "bun run lint:js && bun scripts/check-feature-boundaries.ts",
 		"lint:fix": "bun run lint:js:fix",
 		"lint:js": "bun x oxlint . --config .oxlintrc.json --deny-warnings",
 		"lint:js:fix": "bun x oxlint . --config .oxlintrc.json --fix",

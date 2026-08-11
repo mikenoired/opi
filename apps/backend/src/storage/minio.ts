@@ -116,7 +116,7 @@ export async function deleteFile(objectName: string): Promise<void> {
 }
 
 export async function deleteUserFiles(userId: string): Promise<void> {
-	const prefixes = ["images", "audio", "media", "note-images", "documents"];
+	const prefixes = ["images", "audio", "audio-covers", "media", "media-thumbs", "note-images", "documents"];
 	const objectNames: string[] = [];
 
 	for (const prefix of prefixes) {
@@ -130,7 +130,21 @@ export async function deleteUserFiles(userId: string): Promise<void> {
 }
 
 export async function getPresignedUrl(objectName: string, expirySeconds: number = 3600): Promise<string> {
-	return await minioClient.presignedGetObject(bucketName, objectName, expirySeconds);
+	const extension = objectName.toLowerCase().split(".").pop();
+	const responseContentType =
+		extension === "mp3"
+			? "audio/mpeg"
+			: extension === "m4a"
+				? "audio/mp4"
+				: extension === "jpg" || extension === "jpeg"
+					? "image/jpeg"
+					: undefined;
+	return await minioClient.presignedGetObject(
+		bucketName,
+		objectName,
+		expirySeconds,
+		responseContentType ? { "response-content-type": responseContentType } : undefined
+	);
 }
 
 export { bucketName, minioClient };

@@ -207,7 +207,7 @@ export default function TagClient({ tagId, tagTitle, initialColor, initial }: Pr
 			onDrop={handleDrop}>
 			{dragActive && (
 				<div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/40 select-none">
-					<div className="animate-in rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-2xl font-semibold shadow-xl fade-in-0">
+					<div className="animate-in fade-in-0 rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-2xl font-semibold shadow-xl">
 						Drop files to add content
 					</div>
 				</div>

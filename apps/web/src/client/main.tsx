@@ -1,3 +1,5 @@
+import { DashboardSurface } from "@synapse/features/app-shell";
+import { AppRuntimeProvider } from "@synapse/features/runtime";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	createRootRoute,
@@ -13,8 +15,8 @@ import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 
-import DashboardContent from "@/app/dashboard/dashboard-content";
 import HomePage from "@/app/page";
+import { webRuntime } from "@/platform/web-runtime";
 import { apiClient, unwrap } from "@/shared/api/client";
 import type { ContentTags, Graph } from "@/shared/api/contracts";
 import { apiUrl } from "@/shared/config/api";
@@ -42,20 +44,22 @@ const queryClient = new QueryClient({
 
 function Root() {
 	return (
-		<QueryClientProvider client={queryClient}>
-			<AuthProvider>
-				<SyncListener />
-				<UserPreferencesProvider>
-					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-						<ModalProvider>
-							<Outlet />
-							<ModalManager />
-							<Toaster position="bottom-right" />
-						</ModalProvider>
-					</ThemeProvider>
-				</UserPreferencesProvider>
-			</AuthProvider>
-		</QueryClientProvider>
+		<AppRuntimeProvider runtime={webRuntime}>
+			<QueryClientProvider client={queryClient}>
+				<AuthProvider>
+					<SyncListener />
+					<UserPreferencesProvider>
+						<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+							<ModalProvider>
+								<Outlet />
+								<ModalManager />
+								<Toaster position="bottom-right" />
+							</ModalProvider>
+						</ThemeProvider>
+					</UserPreferencesProvider>
+				</AuthProvider>
+			</QueryClientProvider>
+		</AppRuntimeProvider>
 	);
 }
 
@@ -88,9 +92,9 @@ function DashboardShell() {
 		<DashboardProvider>
 			<div className="flex h-screen min-h-0 w-full overflow-hidden bg-background dark:bg-muted">
 				<Sidebar />
-				<DashboardContent>
+				<DashboardSurface>
 					<Outlet />
-				</DashboardContent>
+				</DashboardSurface>
 				<SettingsModalController />
 			</div>
 		</DashboardProvider>

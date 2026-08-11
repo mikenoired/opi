@@ -4,16 +4,41 @@
 	"private": true,
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./app-shell": "./src/app-shell.tsx",
+		"./runtime": "./src/runtime/index.ts",
+		"./styles.css": "./src/styles.css"
 	},
 	"scripts": {
 		"format": "bun x oxfmt --config ../../.oxfmtrc.json --write .",
 		"format:check": "bun x oxfmt --config ../../.oxfmtrc.json --check .",
-		"lint": "bun x oxlint . --config ../../.oxlintrc.json --deny-warnings",
+		"lint": "bun x oxlint . --config ../../.oxlintrc.json --deny-warnings && bun ../../scripts/check-feature-boundaries.ts",
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
 		"@synapse/tsconfig": "workspace:*",
+		"@types/react": "^19.2.17",
+		"@types/react-dom": "^19.2.3",
 		"typescript": "^7.0.2"
+	},
+	"dependencies": {
+		"@synapse/api": "workspace:*",
+		"@synapse/core": "workspace:*",
+		"@synapse/ui": "workspace:*",
+		"@synapse/shared": "workspace:*",
+		"@tiptap/core": "^3.27.0",
+		"@tiptap/extension-code-block-lowlight": "^3.27.0",
+		"@tiptap/extension-image": "^3.27.0",
+		"@tiptap/extension-list": "^3.27.0",
+		"@tiptap/extension-placeholder": "^3.27.0",
+		"@tiptap/markdown": "^3.27.0",
+		"@tiptap/pm": "^3.27.0",
+		"@tiptap/react": "^3.27.0",
+		"@tiptap/starter-kit": "^3.27.0",
+		"framer-motion": "^12.40.0",
+		"lucide-react": "^1.21.0",
+		"lowlight": "^3.3.0",
+		"react": "^19.2.7",
+		"react-masonry-css": "^1.0.16"
 	}
 }

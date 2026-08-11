@@ -22,6 +22,7 @@ export {
 } from "./content";
 export type {
 	AudioJson,
+	AudioContentMetadata,
 	ContentListParams,
 	ContentListRepository,
 	ContentRecord,

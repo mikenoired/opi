@@ -1,10 +1,7 @@
 {
-	"extends": "@synapse/tsconfig/base.json",
+	"extends": "@synapse/tsconfig/react-library.json",
 	"compilerOptions": {
-		"target": "ES2022",
-		"lib": ["ES2022"],
-		"module": "ESNext",
 		"noEmit": true
 	},
-	"include": ["src/**/*.ts"]
+	"include": ["src/**/*.ts", "src/**/*.tsx"]
 }

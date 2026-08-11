@@ -2,6 +2,7 @@ import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@synapse/shared/
 import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
+	bigserial,
 	check,
 	customType,
 	index,
@@ -9,6 +10,7 @@ import {
 	jsonb,
 	numeric,
 	pgTable,
+	primaryKey,
 	text,
 	timestamp,
 	uuid,
@@ -147,6 +149,55 @@ export const aiUsage = pgTable(
 		index("ai_usage_user_id_feature_created_at_idx").on(table.userId, table.feature, table.createdAt),
 		check("ai_usage_success_tokens_chk", sql`success = true OR (input_tokens = 0 AND output_tokens = 0)`),
 	]
+);
+
+/** Durable server-side cursor journal for local-first clients. */
+export const syncEntities = pgTable(
+	"sync_entities",
+	{
+		contentId: uuid("content_id").notNull(),
+		deleted: boolean("deleted").notNull().default(false),
+		revision: integer("revision").notNull().default(1),
+		sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true }),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+	},
+	(table) => [
+		primaryKey({ columns: [table.userId, table.contentId] }),
+		index("sync_entities_user_id_updated_at_idx").on(table.userId, table.updatedAt),
+	]
+);
+
+export const syncChanges = pgTable(
+	"sync_changes",
+	{
+		id: bigserial("id", { mode: "number" }).primaryKey(),
+		contentId: uuid("content_id").notNull(),
+		operation: text("operation").notNull(),
+		payload: jsonb("payload").$type<unknown>(),
+		revision: integer("revision").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+	},
+	(table) => [index("sync_changes_user_id_id_idx").on(table.userId, table.id)]
+);
+
+/** Idempotency receipts keep an interrupted desktop push safe to retry. */
+export const syncMutationReceipts = pgTable(
+	"sync_mutation_receipts",
+	{
+		clientMutationId: text("client_mutation_id").notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+		result: jsonb("result").notNull().$type<unknown>(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+	},
+	(table) => [primaryKey({ columns: [table.userId, table.clientMutationId] })]
 );
 
 export const usersRelations = relations(users, ({ many }) => ({

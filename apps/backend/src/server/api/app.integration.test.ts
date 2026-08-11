@@ -177,6 +177,17 @@ describe.serial("API integration", () => {
 		const starter = await request("GET", "/user/sync/entitlement", { token: account.token });
 		expect(starter.response.status).toBe(200);
 		expect(starter.body).toEqual({ eligible: false, plan: "starter" });
+		const blockedPull = await request("GET", "/sync/pull", { token: account.token });
+		expect(blockedPull.response.status).toBe(403);
+		expect(blockedPull.body.code).toBe("FORBIDDEN");
+		const blockedPush = await request("POST", "/sync/push", {
+			body: {
+				mutations: [{ clientMutationId: crypto.randomUUID(), content: note("blocked"), kind: "upsert" }],
+			},
+			token: account.token,
+		});
+		expect(blockedPush.response.status).toBe(403);
+		expect(blockedPush.body.code).toBe("FORBIDDEN");
 
 		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
 		const paid = await request("GET", "/user/sync/entitlement", { token: account.token });

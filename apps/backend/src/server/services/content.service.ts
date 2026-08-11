@@ -76,6 +76,12 @@ export default class ContentService {
 		return { ...result, items: result.items.map((item) => contentListItemSchema.parse(item)) };
 	}
 
+	/** Full records are used only to establish an initial durable-sync snapshot. */
+	async getAllForSync(): Promise<Content[]> {
+		const rows = (await this.repo.getAllForSync()) as ContentRow[];
+		return this.attachTagsToContent(rows);
+	}
+
 	async getById(id: string) {
 		const data = await this.repo.getById(id);
 		const [withTags] = await this.attachTagsToContent([data as ContentRow]);

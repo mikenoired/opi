@@ -26,7 +26,7 @@ interface VideoMediaContentParams {
 	videoDimensions?: MediaDimensions;
 }
 
-interface AudioContentMetadata {
+export interface AudioContentMetadata {
 	common?: {
 		album?: string;
 		artist?: string;
@@ -45,7 +45,7 @@ interface AudioContentMetadata {
 	};
 }
 
-interface AudioContentParams {
+export interface AudioContentParams {
 	audioObjectName: string;
 	audioUrl: string;
 	bufferLength: number;

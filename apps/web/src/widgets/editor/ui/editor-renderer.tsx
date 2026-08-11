@@ -1,17 +1,11 @@
-import type { JSONContent } from "@tiptap/core";
+import { RichTextRenderer, type RichTextRendererProps } from "@synapse/features";
 
-import { Editor } from "./editor";
+import { useWebEditorOptions } from "../lib/web-editor-options";
 
-interface EditorRendererProps {
-	data: JSONContent | null;
-}
+export type EditorRendererProps = RichTextRendererProps;
 
-export function EditorRenderer({ data }: EditorRendererProps) {
-	if (!data || !data.content) return null;
-
-	return (
-		<div className="synapse-editor-content">
-			<Editor data={data} readOnly />
-		</div>
-	);
+/** Web adapter: uses the same read-only renderer with the active interface language. */
+export function EditorRenderer(props: EditorRendererProps) {
+	const { strings } = useWebEditorOptions();
+	return <RichTextRenderer {...props} strings={strings} />;
 }

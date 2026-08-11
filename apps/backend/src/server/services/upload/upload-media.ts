@@ -1,4 +1,7 @@
 import { spawn } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { extname, join } from "node:path";
 
 import * as mm from "music-metadata";
 
@@ -24,6 +27,40 @@ export async function parseAudioMetadataSafe(buffer: Buffer, mimeType: string) {
 		return await mm.parseBuffer(buffer, { mimeType, size: buffer.length });
 	} catch {
 		return null;
+	}
+}
+
+/** Chromium does not reliably decode Apple Lossless streams in an M4A container. */
+export function needsPlayableAudioTranscode(codec?: string): boolean {
+	return codec?.trim().toLocaleLowerCase() === "alac";
+}
+
+export async function transcodeAlacToAac(buffer: Buffer, fileName: string): Promise<Buffer> {
+	const directory = await mkdtemp(join(tmpdir(), "synapse-audio-"));
+	const sourcePath = join(directory, `source${extname(fileName) || ".m4a"}`);
+	const targetPath = join(directory, "playable.m4a");
+	try {
+		await writeFile(sourcePath, buffer);
+		await runFFmpeg(
+			[
+				"-y",
+				"-i",
+				sourcePath,
+				"-map",
+				"0:a:0",
+				"-c:a",
+				"aac",
+				"-b:a",
+				"256k",
+				"-movflags",
+				"+faststart",
+				targetPath,
+			],
+			"audio transcoding error"
+		);
+		return await readFile(targetPath);
+	} finally {
+		await rm(directory, { force: true, recursive: true });
 	}
 }
 

@@ -149,7 +149,7 @@ export default class UploadService {
 			buffer: Buffer.from(file.content, "base64"),
 			name: file.name,
 			size: file.size,
-			type: file.type,
+			type: normalizeMimeType(file.name, file.type),
 		};
 	}
 
@@ -183,4 +183,24 @@ export default class UploadService {
 		if (!this.ctx.user?.id) throw new Error("Unauthorized");
 		return this.ctx.user.id;
 	}
+}
+
+function normalizeMimeType(fileName: string, mimeType: string): string {
+	if (mimeType === "audio/mp3") return "audio/mpeg";
+	if (mimeType === "audio/m4a" || mimeType === "audio/x-m4a") return "audio/mp4";
+	if (mimeType === "audio/x-wav") return "audio/wav";
+	if (mimeType === "audio/x-flac") return "audio/flac";
+	if (mimeType && mimeType !== "application/octet-stream") return mimeType;
+	const extension = fileName.toLowerCase().split(".").pop() ?? "";
+	return (
+		{
+			aac: "audio/aac",
+			flac: "audio/flac",
+			m4a: "audio/mp4",
+			mp3: "audio/mpeg",
+			ogg: "audio/ogg",
+			opus: "audio/opus",
+			wav: "audio/wav",
+		}[extension] ?? mimeType
+	);
 }

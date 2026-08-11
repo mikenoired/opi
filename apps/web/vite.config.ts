@@ -15,6 +15,8 @@ export default defineConfig({
 		sourcemap: true,
 	},
 	server: {
+		port: 5173,
+		strictPort: true,
 		proxy: {
 			"/api": {
 				target: process.env.BACKEND_URL || "http://localhost:3000",

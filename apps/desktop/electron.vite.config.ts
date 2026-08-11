@@ -1,7 +1,14 @@
-import { defineConfig, externalizeDepsPlugin } from "electron-vite";
+import { defineConfig } from "electron-vite";
 
 export default defineConfig({
-	main: { plugins: [externalizeDepsPlugin()] },
+	// Workspace packages export TypeScript source. They must be bundled into the
+	// Electron main process: externalising them makes Electron resolve their
+	// extensionless source imports at runtime, which Node ESM rejects.
+	main: {
+		build: {
+			externalizeDeps: { exclude: ["@synapse/api", "@synapse/core", "@synapse/shared"] },
+		},
+	},
 	preload: {
 		build: {
 			rollupOptions: {
@@ -10,5 +17,10 @@ export default defineConfig({
 			},
 		},
 	},
-	renderer: {},
+	renderer: {
+		server: {
+			port: 5174,
+			strictPort: true,
+		},
+	},
 });

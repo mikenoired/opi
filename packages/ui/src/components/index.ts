@@ -13,6 +13,7 @@ export * from "./modal";
 export * from "./preview-image";
 export * from "./scroll-area";
 export * from "./select";
+export * from "./slider";
 export * from "./switch";
 export * from "./skeleton";
 export * from "./tabs";

@@ -26,6 +26,7 @@
 	},
 	"dependencies": {
 		"@scalar/hono-api-reference": "^0.11.12",
+		"@synapse/api": "workspace:*",
 		"@synapse/core": "workspace:*",
 		"@synapse/shared": "workspace:*",
 		"@synapse/sync": "workspace:*",

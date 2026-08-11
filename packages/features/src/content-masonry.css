@@ -1,0 +1,32 @@
+.masonry-grid {
+	display: flex;
+	width: auto;
+	margin-left: -1rem;
+	will-change: transform;
+	contain: layout style paint;
+}
+.masonry-grid_column {
+	padding-left: 1rem;
+	background-clip: padding-box;
+	contain: layout style;
+}
+.masonry-grid_column > div {
+	margin-bottom: 1rem;
+	break-inside: avoid;
+	will-change: transform;
+	contain: layout style paint;
+}
+.animate-in {
+	animation-duration: 0.15s;
+	animation-timing-function: ease-out;
+	animation-fill-mode: both;
+}
+.fade-in-0 {
+	animation-name: synapse-fade-in;
+}
+@keyframes synapse-fade-in {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+}
