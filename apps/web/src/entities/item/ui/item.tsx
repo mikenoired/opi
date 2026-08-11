@@ -22,7 +22,7 @@ interface ItemProps {
 
 /** Web owns mutations/modal state; the complete card visual is shared. */
 export default function Item(props: ItemProps) {
-	const [editOpen, setEditOpen] = useState(false);
+	const [editing, setEditing] = useState<Content | null>(null);
 	const utils = api.useUtils();
 	const { t } = useI18n();
 	const deleteMutation = api.content.delete.useMutation({
@@ -39,6 +39,13 @@ export default function Item(props: ItemProps) {
 			props.onContentDeleted?.(props.item.id);
 		},
 	});
+	const openEditor = async () => {
+		try {
+			setEditing(await utils.content.getById.fetch({ id: props.item.id }));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Не удалось открыть материал");
+		}
+	};
 	return (
 		<>
 			<ContentCard
@@ -48,7 +55,7 @@ export default function Item(props: ItemProps) {
 				excludedTag={props.excludedTag}
 				onOpen={props.onItemClick}
 				onDelete={(item) => deleteMutation.mutate({ id: item.id })}
-				onEdit={() => setEditOpen(true)}
+				onEdit={() => void openEditor()}
 				strings={{
 					delete: t("delete"),
 					done: t("done"),
@@ -58,12 +65,14 @@ export default function Item(props: ItemProps) {
 					untitled: t("untitled"),
 				}}
 			/>
-			{editOpen && (props.item.type === "note" || props.item.type === "todo") && (
+			{editing && (editing.type === "note" || editing.type === "todo") && (
 				<Suspense fallback={null}>
 					<EditContentDialog
-						open={editOpen}
-						onOpenChange={setEditOpen}
-						content={props.item}
+						open
+						onOpenChange={(open) => {
+							if (!open) setEditing(null);
+						}}
+						content={editing}
 						onContentUpdated={props.onContentUpdated}
 					/>
 				</Suspense>

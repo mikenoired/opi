@@ -46,7 +46,7 @@ export interface ContentViewerProps {
 	onDownload?(item: Content, url: string): Promise<void> | void;
 	onEdit?(item: Content): void;
 	onOpenChange(open: boolean): void;
-	onSelect?(item: Content): void;
+	onSelect?(item: Content): Content | null | Promise<Content | null | void> | void;
 	onSuggestTags?(item: Content): Promise<string[]>;
 	onTagNavigate?(): void;
 	onUpdate?(input: UpdateContent): Promise<void> | void;
@@ -136,20 +136,21 @@ export function ContentViewer({
 			)
 				return;
 			revealControls();
-			if (event.key === "ArrowLeft") select(index - 1);
-			if (event.key === "ArrowRight") select(index + 1);
+			if (event.key === "ArrowLeft") void select(index - 1);
+			if (event.key === "ArrowRight") void select(index + 1);
 		};
 		document.addEventListener("keydown", onKeyDown);
 		return () => document.removeEventListener("keydown", onKeyDown);
 	}, [index, open, revealControls]);
 
-	const select = (nextIndex: number) => {
+	const select = async (nextIndex: number) => {
 		const next = collection[nextIndex];
 		if (!next) return;
+		const selected = await onSelect?.(next);
+		if (selected === null) return;
 		setIndex(nextIndex);
-		setCurrent(next);
+		setCurrent(selected ?? next);
 		setDetailsOpen(false);
-		onSelect?.(next);
 	};
 	const updateTags = async (tags: string[]) => {
 		if (!onUpdate) return;
@@ -248,8 +249,8 @@ export function ContentViewer({
 						closeLabel={strings.close}
 						nextLabel={strings.next}
 						onClose={() => onOpenChange(false)}
-						onNext={() => select(index + 1)}
-						onPrevious={() => select(index - 1)}
+						onNext={() => void select(index + 1)}
+						onPrevious={() => void select(index - 1)}
 						previousLabel={strings.previous}
 						visible={controlsVisible}
 					/>

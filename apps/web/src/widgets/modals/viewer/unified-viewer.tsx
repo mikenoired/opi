@@ -100,7 +100,16 @@ export function UnifiedViewerModal({
 					else router.push(`/edit/${content.id}`);
 				}}
 				onOpenChange={onOpenChange}
-				onSelect={onViewerNavigate}
+				onSelect={async (next) => {
+					try {
+						const detailed = await utils.content.getById.fetch({ id: next.id });
+						onViewerNavigate?.(detailed);
+						return detailed;
+					} catch (error) {
+						toast.error(error instanceof Error ? error.message : "Не удалось открыть материал");
+						return null;
+					}
+				}}
 				onSuggestTags={async (content) => {
 					const result = await suggest.mutateAsync({ contentId: content.id, mode: "existing" });
 					if (!result.success) throw new Error(result.error ?? "Не удалось подобрать теги");

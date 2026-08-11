@@ -172,6 +172,30 @@ describe.serial("API integration", () => {
 		expect(await db.select().from(content).where(eq(content.id, item.id))).toHaveLength(0);
 	});
 
+	test("returns complete note content from the detail endpoint", async () => {
+		const account = await register("note-detail");
+		const content = JSON.stringify({
+			content: [{ content: [{ text: "x".repeat(7_000), type: "text" }], type: "paragraph" }],
+			type: "doc",
+		});
+		const created = await request("POST", "/content", {
+			body: { content, title: "Long formatted note", type: "note" },
+			token: account.token,
+		});
+		expect(created.response.status).toBe(200);
+		const item = created.body as Json & { id: string };
+
+		const listed = await request("GET", "/content", { token: account.token });
+		const listedContent = (listed.body.items as Json[])[0]?.content;
+		expect(typeof listedContent).toBe("string");
+		if (typeof listedContent !== "string") throw new Error("Expected a listed content preview");
+		expect(listedContent.length).toBeLessThan(content.length);
+
+		const detailed = await request("GET", `/content/${item.id}`, { token: account.token });
+		expect(detailed.response.status).toBe(200);
+		expect(JSON.parse(detailed.body.content as string)).toEqual(JSON.parse(content));
+	});
+
 	test("exposes Synapse Sync only to paid plans", async () => {
 		const account = await register("sync-entitlement");
 		const starter = await request("GET", "/user/sync/entitlement", { token: account.token });

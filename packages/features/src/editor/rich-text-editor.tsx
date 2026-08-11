@@ -352,6 +352,15 @@ export function RichTextEditor({
 		editor?.setEditable(!readOnly);
 	}, [editor, readOnly]);
 
+	useEffect(() => {
+		if (!editor || !data) return;
+		// `useEditor` applies content only on creation. Reconcile data received after
+		// a save/reload without emitting another change back to the parent.
+		if (JSON.stringify(editor.getJSON()) !== JSON.stringify(data)) {
+			editor.commands.setContent(data, { emitUpdate: false });
+		}
+	}, [data, editor]);
+
 	const openImagePicker = useCallback(() => fileInputRef.current?.click(), []);
 
 	return (

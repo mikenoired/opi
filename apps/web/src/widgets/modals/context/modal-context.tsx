@@ -68,7 +68,12 @@ export function ModalProvider({ children }: ModalProviderProps) {
 			if (config.type === "viewer" && config.item) {
 				viewerPropsRef.current = config.props ?? {};
 				viewerPathnameRef.current = pathname;
+				setModal(null);
 				router.push(viewerUrl(config.item.id), { state: { synapseViewer: true } });
+				// List endpoints intentionally provide a compact preview. Wait for the
+				// detail query below before mounting the viewer so a note never opens
+				// with truncated rich-text JSON.
+				return;
 			}
 			setModal(config);
 		},
