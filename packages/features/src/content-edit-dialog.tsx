@@ -2,9 +2,10 @@ import { uniqueTagTitles } from "@synapse/core";
 import type { Content, UpdateContent } from "@synapse/shared/schemas";
 import { Button, Input } from "@synapse/ui/components";
 import type { JSONContent } from "@tiptap/core";
-import { Maximize, Minimize, Plus, Sparkles, X } from "lucide-react";
+import { Plus, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { ContentTypeHeader, type ContentTypePickerOption } from "./content-type-picker";
 import { BaseModal } from "./dialogs/base-modal";
 import { ConfirmDialog } from "./dialogs/confirm-dialog";
 import { RichTextEditor, type RichTextEditorProps } from "./editor/rich-text-editor";
@@ -20,12 +21,14 @@ export interface ContentEditDialogStrings {
 	editTodo: string;
 	generateTags: string;
 	generatingTags: string;
+	fullScreen: string;
 	save: string;
 	saving: string;
 	titlePlaceholder: string;
 	todoPlaceholder: string;
 	unsavedDescription: string;
 	unsavedTitle: string;
+	windowed: string;
 }
 
 const defaultStrings: ContentEditDialogStrings = {
@@ -38,12 +41,14 @@ const defaultStrings: ContentEditDialogStrings = {
 	editTodo: "Редактировать список",
 	generateTags: "AI-теги",
 	generatingTags: "Генерация…",
+	fullScreen: "На весь экран",
 	save: "Сохранить",
 	saving: "Сохранение…",
 	titlePlaceholder: "Заголовок",
 	todoPlaceholder: "Добавить пункт…",
 	unsavedDescription: "Есть несохранённые изменения. Закрыть без сохранения?",
 	unsavedTitle: "Несохранённые изменения",
+	windowed: "Оконный режим",
 };
 
 export interface ContentEditDialogProps {
@@ -108,6 +113,12 @@ export function ContentEditDialog({
 	const [suggesting, setSuggesting] = useState(false);
 	const [dirty, setDirty] = useState(false);
 	const [confirmClose, setConfirmClose] = useState(false);
+	const editorOption: ContentTypePickerOption = {
+		description: "",
+		icon: isTodo ? "todo" : "note",
+		key: content.type,
+		label: isTodo ? strings.editTodo : strings.editNote,
+	};
 
 	useEffect(() => {
 		setTitle(content.title ?? "");
@@ -177,39 +188,29 @@ export function ContentEditDialog({
 	return (
 		<>
 			<BaseModal
-				className={
-					fullScreen
-						? "h-full max-h-none w-full max-w-none rounded-none"
-						: "h-[min(840px,calc(100vh-2rem))] w-[95vw] max-w-5xl"
-				}
+				className={!fullScreen ? "h-[min(840px,calc(100vh-2rem))]" : undefined}
 				closeOnOverlayClick={false}
 				onOpenChange={(next) => (next ? onOpenChange(true) : requestClose())}
 				open={open}
-				size="xl">
+				size="xl"
+				variant={fullScreen ? "fullscreen" : "default"}>
 				<div className="flex min-h-0 flex-1 flex-col">
-					<div className="flex items-center justify-between border-b p-4">
-						<h2 className="text-lg font-semibold">{isTodo ? strings.editTodo : strings.editNote}</h2>
-						<div className="flex items-center gap-2">
-							<Button
-								onClick={() => setFullScreen((value) => !value)}
-								size="sm"
-								type="button"
-								variant="ghost">
-								{fullScreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
-							</Button>
-							<Button onClick={requestClose} size="sm" type="button" variant="ghost">
-								<X className="size-4" />
-							</Button>
-						</div>
-					</div>
+					<ContentTypeHeader
+						isFullScreen={fullScreen}
+						onBack={requestClose}
+						onToggleFullScreen={() => setFullScreen((value) => !value)}
+						options={[editorOption]}
+						strings={{ fullScreen: strings.fullScreen, windowed: strings.windowed }}
+						type={content.type}
+					/>
 					<form
 						className="flex min-h-0 flex-1 flex-col"
 						onSubmit={(event) => {
 							event.preventDefault();
 							void save();
 						}}>
-						<div className="min-h-0 flex-1 overflow-y-auto px-6 pt-8 pb-6">
-							<div className="mx-auto w-full max-w-3xl">
+						<div className="min-h-0 flex-1 overflow-y-auto p-6">
+							<div className="mx-auto flex h-full w-full max-w-3xl flex-col">
 								<Input
 									className="h-auto border-none bg-transparent! px-0 text-3xl! font-semibold tracking-tight shadow-none focus-visible:ring-0"
 									disabled={saving}
@@ -318,7 +319,7 @@ export function ContentEditDialog({
 										)}
 									</div>
 								) : (
-									<div className="mt-4">
+									<div className="mt-5 min-h-0 flex-1">
 										<RichTextEditor
 											{...editor}
 											data={document}
@@ -332,7 +333,7 @@ export function ContentEditDialog({
 								)}
 							</div>
 						</div>
-						<div className="flex justify-end gap-3 border-t bg-background p-6 pt-4">
+						<div className="flex shrink-0 justify-end gap-2 border-t bg-background p-4 sm:px-6">
 							<Button disabled={saving} onClick={requestClose} type="button" variant="tertiary">
 								{strings.cancel}
 							</Button>
