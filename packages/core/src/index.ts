@@ -42,7 +42,7 @@ export type {
 	SyncChange,
 	SyncProvider,
 } from "./providers";
-export { extractOwnedNoteImages } from "./note";
+export { extractOwnedNoteImages, sanitizeNoteContent } from "./note";
 export {
 	deleteContentWithRelations,
 	normalizeTagTitle,

@@ -1,5 +1,7 @@
 import { Buffer } from "node:buffer";
 
+import { sanitizeNoteContent } from "@synapse/core";
+
 import { deleteFile, getFileMetadata, getPublicUrl, uploadFile } from "../../storage/minio";
 import { imageUploadMaxFileSizeBytes } from "../services/upload/upload-media";
 import { ApiError } from "./api-error";
@@ -72,8 +74,9 @@ export async function prepareNoteImages(
 	userId: string,
 	storage: NoteImageStorage = defaultStorage
 ): Promise<{ content: string; uploaded: UploadedNoteImage[] }> {
-	const document = parseDocument(content);
-	if (!document) return { content, uploaded: [] };
+	const sanitizedContent = sanitizeNoteContent(content);
+	const document = parseDocument(sanitizedContent);
+	if (!document) return { content: sanitizedContent, uploaded: [] };
 
 	const uploaded: UploadedNoteImage[] = [];
 

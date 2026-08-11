@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 
-import { extractOwnedNoteImages } from "@synapse/core";
+import { extractOwnedNoteImages, sanitizeNoteContent } from "@synapse/core";
 
 let deleteStoredNoteImages: typeof import("./note-images").deleteStoredNoteImages;
 let prepareNoteImages: typeof import("./note-images").prepareNoteImages;
@@ -53,6 +53,44 @@ beforeAll(async () => {
 });
 
 describe("note images", () => {
+	test("removes executable note attributes while retaining safe rich text", () => {
+		const content = JSON.stringify({
+			type: "doc",
+			content: [
+				{
+					type: "paragraph",
+					attrs: { onclick: "alert(1)" },
+					content: [
+						{
+							type: "text",
+							text: "<script>alert(1)</script>",
+							marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }, { type: "bold" }],
+						},
+					],
+				},
+				{ type: "image", attrs: { src: "javascript:alert(1)", onerror: "alert(1)" } },
+				{ type: "script", content: [{ type: "text", text: "alert(1)" }] },
+			],
+		});
+
+		expect(JSON.parse(sanitizeNoteContent(content))).toEqual({
+			type: "doc",
+			content: [
+				{
+					type: "paragraph",
+					content: [
+						{
+							type: "text",
+							text: "<script>alert(1)</script>",
+							marks: [{ type: "bold" }],
+						},
+					],
+				},
+			],
+		});
+		expect(sanitizeNoteContent("<img src=x onerror=alert(1)>")).toBe("<img src=x onerror=alert(1)>");
+	});
+
 	test("uploads data images and keeps external images unchanged", async () => {
 		const { storage } = createStorage();
 		const prepared = await prepareNoteImages(
