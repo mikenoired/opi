@@ -1,4 +1,5 @@
 import type { AiUsage } from "@synapse/api";
+import { useI18n } from "@synapse/i18n";
 import { isUnlimited } from "@synapse/shared/plans";
 import { Skeleton } from "@synapse/ui/components";
 import { Activity, Bot, CircleDollarSign, Gauge, Timer } from "lucide-react";
@@ -9,35 +10,15 @@ export interface AiSettingsPanelProps {
 	data?: AiUsage;
 	isError?: boolean;
 	isLoading?: boolean;
-	locale: string;
-	strings: {
-		cost: string;
-		error: string;
-		failures: string;
-		latency: string;
-		models: string;
-		noRequests: string;
-		planDescription: string;
-		requests: string;
-		successRate: string;
-		thisMonth: (month: string) => string;
-		tokens: string;
-		tokensShort: string;
-	};
 }
 
 /** Shared AI usage visual. Querying and platform availability stay outside the component. */
-export function AiSettingsPanel({
-	data,
-	isError = false,
-	isLoading = false,
-	locale,
-	strings,
-}: AiSettingsPanelProps) {
+export function AiSettingsPanel({ data, isError = false, isLoading = false }: AiSettingsPanelProps) {
+	const { t, locale } = useI18n();
 	if (isLoading) return <AiSettingsSkeleton />;
 	if (isError || !data)
 		return (
-			<div className="rounded-[1.75rem] bg-muted p-5 text-sm text-muted-foreground">{strings.error}</div>
+			<div className="rounded-[1.75rem] bg-muted p-5 text-sm text-muted-foreground">{t("ai.error")}</div>
 		);
 
 	const { limits, usage } = data;
@@ -50,24 +31,24 @@ export function AiSettingsPanel({
 				<div className="relative z-10 flex items-start justify-between gap-4">
 					<div>
 						<h2 className="text-2xl font-semibold tracking-tight">{data.planLabel}</h2>
-						<p className="mt-1 text-sm text-primary-foreground/65">{strings.planDescription}</p>
+						<p className="mt-1 text-sm text-primary-foreground/65">{t("ai.planDescription")}</p>
 					</div>
 				</div>
 			</section>
 			<section className="rounded-[1.75rem] bg-muted p-5">
 				<div className="mb-5 flex items-center gap-2 text-sm font-medium">
 					<Gauge className="size-4 text-muted-foreground" />
-					{strings.thisMonth(month)}
+					{t("ai.thisMonth", { month })}
 				</div>
 				<div className="space-y-5">
 					<UsageBar
-						label={strings.tokens}
+						label={t("ai.tokens")}
 						value={usage.totalTokens}
 						limit={limits.aiTokensPerMonth}
 						locale={locale}
 					/>
 					<UsageBar
-						label={strings.requests}
+						label={t("ai.requests")}
 						value={usage.requests}
 						limit={limits.aiRequestsPerMonth}
 						locale={locale}
@@ -75,20 +56,20 @@ export function AiSettingsPanel({
 				</div>
 			</section>
 			<div className="grid grid-cols-2 gap-3">
-				<Metric icon={Activity} label={strings.successRate} value={`${successRate}%`} />
-				<Metric icon={CircleDollarSign} label={strings.cost} value={`$${usage.totalCostUsd.toFixed(4)}`} />
+				<Metric icon={Activity} label={t("ai.successRate")} value={`${successRate}%`} />
+				<Metric icon={CircleDollarSign} label={t("ai.cost")} value={`$${usage.totalCostUsd.toFixed(4)}`} />
 				<Metric
 					icon={Timer}
-					label={strings.latency}
+					label={t("ai.latency")}
 					value={usage.averageLatencyMs === null ? "—" : `${usage.averageLatencyMs} ms`}
 				/>
-				<Metric icon={Bot} label={strings.failures} value={formatTokens(usage.failedRequests, locale)} />
+				<Metric icon={Bot} label={t("ai.failures")} value={formatTokens(usage.failedRequests, locale)} />
 			</div>
 			<section className="rounded-[1.75rem] bg-muted p-5">
 				<div className="mb-4 flex items-center justify-between gap-3">
-					<div className="text-sm font-medium">{strings.models}</div>
+					<div className="text-sm font-medium">{t("ai.models")}</div>
 					<div className="text-xs text-muted-foreground">
-						{data.models.length ? `${data.models[0].provider} · ${data.models[0].model}` : strings.noRequests}
+						{data.models.length ? `${data.models[0].provider} · ${data.models[0].model}` : t("ai.noRequests")}
 					</div>
 				</div>
 				{data.models.length ? (
@@ -99,13 +80,13 @@ export function AiSettingsPanel({
 								className="flex items-center justify-between gap-3 text-sm">
 								<div className="min-w-0 truncate text-foreground">{model.model}</div>
 								<div className="shrink-0 text-muted-foreground">
-									{formatCompact(model.tokens, locale)} {strings.tokensShort}
+									{formatCompact(model.tokens, locale)} {t("ai.tokensShort")}
 								</div>
 							</div>
 						))}
 					</div>
 				) : (
-					<p className="text-sm text-muted-foreground">{strings.noRequests}</p>
+					<p className="text-sm text-muted-foreground">{t("ai.noRequests")}</p>
 				)}
 			</section>
 		</div>

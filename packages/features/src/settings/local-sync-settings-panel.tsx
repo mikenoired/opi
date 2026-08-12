@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import { Button } from "@synapse/ui/components";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
@@ -16,19 +17,6 @@ export interface LocalSyncSettingsPanelProps {
 		tagCount: number;
 	};
 	syncPolicy: "automatic" | "manual";
-	strings: {
-		apiUrl: string;
-		automatic: string;
-		conflicts: string;
-		email: string;
-		login: string;
-		manual: string;
-		password: string;
-		sync: string;
-		syncUnavailable: string;
-		syncWithPlan: (plan: string) => string;
-		syncing: string;
-	};
 }
 
 /** Shared Desktop extension visual. It receives only declared settings and service callbacks. */
@@ -39,8 +27,8 @@ export function LocalSyncSettingsPanel({
 	onSyncPolicyChange,
 	session,
 	syncPolicy,
-	strings,
 }: LocalSyncSettingsPanelProps) {
+	const { t } = useI18n();
 	const [credentials, setCredentials] = useState({
 		apiUrl: "http://localhost:3000/api",
 		email: "",
@@ -58,7 +46,7 @@ export function LocalSyncSettingsPanel({
 							checked={syncPolicy === "manual"}
 							onChange={() => void onSyncPolicyChange("manual")}
 						/>
-						{strings.manual}
+						{t("sync.manual")}
 					</label>
 					<label className="flex gap-2">
 						<input
@@ -66,17 +54,17 @@ export function LocalSyncSettingsPanel({
 							checked={syncPolicy === "automatic"}
 							onChange={() => void onSyncPolicyChange("automatic")}
 						/>
-						{strings.automatic}
+						{t("sync.automatic")}
 					</label>
 				</div>
 				{session ? (
 					<div className="mt-5 space-y-3">
 						<p className="text-sm text-muted-foreground">
-							{session.eligible ? strings.syncWithPlan(session.plan) : strings.syncUnavailable}
+							{session.eligible ? t("sync.withPlan", { plan: session.plan }) : t("sync.unavailable")}
 						</p>
 						<Button disabled={!session.eligible || isSyncing} onClick={() => void onSync()}>
 							<RefreshCw className={isSyncing ? "size-4 animate-spin" : "size-4"} />
-							{isSyncing ? strings.syncing : strings.sync}
+							{isSyncing ? t("sync.syncing") : t("sync.sync")}
 						</Button>
 					</div>
 				) : (
@@ -93,7 +81,7 @@ export function LocalSyncSettingsPanel({
 						}}>
 						<input
 							required
-							placeholder={strings.apiUrl}
+							placeholder={t("sync.apiUrl")}
 							value={credentials.apiUrl}
 							onChange={(event) => setCredentials({ ...credentials, apiUrl: event.target.value })}
 							className="rounded-lg border bg-background p-2"
@@ -101,7 +89,7 @@ export function LocalSyncSettingsPanel({
 						<input
 							required
 							type="email"
-							placeholder={strings.email}
+							placeholder={t("sync.email")}
 							value={credentials.email}
 							onChange={(event) => setCredentials({ ...credentials, email: event.target.value })}
 							className="rounded-lg border bg-background p-2"
@@ -109,13 +97,13 @@ export function LocalSyncSettingsPanel({
 						<input
 							required
 							type="password"
-							placeholder={strings.password}
+							placeholder={t("sync.password")}
 							value={credentials.password}
 							onChange={(event) => setCredentials({ ...credentials, password: event.target.value })}
 							className="rounded-lg border bg-background p-2"
 						/>
 						{error && <p className="text-sm text-destructive">{error}</p>}
-						<Button>{strings.login}</Button>
+						<Button>{t("sync.login")}</Button>
 					</form>
 				)}
 			</section>

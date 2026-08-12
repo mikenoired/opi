@@ -5,7 +5,6 @@ import toast from "react-hot-toast";
 
 import { EditContentDialog } from "@/features/edit-content/ui/edit-content-dialog";
 import { api } from "@/shared/api/hooks";
-import { useI18n } from "@/shared/lib/i18n";
 import { getPresignedMediaUrl } from "@/shared/lib/image-utils";
 import { useUserPreferences } from "@/shared/lib/user-preferences-context";
 import { useRouter } from "@/shared/router/navigation";
@@ -34,7 +33,6 @@ export function UnifiedViewerModal({
 	onTagNavigate,
 	onViewerNavigate,
 }: UnifiedViewerModalProps) {
-	const { t } = useI18n();
 	const router = useRouter();
 	const utils = api.useUtils();
 	const { mediaAutoplayEnabled } = useUserPreferences();
@@ -129,49 +127,11 @@ export function UnifiedViewerModal({
 				open={open}
 				resolveMediaUrl={getPresignedMediaUrl}
 				suggestionGroups={suggestionGroups}
-				suggestionStrings={{
-					ariaLabel: "Похожие материалы",
-					delete: t("delete"),
-					done: t("done"),
-					edit: t("edit"),
-					emptyNote: t("emptyNote"),
-					eyebrow: "Продолжить исследование",
-					loadingMore: "Ищем дальше",
-					open: t("open"),
-					title: "Рядом по смыслу",
-					untitled: t("untitled"),
-				}}
 				suggestionsHasMore={suggestions.hasNextPage}
 				suggestionsLoading={suggestions.isLoading}
 				suggestionsLoadingMore={suggestions.isFetchingNextPage}
 				onLoadMoreSuggestions={loadMoreSuggestions}
 				onSuggestionTagNavigate={(tagId) => router.push(`/tags/${tagId}`)}
-				strings={{
-					addTag: t("viewer.addTag"),
-					cancel: t("cancel"),
-					close: t("viewer.close"),
-					created: (date) => t("viewer.created", { date }),
-					delete: t("delete"),
-					deleteDescription: t("viewer.deleteDescription"),
-					deleteTitle: t("viewer.deleteTitle"),
-					details: t("details"),
-					download: t("viewer.download"),
-					edit: t("edit"),
-					emptyTasks: t("viewer.emptyTasks"),
-					next: t("viewer.next"),
-					previous: t("viewer.previous"),
-					suggestTags: t("generateTags"),
-					tags: t("tags"),
-					types: {
-						audio: t("audio"),
-						link: t("link"),
-						media: t("media"),
-						note: t("note"),
-						todo: t("todo"),
-					},
-					untitled: t("untitled"),
-					updated: (date) => t("viewer.updated", { date }),
-				}}
 				tagColors={tagColors}
 				tagSuggestions={tags}
 			/>

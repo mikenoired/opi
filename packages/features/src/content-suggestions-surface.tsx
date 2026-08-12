@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import { Skeleton } from "@synapse/ui/components";
@@ -5,20 +6,13 @@ import { motion } from "framer-motion";
 import { Hash } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
-import { ContentCard, type ContentCardStrings } from "./content-card";
+import { ContentCard } from "./content-card";
 import { ContentMasonry } from "./content-masonry";
 import { ContentTag } from "./content-tag";
 
 export interface ContentSuggestionGroup {
 	items: Content[];
 	tag: { color: number; id: string; itemCount: number; title: string };
-}
-
-export interface ContentSuggestionsSurfaceStrings extends ContentCardStrings {
-	ariaLabel: string;
-	eyebrow: string;
-	loadingMore: string;
-	title: string;
 }
 
 export interface ContentSuggestionsSurfaceProps {
@@ -35,7 +29,6 @@ export interface ContentSuggestionsSurfaceProps {
 	onOpen(item: Content): void;
 	onTagNavigate?(tagId: string): void;
 	renderItems?(group: ContentSuggestionGroup): ReactNode;
-	strings: ContentSuggestionsSurfaceStrings;
 }
 
 function useIntersectionAction(enabled: boolean, action: () => void) {
@@ -70,13 +63,13 @@ export function ContentSuggestionsSurface({
 	onOpen,
 	onTagNavigate,
 	renderItems,
-	strings,
 }: ContentSuggestionsSurfaceProps) {
+	const { t } = useI18n();
 	const activationRef = useIntersectionAction(!active, onActivate);
 	const paginationRef = useIntersectionAction(hasMore && !isLoadingMore, onLoadMore);
 	return (
 		<section
-			aria-label={strings.ariaLabel}
+			aria-label={t("library.viewer.recommendationsAria")}
 			className="relative z-10 min-h-24 w-full bg-background text-foreground">
 			<div
 				aria-hidden
@@ -91,9 +84,11 @@ export function ContentSuggestionsSurface({
 					transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}>
 					<header className="mb-10 border-b border-current/10 pb-5">
 						<p className="mb-2 text-xs font-medium tracking-[0.16em] uppercase opacity-45">
-							{strings.eyebrow}
+							{t("library.viewer.recommendationsEyebrow")}
 						</p>
-						<h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">{strings.title}</h2>
+						<h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+							{t("library.viewer.recommendationsTitle")}
+						</h2>
 					</header>
 					{isLoading ? (
 						<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -127,7 +122,6 @@ export function ContentSuggestionsSurface({
 												onDelete={onDelete}
 												onEdit={onEdit}
 												onOpen={onOpen}
-												strings={strings}
 											/>
 										)}
 									</div>
@@ -138,7 +132,9 @@ export function ContentSuggestionsSurface({
 					{hasMore && (
 						<div aria-hidden className="flex h-24 items-end justify-center" ref={paginationRef}>
 							{isLoadingMore && (
-								<span className="text-xs tracking-[0.14em] uppercase opacity-40">{strings.loadingMore}</span>
+								<span className="text-xs tracking-[0.14em] uppercase opacity-40">
+									{t("library.viewer.recommendationsLoadingMore")}
+								</span>
 							)}
 						</div>
 					)}
@@ -153,13 +149,11 @@ function DefaultSuggestionItems({
 	onDelete,
 	onEdit,
 	onOpen,
-	strings,
 }: {
 	group: ContentSuggestionGroup;
 	onDelete?: (item: Content) => void;
 	onEdit?: (item: Content) => void;
 	onOpen: (item: Content) => void;
-	strings: ContentSuggestionsSurfaceStrings;
 }) {
 	return (
 		<ContentMasonry
@@ -173,7 +167,6 @@ function DefaultSuggestionItems({
 					onDelete={onDelete}
 					onEdit={onEdit}
 					onOpen={onOpen}
-					strings={strings}
 				/>
 			)}
 		/>

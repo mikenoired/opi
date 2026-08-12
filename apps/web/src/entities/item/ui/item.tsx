@@ -4,7 +4,6 @@ import { lazy, Suspense, useState } from "react";
 import toast from "react-hot-toast";
 
 import { api } from "@/shared/api/hooks";
-import { useI18n } from "@/shared/lib/i18n";
 import { getPresignedMediaUrl } from "@/shared/lib/image-utils";
 
 const EditContentDialog = lazy(() =>
@@ -25,7 +24,6 @@ interface ItemProps {
 export default function Item(props: ItemProps) {
 	const [editing, setEditing] = useState<Content | null>(null);
 	const utils = api.useUtils();
-	const { t } = useI18n();
 	const deleteMutation = api.content.delete.useMutation({
 		onSuccess: () => {
 			void Promise.all([
@@ -58,14 +56,6 @@ export default function Item(props: ItemProps) {
 				onDelete={(item) => deleteMutation.mutate({ id: item.id })}
 				onEdit={() => void openEditor()}
 				resolveMediaUrl={getPresignedMediaUrl}
-				strings={{
-					delete: t("delete"),
-					done: t("done"),
-					edit: t("edit"),
-					emptyNote: t("emptyNote"),
-					open: t("open"),
-					untitled: t("untitled"),
-				}}
 			/>
 			{editing && (
 				<Suspense fallback={null}>

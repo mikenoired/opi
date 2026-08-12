@@ -1,4 +1,5 @@
 import { getAudioDisplayTitle, parseAudioJson, parseLinkContent, parseMediaJson } from "@synapse/core";
+import { useI18n } from "@synapse/i18n";
 import type { Content, LinkContent } from "@synapse/shared/schemas";
 import { extractTextFromStructuredContent } from "@synapse/shared/schemas";
 import { motion } from "framer-motion";
@@ -9,15 +10,6 @@ import { createPortal } from "react-dom";
 import { ContentCardFrame } from "./content-card-frame";
 import { ContentTag } from "./content-tag";
 
-export interface ContentCardStrings {
-	delete: string;
-	done: string;
-	emptyNote: string;
-	edit: string;
-	open: string;
-	untitled: string;
-}
-
 export interface ContentCardProps {
 	disableAnimation?: boolean;
 	excludedTag?: string;
@@ -26,7 +18,6 @@ export interface ContentCardProps {
 	onDelete?: (item: Content) => void;
 	onEdit?: (item: Content) => void;
 	onOpen?: (item: Content) => void;
-	strings: ContentCardStrings;
 	resolveMediaUrl?: (url: string) => string;
 }
 
@@ -39,9 +30,9 @@ export function ContentCard({
 	onDelete,
 	onEdit,
 	onOpen,
-	strings,
 	resolveMediaUrl,
 }: ContentCardProps) {
+	const { t } = useI18n();
 	const visibleTags = excludedTag ? item.tags.filter((tag) => tag !== excludedTag) : item.tags;
 	const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
 	const menuRef = useRef<HTMLDivElement>(null);
@@ -79,13 +70,7 @@ export function ContentCard({
 					transition={disableAnimation ? undefined : { duration: 0.2 }}
 					className="group">
 					<ContentCardFrame type={item.type}>
-						<ContentCardBody
-							item={item}
-							index={index}
-							tags={visibleTags}
-							strings={strings}
-							resolveMediaUrl={resolveMediaUrl}
-						/>
+						<ContentCardBody item={item} index={index} tags={visibleTags} resolveMediaUrl={resolveMediaUrl} />
 					</ContentCardFrame>
 				</motion.div>
 			</div>
@@ -96,13 +81,17 @@ export function ContentCard({
 						ref={menuRef}
 						role="menu"
 						style={{ left: menuPosition.x, top: menuPosition.y }}>
-						<CardMenuItem onClick={() => runMenuAction(() => onOpen?.(item))}>{strings.open}</CardMenuItem>
+						<CardMenuItem onClick={() => runMenuAction(() => onOpen?.(item))}>
+							{t("library.open")}
+						</CardMenuItem>
 						{onEdit && (
-							<CardMenuItem onClick={() => runMenuAction(() => onEdit(item))}>{strings.edit}</CardMenuItem>
+							<CardMenuItem onClick={() => runMenuAction(() => onEdit(item))}>
+								{t("library.edit")}
+							</CardMenuItem>
 						)}
 						{onDelete && (
 							<CardMenuItem onClick={() => runMenuAction(() => onDelete(item))}>
-								{strings.delete}
+								{t("library.delete")}
 							</CardMenuItem>
 						)}
 					</div>,
@@ -127,20 +116,19 @@ function CardMenuItem({ children, onClick }: { children: string; onClick(): void
 function ContentCardBody({
 	item,
 	index,
-	strings,
 	tags,
 	resolveMediaUrl,
 }: {
 	index: number;
 	item: Content;
-	strings: ContentCardStrings;
 	tags: string[];
 	resolveMediaUrl?: (url: string) => string;
 }) {
+	const { t } = useI18n();
 	const notePreview = useMemo(() => getNotePreview(item.content), [item.content]);
 	if (item.type === "todo")
-		return <TodoPreview content={item.content} doneLabel={strings.done} tags={tags} />;
-	if (item.type === "link") return <LinkPreview item={item} tags={tags} untitled={strings.untitled} />;
+		return <TodoPreview content={item.content} doneLabel={t("library.done")} tags={tags} />;
+	if (item.type === "link") return <LinkPreview item={item} tags={tags} untitled={t("library.untitled")} />;
 	if (item.type === "media" || item.type === "audio")
 		return <MediaPreview item={item} resolveMediaUrl={resolveMediaUrl} />;
 	if (isDocumentType(item.type))
@@ -148,10 +136,10 @@ function ContentCardBody({
 	return (
 		<>
 			<h3 className="line-clamp-2 text-lg leading-snug font-semibold tracking-tight text-foreground">
-				{item.title || strings.untitled}
+				{item.title || t("library.untitled")}
 			</h3>
 			<p className="wrap-break-words mt-3 line-clamp-5 text-sm leading-6 whitespace-pre-wrap text-muted-foreground">
-				{notePreview || strings.emptyNote}
+				{notePreview || t("library.emptyNote")}
 			</p>
 			<TagList tags={tags} className="mt-auto pt-5" />
 		</>

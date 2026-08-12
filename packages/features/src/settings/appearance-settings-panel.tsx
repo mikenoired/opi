@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import type { ColorPalette, InterfaceLanguage } from "@synapse/shared/preferences";
 import { cn } from "@synapse/ui/cn";
 import { Switch } from "@synapse/ui/components";
@@ -50,36 +51,19 @@ export interface AppearanceSettingsPanelProps {
 	onNoteSparklesEnabledChange(value: boolean): void;
 	onThemeChange(value: "dark" | "light" | "system"): void;
 	theme: string | undefined;
-	strings: {
-		autoTagColorsDescription: string;
-		autoTagColorsTitle: string;
-		description: string;
-		languageDescription: string;
-		languageEnglish: string;
-		languageRussian: string;
-		languageTitle: string;
-		noteSparklesDescription: string;
-		noteSparklesTitle: string;
-		paletteDescription: string;
-		paletteLabels: Record<ColorPalette, string>;
-		paletteTitle: string;
-		themeLabels: Record<"dark" | "light" | "system", string>;
-		themeTitle: string;
-		title: string;
-	};
 }
 
 export function AppearanceSettingsPanel(props: AppearanceSettingsPanelProps) {
-	const { strings } = props;
+	const { t } = useI18n();
 	return (
 		<div className="space-y-6 py-1">
 			<div>
-				<h2 className="text-xl font-semibold tracking-tight">{strings.title}</h2>
-				<p className="mt-1 text-sm text-muted-foreground">{strings.description}</p>
+				<h2 className="text-xl font-semibold tracking-tight">{t("appearance.theme.title")}</h2>
+				<p className="mt-1 text-sm text-muted-foreground">{t("appearance.description")}</p>
 			</div>
 			<fieldset className="space-y-3" disabled={!props.isReady}>
 				<legend id="appearance-theme-label" className="text-sm font-medium">
-					{strings.themeTitle}
+					{t("appearance.theme.title")}
 				</legend>
 				<div
 					className="inline-flex rounded-full bg-muted p-1"
@@ -90,29 +74,47 @@ export function AppearanceSettingsPanel(props: AppearanceSettingsPanelProps) {
 							key={value}
 							icon={Icon}
 							selected={props.theme === value}
-							title={strings.themeLabels[value]}
+							title={
+								value === "dark"
+									? t("appearance.theme.dark")
+									: value === "light"
+										? t("appearance.theme.light")
+										: t("appearance.theme.system")
+							}
 							onClick={() => props.onThemeChange(value)}
 						/>
 					))}
 				</div>
 			</fieldset>
 			<fieldset className="space-y-3" disabled={!props.isReady}>
-				<legend className="text-sm font-medium">{strings.paletteTitle}</legend>
-				<p className="text-sm leading-5 text-muted-foreground">{strings.paletteDescription}</p>
+				<legend className="text-sm font-medium">{t("appearance.palette.title")}</legend>
+				<p className="text-sm leading-5 text-muted-foreground">{t("appearance.palette.description")}</p>
 				<PaletteSelector
-					title={strings.paletteTitle}
+					title={t("appearance.palette.title")}
 					palettes={paletteOptions}
 					currentPalette={props.colorPalette}
-					paletteLables={strings.paletteLabels}
+					paletteLables={{
+						arctic: t("appearance.palette.arctic"),
+						desert: t("appearance.palette.desert"),
+						ember: t("appearance.palette.ember"),
+						forest: t("appearance.palette.forest"),
+						noir: t("appearance.palette.noir"),
+						sakura: t("appearance.palette.sakura"),
+						slate: t("appearance.palette.slate"),
+						twilight: t("appearance.palette.twilight"),
+					}}
 					onColorPaletteChange={props.onColorPaletteChange}
 				/>
 			</fieldset>
-			<PreferenceRow icon={Languages} title={strings.languageTitle} description={strings.languageDescription}>
+			<PreferenceRow
+				icon={Languages}
+				title={t("appearance.language.title")}
+				description={t("appearance.language.description")}>
 				<div className="inline-flex shrink-0 self-start rounded-xl bg-background p-1 sm:self-center">
 					{(
 						[
-							{ label: strings.languageRussian, value: "ru" },
-							{ label: strings.languageEnglish, value: "en" },
+							{ label: t("appearance.language.russian"), value: "ru" },
+							{ label: t("appearance.language.english"), value: "en" },
 						] as const
 					).map((option) => (
 						<button
@@ -134,11 +136,11 @@ export function AppearanceSettingsPanel(props: AppearanceSettingsPanelProps) {
 			</PreferenceRow>
 			<PreferenceRow
 				icon={Sparkles}
-				title={strings.noteSparklesTitle}
-				description={strings.noteSparklesDescription}>
+				title={t("appearance.noteSparkles.title")}
+				description={t("appearance.noteSparkles.description")}>
 				<Switch
 					checked={props.noteSparklesEnabled}
-					aria-label={strings.noteSparklesTitle}
+					aria-label={t("appearance.noteSparkles.title")}
 					disabled={!props.isReady}
 					className="self-start sm:self-center"
 					onToggle={() => props.onNoteSparklesEnabledChange(!props.noteSparklesEnabled)}
@@ -146,11 +148,11 @@ export function AppearanceSettingsPanel(props: AppearanceSettingsPanelProps) {
 			</PreferenceRow>
 			<PreferenceRow
 				icon={Palette}
-				title={strings.autoTagColorsTitle}
-				description={strings.autoTagColorsDescription}>
+				title={t("appearance.autoTagColors.title")}
+				description={t("appearance.autoTagColors.description")}>
 				<Switch
 					checked={props.autoTagColorEnabled}
-					aria-label={strings.autoTagColorsTitle}
+					aria-label={t("appearance.autoTagColors.title")}
 					disabled={!props.isReady}
 					className="self-start sm:self-center"
 					onToggle={() => props.onAutoTagColorEnabledChange(!props.autoTagColorEnabled)}

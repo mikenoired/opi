@@ -9,7 +9,7 @@ import { useI18n } from "@/shared/lib/i18n";
 export default function GeneralTab() {
 	const { data: user, isLoading } = api.user.getUser.useQuery();
 	const { signOut } = useAuth();
-	const { locale, t } = useI18n();
+	const { t } = useI18n();
 	const [isSigningOut, setIsSigningOut] = useState(false);
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const deleteAccount = api.user.deleteAccount.useMutation();
@@ -18,18 +18,9 @@ export default function GeneralTab() {
 			<AccountSettingsPanel
 				isLoading={isLoading}
 				isSigningOut={isSigningOut || false}
-				locale={locale}
 				onSignOut={async () => {
 					setIsSigningOut(true);
 					await signOut();
-				}}
-				strings={{
-					createdWithUs: (date) => t("createdWithUs", { date }),
-					noDate: t("noDate"),
-					sessionDescription: t("session.description"),
-					sessionSignOut: t("session.signOut"),
-					sessionSigningOut: t("session.signingOut"),
-					sessionTitle: t("session.title"),
 				}}
 				user={user}
 			/>

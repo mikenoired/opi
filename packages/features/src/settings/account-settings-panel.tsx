@@ -1,4 +1,5 @@
 import type { CurrentUser } from "@synapse/api";
+import { useI18n } from "@synapse/i18n";
 import { Button, Skeleton } from "@synapse/ui/components";
 import { CalendarDays, LogOutIcon, Mail } from "lucide-react";
 import type { ReactNode } from "react";
@@ -6,16 +7,7 @@ import type { ReactNode } from "react";
 export interface AccountSettingsPanelProps {
 	isLoading?: boolean;
 	isSigningOut?: boolean;
-	locale: string;
 	onSignOut: () => void;
-	strings: {
-		createdWithUs: (date: string) => string;
-		noDate: string;
-		sessionDescription: string;
-		sessionSignOut: string;
-		sessionSigningOut: string;
-		sessionTitle: string;
-	};
 	user: CurrentUser | null | undefined;
 	synapseSync?: ReactNode;
 }
@@ -23,12 +15,11 @@ export interface AccountSettingsPanelProps {
 export function AccountSettingsPanel({
 	isLoading = false,
 	isSigningOut = false,
-	locale,
 	onSignOut,
-	strings,
 	user,
 	synapseSync,
 }: AccountSettingsPanelProps) {
+	const { t, locale } = useI18n();
 	if (isLoading) return <AccountSettingsSkeleton />;
 	return (
 		<div className="space-y-5 py-1">
@@ -41,18 +32,23 @@ export function AccountSettingsPanel({
 					<div className="inline-flex items-center gap-2 rounded-full bg-muted px-3.5 py-2 text-sm text-foreground">
 						<CalendarDays className="size-4 text-muted-foreground" />
 						<span>
-							{formatRegistrationDate(user?.createdAt, locale, strings.createdWithUs, strings.noDate)}
+							{formatRegistrationDate(
+								user?.createdAt,
+								locale,
+								(date) => t("account.createdWithUs", { date }),
+								t("account.noDate")
+							)}
 						</span>
 					</div>
 				</div>
 			)}
 			<div className="flex items-center justify-between gap-4">
 				<div>
-					<h2 className="text-sm font-medium">{strings.sessionTitle}</h2>
-					<p className="mt-1 text-sm text-muted-foreground">{strings.sessionDescription}</p>
+					<h2 className="text-sm font-medium">{t("account.session.title")}</h2>
+					<p className="mt-1 text-sm text-muted-foreground">{t("account.session.description")}</p>
 				</div>
 				<Button variant="primary" leadingIcon={LogOutIcon} disabled={isSigningOut} onClick={onSignOut}>
-					{isSigningOut ? strings.sessionSigningOut : strings.sessionSignOut}
+					{isSigningOut ? t("account.session.signingOut") : t("account.session.signOut")}
 				</Button>
 			</div>
 			{synapseSync}

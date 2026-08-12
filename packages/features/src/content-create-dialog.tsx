@@ -1,4 +1,5 @@
 import type { BinaryFile } from "@synapse/api";
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 import { Button, CheckboxGroup, CheckboxItem, InputField, Label } from "@synapse/ui/components";
 import type { JSONContent } from "@tiptap/core";
@@ -15,88 +16,6 @@ import { MediaDropZone } from "./media-drop-zone";
 import { useAppServices } from "./runtime";
 import { TagEditor } from "./tag-editor";
 
-export interface ContentCreateDialogStrings {
-	addItem: string;
-	addTag: string;
-	addTodo: string;
-	cancel: string;
-	changeTypeDescription: string;
-	changeTypeTitle: string;
-	chooseFiles: string;
-	contentRequired: string;
-	create: string;
-	creating: string;
-	discard: string;
-	description: string;
-	documentFiles: string;
-	eyebrow: string;
-	fileRequired: string;
-	files: string;
-	fullScreen: string;
-	linkParsed: string;
-	linkParsingFailed: string;
-	linkUrl: string;
-	makeTrack: string;
-	parse: string;
-	parsing: string;
-	save: string;
-	suggestTags: string;
-	suggestingTags: string;
-	tags: string;
-	title: string;
-	titleOptional: string;
-	titlePlaceholder: string;
-	todoRequired: string;
-	todoTitle: string;
-	typePickerTitle: string;
-	unsavedDescription: string;
-	unsavedTitle: string;
-	upload: string;
-	uploading: (count: number) => string;
-	windowed: string;
-}
-
-const defaultStrings: ContentCreateDialogStrings = {
-	addItem: "Добавить пункт…",
-	addTag: "+ Добавить тег",
-	addTodo: "Добавить",
-	cancel: "Отмена",
-	changeTypeDescription: "Несохранённые изменения будут удалены. Перейти к выбору другого типа?",
-	changeTypeTitle: "Сменить тип материала?",
-	chooseFiles: "Выбрать файлы",
-	contentRequired: "Добавьте содержимое заметки",
-	create: "Создать",
-	creating: "Сохранение…",
-	discard: "Удалить изменения",
-	description: "Выберите формат — в дальнейшем его можно будет открыть и найти в библиотеке.",
-	documentFiles: "Документы",
-	eyebrow: "Новый материал",
-	fileRequired: "Выберите хотя бы один файл",
-	files: "Файлы",
-	fullScreen: "На весь экран",
-	linkParsed: "Ссылка распознана",
-	linkParsingFailed: "Не удалось распознать ссылку",
-	linkUrl: "https://example.com",
-	makeTrack: "Создать трек в плейлисте",
-	parse: "Распознать",
-	parsing: "Обработка…",
-	save: "Сохранить",
-	suggestTags: "AI-теги",
-	suggestingTags: "Генерация…",
-	tags: "Теги",
-	title: "Заголовок",
-	titleOptional: "Заголовок (необязательно)",
-	titlePlaceholder: "Введите заголовок…",
-	todoRequired: "Добавьте хотя бы одну задачу",
-	todoTitle: "Название списка…",
-	typePickerTitle: "Что добавим?",
-	unsavedDescription: "Есть несохранённые изменения. Закрыть без сохранения?",
-	unsavedTitle: "Несохранённые изменения",
-	upload: "Загрузить",
-	uploading: (count) => `Загрузка ${count} файлов…`,
-	windowed: "Оконный режим",
-};
-
 export interface ContentCreateDialogProps {
 	initialTags?: string[];
 	onContentAdded?(content?: Content | Content[]): void;
@@ -105,7 +24,6 @@ export interface ContentCreateDialogProps {
 	open: boolean;
 	options: ContentTypePickerOption[];
 	preloadedFiles?: File[];
-	strings?: Partial<ContentCreateDialogStrings>;
 	suggestedType?: Content["type"] | null;
 }
 
@@ -121,10 +39,9 @@ export function ContentCreateDialog({
 	open,
 	options,
 	preloadedFiles = [],
-	strings: stringOverrides,
 	suggestedType,
 }: ContentCreateDialogProps) {
-	const strings = { ...defaultStrings, ...stringOverrides };
+	const { t } = useI18n();
 	const { client } = useAppServices();
 	const [type, setType] = useState<Content["type"] | null>(null);
 	const [isFullScreen, setIsFullScreen] = useState(false);
@@ -222,7 +139,7 @@ export function ContentCreateDialog({
 		setSaving(true);
 		try {
 			if (type === "note") {
-				if (!hasMeaningfulNoteContent(note)) return fail(strings.contentRequired);
+				if (!hasMeaningfulNoteContent(note)) return fail(t("content.contentRequired"));
 				onContentAdded?.(
 					await client.content.create({
 						content: JSON.stringify(note),
@@ -234,7 +151,7 @@ export function ContentCreateDialog({
 				);
 			} else if (type === "todo") {
 				const valid = todos.filter((todo) => todo.text.trim());
-				if (!valid.length) return fail(strings.todoRequired);
+				if (!valid.length) return fail(t("content.todoRequired"));
 				onContentAdded?.(
 					await client.content.create({
 						content: JSON.stringify(valid),
@@ -245,7 +162,7 @@ export function ContentCreateDialog({
 					})
 				);
 			} else if (type === "link") {
-				if (!url.trim()) return fail(strings.linkUrl);
+				if (!url.trim()) return fail(t("library.linkUrl"));
 				onContentAdded?.(
 					await client.content.create({
 						content: url.trim(),
@@ -257,7 +174,7 @@ export function ContentCreateDialog({
 					})
 				);
 			} else {
-				if (!files.length) return fail(strings.fileRequired);
+				if (!files.length) return fail(t("content.fileRequired"));
 				const payload = await Promise.all(files.map(toBinaryFile));
 				if (type === "audio" || type === "media") {
 					const result = await client.content.upload({
@@ -296,7 +213,7 @@ export function ContentCreateDialog({
 			if (!title && parsed.title) setTitle(parsed.title);
 			setParsedDescription(parsed.description);
 		} catch {
-			fail(strings.linkParsingFailed);
+			fail(t("content.linkParsingFailed"));
 		} finally {
 			setParsing(false);
 		}
@@ -322,20 +239,11 @@ export function ContentCreateDialog({
 						onBack={requestTypeChange}
 						onToggleFullScreen={() => setIsFullScreen((value) => !value)}
 						options={options}
-						strings={{ fullScreen: strings.fullScreen, windowed: strings.windowed }}
 						type={type}
 					/>
 				)}
 				{!type ? (
-					<ContentTypePicker
-						onSelect={setType}
-						options={options}
-						strings={{
-							description: strings.description,
-							eyebrow: strings.eyebrow,
-							title: strings.typePickerTitle,
-						}}
-					/>
+					<ContentTypePicker onSelect={setType} options={options} />
 				) : (
 					<form
 						className="flex min-h-0 flex-1 flex-col"
@@ -351,9 +259,9 @@ export function ContentCreateDialog({
 										data-testid="content-title"
 										disabled={saving}
 										onChange={setTitle}
-										placeholder={strings.titlePlaceholder}
+										placeholder={t("content.titlePlaceholder")}
 										value={title}
-										label={strings.titlePlaceholder}
+										label={t("content.titlePlaceholder")}
 										labelHidden
 									/>
 									<div className="mt-3">
@@ -368,8 +276,7 @@ export function ContentCreateDialog({
 											disabled={saving}
 											onError={fail}
 											onTagsChange={setTags}
-											placeholder={strings.addTag}
-											strings={{ generate: strings.suggestTags, generating: strings.suggestingTags }}
+											placeholder={t("content.addTag")}
 											tags={tags}
 										/>
 									</div>
@@ -380,7 +287,6 @@ export function ContentCreateDialog({
 							) : type === "todo" ? (
 								<TodoForm
 									onError={fail}
-									strings={strings}
 									title={title}
 									setTitle={setTitle}
 									tags={tags}
@@ -395,7 +301,6 @@ export function ContentCreateDialog({
 							) : type === "link" ? (
 								<LinkForm
 									onError={fail}
-									strings={strings}
 									title={title}
 									setTitle={setTitle}
 									tags={tags}
@@ -410,7 +315,6 @@ export function ContentCreateDialog({
 							) : (
 								<FileForm
 									type={type}
-									strings={strings}
 									title={title}
 									setTitle={setTitle}
 									tags={tags}
@@ -426,26 +330,28 @@ export function ContentCreateDialog({
 						</div>
 						<div className="flex shrink-0 justify-end gap-2 border-t bg-background p-4 sm:px-6">
 							<Button disabled={saving} onClick={() => onOpenChange(false)} type="button" variant="tertiary">
-								{strings.cancel}
+								{t("library.cancel")}
 							</Button>
 							<Button disabled={saving} loading={saving} type="submit">
 								{saving
 									? type === "audio" || type === "media" || isDocument(type)
-										? strings.uploading(files.length)
-										: strings.creating
+										? t("content.uploading", { count: files.length })
+										: t("content.creating")
 									: type === "audio" || type === "media" || isDocument(type)
-										? strings.upload
-										: strings.save}
+										? t("content.upload")
+										: t("library.save")}
 							</Button>
 						</div>
 					</form>
 				)}
 			</BaseModal>
 			<ConfirmDialog
-				cancelText={strings.cancel}
-				confirmText={strings.discard}
+				cancelText={t("library.cancel")}
+				confirmText={t("content.discard")}
 				description={
-					confirmAction === "changeType" ? strings.changeTypeDescription : strings.unsavedDescription
+					confirmAction === "changeType"
+						? t("content.changeTypeDescription")
+						: t("library.unsavedDescription")
 				}
 				onConfirm={() => {
 					if (confirmAction === "changeType") resetDraft();
@@ -457,7 +363,7 @@ export function ContentCreateDialog({
 				}}
 				open={confirmAction !== null}
 				testId={confirmAction === "changeType" ? "change-type-confirm" : "discard-draft-confirm"}
-				title={confirmAction === "changeType" ? strings.changeTypeTitle : strings.unsavedTitle}
+				title={confirmAction === "changeType" ? t("content.changeTypeTitle") : t("library.unsavedTitle")}
 			/>
 		</>
 	);
@@ -471,7 +377,6 @@ function TodoForm({
 	setTitle,
 	setTodoInput,
 	setTodos,
-	strings,
 	tags,
 	title,
 	todoInput,
@@ -488,28 +393,28 @@ function TodoForm({
 			| Array<{ marked: boolean; text: string }>
 			| ((current: Array<{ marked: boolean; text: string }>) => Array<{ marked: boolean; text: string }>)
 	): void;
-	strings: ContentCreateDialogStrings;
 	tags: string[];
 	title: string;
 	todoInput: string;
 	todos: Array<{ marked: boolean; text: string }>;
 }) {
+	const { t } = useI18n();
 	return (
 		<div className="mx-auto max-w-3xl space-y-5">
 			<label className="grid gap-2 text-sm font-medium">
-				{strings.title}
+				{t("library.content")}
 				<InputField
 					data-testid="content-title"
 					disabled={saving}
 					onChange={setTitle}
-					placeholder={strings.todoTitle}
+					placeholder={t("content.todoTitle")}
 					labelHidden
-					label={strings.todoTitle}
+					label={t("content.todoTitle")}
 					value={title}
 				/>
 			</label>
 			<div className="space-y-2">
-				<Label>{strings.addTodo}</Label>
+				<Label>{t("content.addTodo")}</Label>
 				{todos.map((todo, index) => (
 					<div className="flex gap-2" key={`${todo.text}-${index}`}>
 						<InputField
@@ -537,7 +442,7 @@ function TodoForm({
 					<InputField
 						data-testid="todo-item"
 						disabled={saving}
-						label={strings.addItem}
+						label={t("content.addItem")}
 						labelHidden
 						onChange={setTodoInput}
 						onKeyDown={(event) => {
@@ -546,7 +451,7 @@ function TodoForm({
 								addTodo();
 							}
 						}}
-						placeholder={strings.addItem}
+						placeholder={t("content.addItem")}
 						value={todoInput}
 					/>
 					<Button disabled={saving || !todoInput.trim()} onClick={addTodo} type="button" variant="tertiary">
@@ -555,7 +460,7 @@ function TodoForm({
 				</div>
 			</div>
 			<div className="grid gap-2 text-sm font-medium">
-				<Label>{strings.tags}</Label>
+				<Label>{t("library.tags")}</Label>
 				<TagEditor
 					aiGenerate={{
 						content: JSON.stringify(todos.filter((todo) => todo.text.trim())),
@@ -567,8 +472,7 @@ function TodoForm({
 					disabled={saving}
 					onError={onError}
 					onTagsChange={setTags}
-					placeholder={strings.addTag}
-					strings={{ generate: strings.suggestTags, generating: strings.suggestingTags }}
+					placeholder={t("content.addTag")}
 					tags={tags}
 				/>
 			</div>
@@ -585,7 +489,6 @@ function LinkForm({
 	setTags,
 	setTitle,
 	setUrl,
-	strings,
 	tags,
 	title,
 	url,
@@ -598,23 +501,23 @@ function LinkForm({
 	setTags(tags: string[]): void;
 	setTitle(value: string): void;
 	setUrl(value: string): void;
-	strings: ContentCreateDialogStrings;
 	tags: string[];
 	title: string;
 	url: string;
 }) {
+	const { t } = useI18n();
 	return (
 		<div className="mx-auto max-w-3xl space-y-5">
 			<label className="grid gap-2 text-sm font-medium">
 				<span>URL</span>
 				<div className="flex gap-2">
 					<InputField
-						label={strings.linkUrl}
+						label={t("library.linkUrl")}
 						labelHidden
 						data-testid="content-url"
 						disabled={saving || parsing}
 						onChange={setUrl}
-						placeholder={strings.linkUrl}
+						placeholder={t("library.linkUrl")}
 						required
 						type="url"
 						value={url}
@@ -624,7 +527,7 @@ function LinkForm({
 						onClick={onParse}
 						type="button"
 						variant="tertiary">
-						{parsing ? strings.parsing : strings.parse}
+						{parsing ? t("content.parsing") : t("content.parse")}
 					</Button>
 				</div>
 			</label>
@@ -632,19 +535,19 @@ function LinkForm({
 				<p className="rounded-lg bg-muted p-3 text-sm text-muted-foreground">{parsedDescription}</p>
 			)}
 			<label className="grid gap-2 text-sm font-medium">
-				{strings.titleOptional}
+				{t("content.titleOptional")}
 				<InputField
 					data-testid="content-title"
 					disabled={saving}
-					label={strings.titlePlaceholder}
+					label={t("content.titlePlaceholder")}
 					labelHidden
 					onChange={setTitle}
-					placeholder={strings.titlePlaceholder}
+					placeholder={t("content.titlePlaceholder")}
 					value={title}
 				/>
 			</label>
 			<div className="grid gap-2 text-sm font-medium">
-				<Label>{strings.tags}</Label>
+				<Label>{t("library.tags")}</Label>
 				<TagEditor
 					aiGenerate={{
 						content: parsedDescription ?? url,
@@ -656,8 +559,7 @@ function LinkForm({
 					disabled={saving}
 					onError={onError}
 					onTagsChange={setTags}
-					placeholder={strings.addTag}
-					strings={{ generate: strings.suggestTags, generating: strings.suggestingTags }}
+					placeholder={t("content.addTag")}
 					tags={tags}
 				/>
 			</div>
@@ -674,7 +576,6 @@ function FileForm({
 	setMakeTrack,
 	setTags,
 	setTitle,
-	strings,
 	tags,
 	title,
 	type,
@@ -687,11 +588,11 @@ function FileForm({
 	setMakeTrack(value: boolean): void;
 	setTags(tags: string[]): void;
 	setTitle(value: string): void;
-	strings: ContentCreateDialogStrings;
 	tags: string[];
 	title: string;
 	type: Content["type"];
 }) {
+	const { t } = useI18n();
 	const isDocumentType = isDocument(type);
 	const [dragActive, setDragActive] = useState(false);
 	const previewUrls = useMemo(() => files.map((file) => URL.createObjectURL(file)), [files]);
@@ -712,7 +613,7 @@ function FileForm({
 	return (
 		<div className="mx-auto max-w-3xl space-y-5">
 			<label className="grid gap-2 text-sm font-medium">
-				{isDocumentType ? strings.documentFiles : strings.files}
+				{isDocumentType ? t("content.documentFiles") : t("media.files")}
 				{isDocumentType ? (
 					<DocumentDropZone
 						dragActive={dragActive}
@@ -745,14 +646,14 @@ function FileForm({
 			{!isDocumentType && (
 				<>
 					<label className="grid gap-2 text-sm font-medium">
-						{strings.titleOptional}
+						{t("content.titleOptional")}
 						<InputField
-							label={strings.titleOptional}
+							label={t("content.titleOptional")}
 							labelHidden
 							data-testid="content-title"
 							disabled={saving}
 							onChange={setTitle}
-							placeholder={strings.titlePlaceholder}
+							placeholder={t("content.titlePlaceholder")}
 							value={title}
 						/>
 					</label>
@@ -762,7 +663,7 @@ function FileForm({
 								<CheckboxItem
 									checked={makeTrack}
 									index={0}
-									label={strings.makeTrack}
+									label={t("content.makeTrack")}
 									onToggle={() => setMakeTrack(!makeTrack)}
 									aria-disabled={saving}
 									className={saving ? "pointer-events-none opacity-50" : undefined}
@@ -771,8 +672,13 @@ function FileForm({
 						</div>
 					)}
 					<div className="grid gap-2 text-sm font-medium">
-						<Label>{strings.tags}</Label>
-						<TagEditor disabled={saving} onTagsChange={setTags} placeholder={strings.addTag} tags={tags} />
+						<Label>{t("library.tags")}</Label>
+						<TagEditor
+							disabled={saving}
+							onTagsChange={setTags}
+							placeholder={t("content.addTag")}
+							tags={tags}
+						/>
 					</div>
 				</>
 			)}

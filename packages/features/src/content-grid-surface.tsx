@@ -1,19 +1,11 @@
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 import { Button } from "@synapse/ui/components";
 import { FileText, Search } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
-import { ContentCard, type ContentCardStrings } from "./content-card";
+import { ContentCard } from "./content-card";
 import { ContentMasonry } from "./content-masonry";
-
-export interface ContentGridSurfaceStrings extends ContentCardStrings {
-	addContent: string;
-	clearFilters: string;
-	emptyDescription: string;
-	emptyTitle: string;
-	notFoundDescription: string;
-	notFoundTitle: string;
-}
 
 export interface ContentGridSurfaceProps {
 	excludedTag?: string;
@@ -32,7 +24,6 @@ export interface ContentGridSurfaceProps {
 	searchQuery?: string;
 	selectedContentTypes?: Content["type"][];
 	selectedTags?: string[];
-	strings: ContentGridSurfaceStrings;
 	resolveMediaUrl?: (url: string) => string;
 }
 
@@ -57,9 +48,9 @@ export function ContentGridSurface({
 	searchQuery,
 	selectedContentTypes,
 	selectedTags,
-	strings,
 	resolveMediaUrl,
 }: ContentGridSurfaceProps) {
+	const { t } = useI18n();
 	const sentinelRef = useLoadMore(hasNext && !isFetchingNext, fetchNext);
 	const hasContent = items.length > 0;
 	const hasSelectedTags = Boolean(selectedTags?.length);
@@ -76,9 +67,9 @@ export function ContentGridSurface({
 				<div className="w-full max-w-md space-y-4 p-8">
 					<FileText className="mx-auto h-16 w-16 text-muted-foreground opacity-50" />
 					<div>
-						<h3 className="mb-2 text-xl font-semibold">{strings.emptyTitle}</h3>
-						<p className="mb-6 text-muted-foreground">{strings.emptyDescription}</p>
-						{onAddContent && <Button onClick={onAddContent}>{strings.addContent}</Button>}
+						<h3 className="mb-2 text-xl font-semibold">{t("library.emptyTitle")}</h3>
+						<p className="mb-6 text-muted-foreground">{t("library.emptyDescription")}</p>
+						{onAddContent && <Button onClick={onAddContent}>{t("library.add")}</Button>}
 					</div>
 				</div>
 			</div>
@@ -88,11 +79,11 @@ export function ContentGridSurface({
 			<div className="py-12 text-center">
 				<div className="text-muted-foreground">
 					<Search className="mx-auto mb-4 h-12 w-12 opacity-50" />
-					<p className="mb-2 text-lg">{strings.notFoundTitle}</p>
-					<p className="text-sm">{strings.notFoundDescription}</p>
+					<p className="mb-2 text-lg">{t("library.notFoundTitle")}</p>
+					<p className="text-sm">{t("library.notFoundDescription")}</p>
 					{onClearFilters && (
 						<Button className="mt-4" onClick={onClearFilters} variant="tertiary">
-							{strings.clearFilters}
+							{t("library.clearFilters")}
 						</Button>
 					)}
 				</div>
@@ -112,7 +103,6 @@ export function ContentGridSurface({
 							onDelete={onDelete}
 							onEdit={onEdit}
 							onOpen={onOpen}
-							strings={strings}
 							resolveMediaUrl={resolveMediaUrl}
 						/>
 					)}

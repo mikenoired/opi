@@ -165,7 +165,6 @@ export default function GraphClient({ nodes, edges }: { nodes: Node[]; edges: Ed
 				nodes={nodes}
 				onNodeClick={(node) => void handleNodeClick(node.id, node.type)}
 				onNodeHover={(node, x, y) => (node ? handleNodeHover(node.id, x, y) : handleNodeLeave())}
-				strings={{ empty: "Граф пока пуст", zoomIn: "Увеличить", zoomOut: "Уменьшить" }}
 				tagColors={tagColors}
 			/>
 			{hoverState && previewPosition && (

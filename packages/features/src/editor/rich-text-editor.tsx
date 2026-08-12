@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import { cn } from "@synapse/ui/cn";
 import {
 	Button,
@@ -78,58 +79,6 @@ const editorContentClassName = cn(
 	"[&_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
 );
 
-export interface RichTextEditorStrings {
-	blockquote: string;
-	bold: string;
-	bulletList: string;
-	code: string;
-	codeBlock: string;
-	commandsNotFound: string;
-	heading2: string;
-	heading3: string;
-	heading4: string;
-	image: string;
-	imageLoadError: string;
-	italic: string;
-	link: string;
-	noteContent: string;
-	orderedList: string;
-	paragraph: string;
-	placeholder: string;
-	redo: string;
-	separator: string;
-	strike: string;
-	taskList: string;
-	underline: string;
-	undo: string;
-}
-
-export const defaultRichTextEditorStrings: RichTextEditorStrings = {
-	blockquote: "Цитата",
-	bold: "Жирный",
-	bulletList: "Маркированный список",
-	code: "Строчный код",
-	codeBlock: "Блок кода",
-	commandsNotFound: "Команды не найдены",
-	heading2: "Заголовок 2",
-	heading3: "Заголовок 3",
-	heading4: "Заголовок 4",
-	image: "Изображение",
-	imageLoadError: "Не удалось добавить изображение",
-	italic: "Курсив",
-	link: "Ссылка",
-	noteContent: "Содержимое заметки",
-	orderedList: "Нумерованный список",
-	paragraph: "Текст",
-	placeholder: "Начните с мысли, идеи или наблюдения…",
-	redo: "Повторить",
-	separator: "Разделитель",
-	strike: "Зачёркнутый",
-	taskList: "Список задач",
-	underline: "Подчёркнутый",
-	undo: "Отменить",
-};
-
 async function editLink(
 	editor: TiptapEditor,
 	onRequestLink?: (currentHref: string) => string | null | Promise<string | null>
@@ -192,7 +141,6 @@ export interface RichTextEditorProps {
 	onError?: (message: string) => void;
 	onRequestLink?: (currentHref: string) => string | null | Promise<string | null>;
 	readOnly?: boolean;
-	strings?: Partial<RichTextEditorStrings>;
 }
 
 interface ToolbarButtonProps {
@@ -240,11 +188,10 @@ export function RichTextEditor({
 	onError,
 	onRequestLink,
 	readOnly = false,
-	strings: stringsOverride,
 }: RichTextEditorProps) {
+	const { t } = useI18n();
 	const editorRef = useRef<TiptapEditor | null>(null);
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const strings = { ...defaultRichTextEditorStrings, ...stringsOverride };
 
 	const insertImageFiles = useCallback(
 		async (files: File[], position?: number) => {
@@ -260,10 +207,10 @@ export function RichTextEditor({
 				if (position !== undefined) chain.setTextSelection(position);
 				chain.insertContent(content).run();
 			} catch (error) {
-				onError?.(error instanceof Error ? error.message : strings.imageLoadError);
+				onError?.(error instanceof Error ? error.message : t("editor.imageLoadError"));
 			}
 		},
-		[onError, strings.imageLoadError]
+		[onError, t]
 	);
 
 	const editor = useEditor({
@@ -279,7 +226,7 @@ export function RichTextEditor({
 			Markdown,
 			createEditorShortcuts(onRequestLink),
 			NoInPageAnchorLinks,
-			Placeholder.configure({ placeholder: strings.placeholder }),
+			Placeholder.configure({ placeholder: t("editor.placeholder") }),
 			TaskList.extend({
 				addNodeView() {
 					return ReactNodeViewRenderer(TaskListView);
@@ -299,7 +246,7 @@ export function RichTextEditor({
 		],
 		editorProps: {
 			attributes: {
-				"aria-label": strings.noteContent,
+				"aria-label": t("editor.noteContent"),
 				"class": editorContentClassName,
 				"role": "textbox",
 			},
@@ -400,61 +347,61 @@ export function RichTextEditor({
 											.run();
 									else editor.chain().focus().setParagraph().run();
 								}}>
-								<SelectTrigger placeholder={strings.paragraph} />
+								<SelectTrigger placeholder={t("editor.paragraph")} />
 								<SelectContent>
 									<SelectItem index={0} value="0">
-										{strings.paragraph}
+										{t("editor.paragraph")}
 									</SelectItem>
 									<SelectItem index={1} value="2">
-										{strings.heading2}
+										{t("editor.heading2")}
 									</SelectItem>
 									<SelectItem index={2} value="3">
-										{strings.heading3}
+										{t("editor.heading3")}
 									</SelectItem>
 									<SelectItem index={3} value="4">
-										{strings.heading4}
+										{t("editor.heading4")}
 									</SelectItem>
 								</SelectContent>
 							</Select>
 							<div className="mx-1 h-5 w-px bg-border" />
 							<ToolbarButton
 								active={editor.isActive("bold")}
-								label={strings.bold}
+								label={t("editor.bold")}
 								onClick={() => void editor.chain().focus().toggleBold().run()}
 								shortcut="⌘/Ctrl+B">
 								<Bold />
 							</ToolbarButton>
 							<ToolbarButton
 								active={editor.isActive("italic")}
-								label={strings.italic}
+								label={t("editor.italic")}
 								onClick={() => void editor.chain().focus().toggleItalic().run()}
 								shortcut="⌘/Ctrl+I">
 								<Italic />
 							</ToolbarButton>
 							<ToolbarButton
 								active={editor.isActive("underline")}
-								label={strings.underline}
+								label={t("editor.underline")}
 								onClick={() => void editor.chain().focus().toggleUnderline().run()}
 								shortcut="⌘/Ctrl+U">
 								<Underline />
 							</ToolbarButton>
 							<ToolbarButton
 								active={editor.isActive("strike")}
-								label={strings.strike}
+								label={t("editor.strike")}
 								onClick={() => void editor.chain().focus().toggleStrike().run()}
 								shortcut="⌘/Ctrl+Shift+S">
 								<Strikethrough />
 							</ToolbarButton>
 							<ToolbarButton
 								active={editor.isActive("code")}
-								label={strings.code}
+								label={t("editor.code")}
 								onClick={() => void editor.chain().focus().toggleCode().run()}
 								shortcut="⌘/Ctrl+E">
 								<Code2 />
 							</ToolbarButton>
 							<ToolbarButton
 								active={editor.isActive("link")}
-								label={strings.link}
+								label={t("editor.link")}
 								onClick={() => void editLink(editor, onRequestLink)}
 								shortcut="⌘/Ctrl+K">
 								<Link />
@@ -462,65 +409,65 @@ export function RichTextEditor({
 							<div className="mx-1 h-5 w-px bg-border" />
 							<ToolbarButton
 								active={editor.isActive("bulletList")}
-								label={strings.bulletList}
+								label={t("editor.bulletList")}
 								onClick={() => void editor.chain().focus().toggleBulletList().run()}
 								shortcut="⌘/Ctrl+Shift+8">
 								<List />
 							</ToolbarButton>
 							<ToolbarButton
 								active={editor.isActive("orderedList")}
-								label={strings.orderedList}
+								label={t("editor.orderedList")}
 								onClick={() => void editor.chain().focus().toggleOrderedList().run()}
 								shortcut="⌘/Ctrl+Shift+7">
 								<ListOrdered />
 							</ToolbarButton>
 							<ToolbarButton
 								active={editor.isActive("taskList")}
-								label={strings.taskList}
+								label={t("editor.taskList")}
 								onClick={() => void editor.chain().focus().toggleTaskList().run()}
 								shortcut="⌘/Ctrl+Shift+9">
 								<SquareCheckBig />
 							</ToolbarButton>
 							<ToolbarButton
 								active={editor.isActive("blockquote")}
-								label={strings.blockquote}
+								label={t("editor.blockquote")}
 								onClick={() => void editor.chain().focus().toggleBlockquote().run()}
 								shortcut="⌘/Ctrl+Shift+B">
 								<Quote />
 							</ToolbarButton>
 							<ToolbarButton
 								active={editor.isActive("codeBlock")}
-								label={strings.codeBlock}
+								label={t("editor.codeBlock")}
 								onClick={() => void editor.chain().focus().toggleCodeBlock().run()}
 								shortcut="⌘/Ctrl+Alt+C">
 								<FileCode2 />
 							</ToolbarButton>
 							<ToolbarButton
-								label={strings.separator}
+								label={t("editor.separator")}
 								onClick={() => void editor.chain().focus().setHorizontalRule().run()}>
 								<Minus />
 							</ToolbarButton>
-							<ToolbarButton label={strings.image} onClick={openImagePicker}>
+							<ToolbarButton label={t("editor.image")} onClick={openImagePicker}>
 								<ImageIcon />
 							</ToolbarButton>
 							<div className="mx-1 h-5 w-px bg-border" />
 							<ToolbarButton
 								disabled={!editor.can().undo()}
-								label={strings.undo}
+								label={t("editor.undo")}
 								onClick={() => void editor.chain().focus().undo().run()}
 								shortcut="⌘/Ctrl+Z">
 								<Undo2 />
 							</ToolbarButton>
 							<ToolbarButton
 								disabled={!editor.can().redo()}
-								label={strings.redo}
+								label={t("editor.redo")}
 								onClick={() => void editor.chain().focus().redo().run()}
 								shortcut="⌘/Ctrl+Shift+Z">
 								<Redo2 />
 							</ToolbarButton>
 						</div>
 					</TooltipProvider>
-					<SlashMenu editor={editor} onImage={openImagePicker} strings={strings} />
+					<SlashMenu editor={editor} onImage={openImagePicker} />
 				</>
 			)}
 			<EditorContent editor={editor} />

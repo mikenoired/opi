@@ -1,7 +1,7 @@
 export { ContentTypeFilter } from "./content-type-filter";
 export type { ContentTypeFilterProps } from "./content-type-filter";
 export { GraphSurface } from "./graph-surface";
-export type { GraphSurfaceProps, GraphSurfaceStrings } from "./graph-surface";
+export type { GraphSurfaceProps } from "./graph-surface";
 export { ContentTypeSelector, defaultContentTypeTabs } from "./content-type-selector";
 export type { ContentTypeSelectorProps, ContentTypeTab } from "./content-type-selector";
 export { ContentTypeHeader, ContentTypePicker } from "./content-type-picker";
@@ -10,25 +10,20 @@ export type {
 	ContentTypePickerIcon,
 	ContentTypePickerOption,
 	ContentTypePickerProps,
-	ContentTypePickerStrings,
 } from "./content-type-picker";
 export { ContentEditDialog } from "./content-edit-dialog";
-export type { ContentEditDialogProps, ContentEditDialogStrings } from "./content-edit-dialog";
+export type { ContentEditDialogProps } from "./content-edit-dialog";
 export { ContentCreateDialog } from "./content-create-dialog";
-export type { ContentCreateDialogProps, ContentCreateDialogStrings } from "./content-create-dialog";
+export type { ContentCreateDialogProps } from "./content-create-dialog";
 export { inferContentTypeFromFiles, normalizeDroppedFiles } from "./file-import";
 export { ContentViewer } from "./content-viewer";
-export type { ContentViewerProps, ContentViewerStrings } from "./content-viewer";
+export type { ContentViewerProps } from "./content-viewer";
 export { ContentSuggestionsSurface } from "./content-suggestions-surface";
-export type {
-	ContentSuggestionGroup,
-	ContentSuggestionsSurfaceProps,
-	ContentSuggestionsSurfaceStrings,
-} from "./content-suggestions-surface";
+export type { ContentSuggestionGroup, ContentSuggestionsSurfaceProps } from "./content-suggestions-surface";
 export { DocumentDropZone } from "./document-drop-zone";
 export type { DocumentDropZoneProps } from "./document-drop-zone";
-export { defaultRichTextEditorStrings, RichTextEditor } from "./editor/rich-text-editor";
-export type { RichTextEditorProps, RichTextEditorStrings } from "./editor/rich-text-editor";
+export { RichTextEditor } from "./editor/rich-text-editor";
+export type { RichTextEditorProps } from "./editor/rich-text-editor";
 export { RichTextRenderer } from "./editor/rich-text-renderer";
 export type { RichTextRendererProps } from "./editor/rich-text-renderer";
 export { CustomVideoPlayer } from "./media/custom-video-player";
@@ -42,13 +37,13 @@ export type { LinkPreviewData, LinkPreviewProps } from "./link-preview";
 export { ContentEmptyState } from "./content-empty-state";
 export { ContentCardFrame } from "./content-card-frame";
 export { ContentCard } from "./content-card";
-export type { ContentCardProps, ContentCardStrings } from "./content-card";
+export type { ContentCardProps } from "./content-card";
 export { ContentTag } from "./content-tag";
 export type { ContentTagProps } from "./content-tag";
 export { TagInput } from "./tag-input";
 export type { TagInputProps, TagSuggestion } from "./tag-input";
 export { TagEditor } from "./tag-editor";
-export type { TagEditorProps, TagEditorStrings } from "./tag-editor";
+export type { TagEditorProps } from "./tag-editor";
 export { TagManager } from "./tag-manager";
 export type { TagManagerProps } from "./tag-manager";
 export { TodoList } from "./todo-list";
@@ -58,9 +53,9 @@ export type { ViewerDetailsProps } from "./viewer-details";
 export { ContentFilterBar } from "./content-filter-bar";
 export type { ContentFilterBarProps } from "./content-filter-bar";
 export { ContentGridSurface } from "./content-grid-surface";
-export type { ContentGridSurfaceProps, ContentGridSurfaceStrings } from "./content-grid-surface";
+export type { ContentGridSurfaceProps } from "./content-grid-surface";
 export { LibraryWorkspace } from "./library-workspace";
-export type { LibraryWorkspaceProps, LibraryWorkspaceStrings } from "./library-workspace";
+export type { LibraryWorkspaceProps } from "./library-workspace";
 export { ContentMasonry } from "./content-masonry";
 export type { ContentMasonryProps } from "./content-masonry";
 export { AuthDialog } from "./dialogs/auth-dialog";

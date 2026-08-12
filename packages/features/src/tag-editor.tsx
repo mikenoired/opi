@@ -1,5 +1,6 @@
 import type { AiTagsInput } from "@synapse/api";
 import { uniqueTagTitles } from "@synapse/core";
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 import { Button } from "@synapse/ui/components";
 import { Sparkles } from "lucide-react";
@@ -19,25 +20,12 @@ type AiGenerate =
 	  }
 	| { mode: "existing"; contentId: string; disabled?: boolean };
 
-export interface TagEditorStrings {
-	generate: string;
-	generating: string;
-	noSuggestions: string;
-}
-
 export interface TagEditorProps extends Omit<TagInputProps, "action" | "suggestions"> {
 	aiGenerate?: AiGenerate | null;
 	onGenerateTags?(input: AiTagsInput): Promise<string[]>;
 	onError?(message: string): void;
 	suggestions?: TagSuggestion[];
-	strings?: Partial<TagEditorStrings>;
 }
-
-const defaultStrings: TagEditorStrings = {
-	generate: "AI-теги",
-	generating: "Генерация…",
-	noSuggestions: "Не удалось подобрать теги",
-};
 
 /**
  * Canonical tag form for every platform. The runtime supplies REST on Web and
@@ -49,13 +37,12 @@ export function TagEditor({
 	onError,
 	onGenerateTags,
 	onTagsChange,
-	strings: overrides,
 	suggestions,
 	tags,
 	...input
 }: TagEditorProps) {
+	const { t } = useI18n();
 	const { client } = useAppServices();
-	const strings = { ...defaultStrings, ...overrides };
 	const [loadedSuggestions, setLoadedSuggestions] = useState<TagSuggestion[]>([]);
 	const [suggesting, setSuggesting] = useState(false);
 	const [errorMessage, setErrorMessage] = useState("");
@@ -93,13 +80,13 @@ export function TagEditor({
 				onTagsChange(uniqueTagTitles([...tags, ...(await onGenerateTags(aiInput))]));
 			} else {
 				const result = await client.ai.suggestTags(aiInput);
-				if (!result.success) throw new Error(result.error ?? strings.noSuggestions);
+				if (!result.success) throw new Error(result.error ?? t("tags.noSuggestions"));
 				onTagsChange(
 					uniqueTagTitles([...tags, ...result.existing.map((tag) => tag.name), ...result.newTags])
 				);
 			}
 		} catch (error) {
-			const message = messageFor(error, strings.noSuggestions);
+			const message = messageFor(error, t("tags.noSuggestions"));
 			setErrorMessage(message);
 			onError?.(message);
 		} finally {
@@ -119,7 +106,7 @@ export function TagEditor({
 							onClick={() => void generate()}
 							size="sm"
 							type="button">
-							{suggesting ? strings.generating : strings.generate}
+							{suggesting ? t("tags.generating") : t("tags.generate")}
 						</Button>
 					) : undefined
 				}

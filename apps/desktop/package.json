@@ -18,6 +18,7 @@
 		"@synapse/api": "workspace:*",
 		"@synapse/core": "workspace:*",
 		"@synapse/features": "workspace:*",
+		"@synapse/i18n": "workspace:*",
 		"@synapse/shared": "workspace:*",
 		"electron": "^43.3.0",
 		"lucide-react": "^1.28.0",

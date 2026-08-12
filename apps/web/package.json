@@ -20,6 +20,7 @@
 		"@synapse/backend": "workspace:*",
 		"@synapse/core": "workspace:*",
 		"@synapse/features": "workspace:*",
+		"@synapse/i18n": "workspace:*",
 		"@synapse/shared": "workspace:*",
 		"@synapse/ui": "workspace:*",
 		"@tanstack/react-query": "^5.101.0",

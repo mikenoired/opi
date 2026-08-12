@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import type { Content, UpdateContent } from "@synapse/shared/schemas";
 import { Button, CheckboxGroup, CheckboxItem, InputField } from "@synapse/ui/components";
 import type { JSONContent } from "@tiptap/core";
@@ -11,58 +12,15 @@ import { RichTextEditor, type RichTextEditorProps } from "./editor/rich-text-edi
 import { TagEditor } from "./tag-editor";
 import type { TagSuggestion } from "./tag-input";
 
-export interface ContentEditDialogStrings {
-	addTag: string;
-	addTodo: string;
-	cancel: string;
-	discard: string;
-	emptyTodos: string;
-	editContent: string;
-	editNote: string;
-	editTodo: string;
-	generateTags: string;
-	generatingTags: string;
-	fullScreen: string;
-	save: string;
-	saving: string;
-	titlePlaceholder: string;
-	todoPlaceholder: string;
-	unsavedDescription: string;
-	unsavedTitle: string;
-	windowed: string;
-}
-
-const defaultStrings: ContentEditDialogStrings = {
-	addTag: "+ Добавить тег",
-	addTodo: "Добавить",
-	cancel: "Отмена",
-	discard: "Не сохранять",
-	emptyTodos: "Список пока пуст",
-	editContent: "Редактировать материал",
-	editNote: "Редактировать заметку",
-	editTodo: "Редактировать список",
-	generateTags: "AI-теги",
-	generatingTags: "Генерация…",
-	fullScreen: "На весь экран",
-	save: "Сохранить",
-	saving: "Сохранение…",
-	titlePlaceholder: "Заголовок",
-	todoPlaceholder: "Добавить пункт…",
-	unsavedDescription: "Есть несохранённые изменения. Закрыть без сохранения?",
-	unsavedTitle: "Несохранённые изменения",
-	windowed: "Оконный режим",
-};
-
 export interface ContentEditDialogProps {
 	content: Content;
-	editor?: Pick<RichTextEditorProps, "onError" | "onRequestLink" | "strings">;
+	editor?: Pick<RichTextEditorProps, "onError" | "onRequestLink">;
 	onOpenChange(open: boolean): void;
 	onError?(error: unknown): void;
 	onSave(input: UpdateContent): Promise<Content>;
 	onSaved?(content: Content): void;
 	onSuggestTags?(input: { content: string; title?: string; type: Content["type"] }): Promise<string[]>;
 	open: boolean;
-	strings?: Partial<ContentEditDialogStrings>;
 	tagSuggestions?: TagSuggestion[];
 }
 
@@ -100,10 +58,9 @@ export function ContentEditDialog({
 	onSaved,
 	onSuggestTags,
 	open,
-	strings: stringOverrides,
 	tagSuggestions,
 }: ContentEditDialogProps) {
-	const strings = { ...defaultStrings, ...stringOverrides };
+	const { t } = useI18n();
 	const isTodo = content.type === "todo";
 	const isEditableText = content.type === "note" || isTodo;
 	const [title, setTitle] = useState(content.title ?? "");
@@ -119,7 +76,11 @@ export function ContentEditDialog({
 		description: "",
 		icon: isTodo ? "todo" : "note",
 		key: content.type,
-		label: isTodo ? strings.editTodo : content.type === "note" ? strings.editNote : strings.editContent,
+		label: isTodo
+			? t("content.editTodo")
+			: content.type === "note"
+				? t("content.editNote")
+				: t("content.editContent"),
 	};
 
 	useEffect(() => {
@@ -188,7 +149,6 @@ export function ContentEditDialog({
 						onBack={requestClose}
 						onToggleFullScreen={() => setFullScreen((value) => !value)}
 						options={[editorOption]}
-						strings={{ fullScreen: strings.fullScreen, windowed: strings.windowed }}
 						type={content.type}
 					/>
 					<form
@@ -201,7 +161,7 @@ export function ContentEditDialog({
 							<div className="mx-auto flex h-full w-full max-w-3xl flex-col">
 								<InputField
 									labelHidden
-									label={strings.titlePlaceholder}
+									label={t("content.titlePlaceholder")}
 									className="h-auto border-none bg-transparent! px-0 text-3xl! font-semibold tracking-tight shadow-none focus-visible:ring-0"
 									data-testid="content-title"
 									disabled={saving}
@@ -209,7 +169,7 @@ export function ContentEditDialog({
 										setTitle(value);
 										setDirty(true);
 									}}
-									placeholder={strings.titlePlaceholder}
+									placeholder={t("content.titlePlaceholder")}
 									value={title}
 								/>
 								<div className="mt-3">
@@ -245,9 +205,8 @@ export function ContentEditDialog({
 											setDirty(true);
 										}}
 										onError={onError ? (message) => onError(new Error(message)) : undefined}
-										placeholder={strings.addTag}
+										placeholder={t("content.addTag")}
 										suggestions={tagSuggestions}
-										strings={{ generate: strings.generateTags, generating: strings.generatingTags }}
 										tags={tags}
 									/>
 								</div>
@@ -257,7 +216,7 @@ export function ContentEditDialog({
 											<InputField
 												disabled={saving}
 												labelHidden
-												label={strings.todoPlaceholder}
+												label={t("content.todoPlaceholder")}
 												onChange={setTodoInput}
 												onKeyDown={(event) => {
 													if (event.key === "Enter") {
@@ -265,7 +224,7 @@ export function ContentEditDialog({
 														addTodo();
 													}
 												}}
-												placeholder={strings.todoPlaceholder}
+												placeholder={t("content.todoPlaceholder")}
 												value={todoInput}
 											/>
 											<Button
@@ -273,7 +232,7 @@ export function ContentEditDialog({
 												leadingIcon={Plus}
 												onClick={addTodo}
 												type="button">
-												{strings.addTodo}
+												{t("content.addTodo")}
 											</Button>
 										</div>
 										{todos.length ? (
@@ -328,7 +287,7 @@ export function ContentEditDialog({
 												))}
 											</div>
 										) : (
-											<p className="text-sm text-muted-foreground">{strings.emptyTodos}</p>
+											<p className="text-sm text-muted-foreground">{t("content.emptyTodos")}</p>
 										)}
 									</div>
 								) : isEditableText ? (
@@ -352,19 +311,19 @@ export function ContentEditDialog({
 						</div>
 						<div className="flex shrink-0 justify-end gap-2 border-t bg-background p-4 sm:px-6">
 							<Button disabled={saving} onClick={requestClose} type="button" variant="tertiary">
-								{strings.cancel}
+								{t("library.cancel")}
 							</Button>
 							<Button disabled={saving || !canSave} type="submit">
-								{saving ? strings.saving : strings.save}
+								{saving ? t("content.saving") : t("library.save")}
 							</Button>
 						</div>
 					</form>
 				</div>
 			</BaseModal>
 			<ConfirmDialog
-				cancelText={strings.cancel}
-				confirmText={strings.discard}
-				description={strings.unsavedDescription}
+				cancelText={t("library.cancel")}
+				confirmText={t("content.discard")}
+				description={t("library.unsavedDescription")}
 				onConfirm={() => {
 					setDirty(false);
 					setConfirmClose(false);
@@ -372,7 +331,7 @@ export function ContentEditDialog({
 				}}
 				onOpenChange={setConfirmClose}
 				open={confirmClose}
-				title={strings.unsavedTitle}
+				title={t("library.unsavedTitle")}
 			/>
 		</>
 	);

@@ -63,6 +63,7 @@
         "@synapse/api": "workspace:*",
         "@synapse/core": "workspace:*",
         "@synapse/features": "workspace:*",
+        "@synapse/i18n": "workspace:*",
         "@synapse/shared": "workspace:*",
         "electron": "^43.3.0",
         "lucide-react": "^1.28.0",
@@ -90,6 +91,7 @@
         "@synapse/backend": "workspace:*",
         "@synapse/core": "workspace:*",
         "@synapse/features": "workspace:*",
+        "@synapse/i18n": "workspace:*",
         "@synapse/shared": "workspace:*",
         "@synapse/ui": "workspace:*",
         "@tanstack/react-query": "^5.101.0",
@@ -154,6 +156,7 @@
       "dependencies": {
         "@synapse/api": "workspace:*",
         "@synapse/core": "workspace:*",
+        "@synapse/i18n": "workspace:*",
         "@synapse/shared": "workspace:*",
         "@synapse/ui": "workspace:*",
         "@tiptap/core": "^3.27.0",
@@ -176,6 +179,18 @@
         "@synapse/tsconfig": "workspace:*",
         "@types/react": "^19.2.17",
         "@types/react-dom": "^19.2.3",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/i18n": {
+      "name": "@synapse/i18n",
+      "version": "0.0.0",
+      "dependencies": {
+        "react": "^19.2.8",
+      },
+      "devDependencies": {
+        "@synapse/tsconfig": "workspace:*",
+        "@types/react": "^19.2.18",
         "typescript": "^7.0.2",
       },
     },
@@ -654,6 +669,8 @@
     "@synapse/desktop": ["@synapse/desktop@workspace:apps/desktop"],
 
     "@synapse/features": ["@synapse/features@workspace:packages/features"],
+
+    "@synapse/i18n": ["@synapse/i18n@workspace:packages/i18n"],
 
     "@synapse/shared": ["@synapse/shared@workspace:packages/shared"],
 

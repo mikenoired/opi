@@ -2,7 +2,6 @@ import { ContentGridSurface } from "@synapse/features";
 import type { Content } from "@synapse/shared/schemas";
 import { memo } from "react";
 
-import { useI18n } from "@/shared/lib/i18n";
 import { getPresignedMediaUrl } from "@/shared/lib/image-utils";
 
 import { ContentMasonry } from "./content-masonry";
@@ -43,7 +42,6 @@ export const ContentGrid = memo(
 		onAddContent,
 		excludedTag,
 	}: ContentGridProps) => {
-		const { t } = useI18n();
 		return (
 			<ContentGridSurface
 				excludedTag={excludedTag}
@@ -57,20 +55,6 @@ export const ContentGrid = memo(
 				searchQuery={searchQuery}
 				selectedContentTypes={selectedContentTypes}
 				selectedTags={selectedTags}
-				strings={{
-					addContent: t("addContent"),
-					clearFilters: t("clearFilters"),
-					delete: t("delete"),
-					done: t("done"),
-					emptyDescription: t("empty.description"),
-					emptyNote: t("emptyNote"),
-					emptyTitle: t("empty.title"),
-					edit: t("edit"),
-					notFoundDescription: t("notFound.description"),
-					notFoundTitle: t("notFound.title"),
-					open: t("open"),
-					untitled: t("untitled"),
-				}}
 				resolveMediaUrl={getPresignedMediaUrl}
 				renderItems={(visibleItems) => (
 					<ContentMasonry

@@ -1,19 +1,13 @@
 import type { GraphEdge, GraphNode } from "@synapse/api";
+import { useI18n } from "@synapse/i18n";
 import { Minus, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-
-export interface GraphSurfaceStrings {
-	empty: string;
-	zoomIn: string;
-	zoomOut: string;
-}
 
 export interface GraphSurfaceProps {
 	edges: GraphEdge[];
 	nodes: GraphNode[];
 	onNodeClick?(node: GraphNode): void;
 	onNodeHover?(node: GraphNode | null, x: number, y: number): void;
-	strings: GraphSurfaceStrings;
 	tagColors?: Record<string, number>;
 }
 
@@ -21,14 +15,8 @@ const size = 1_000;
 const center = size / 2;
 
 /** Shared, dependency-free relationship map for browser and Electron renderers. */
-export function GraphSurface({
-	edges,
-	nodes,
-	onNodeClick,
-	onNodeHover,
-	strings,
-	tagColors = {},
-}: GraphSurfaceProps) {
+export function GraphSurface({ edges, nodes, onNodeClick, onNodeHover, tagColors = {} }: GraphSurfaceProps) {
+	const { t } = useI18n();
 	const [zoom, setZoom] = useState(1);
 	const [pan, setPan] = useState({ x: 0, y: 0 });
 	const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
@@ -47,7 +35,7 @@ export function GraphSurface({
 	if (!nodes.length)
 		return (
 			<div className="grid h-full min-h-80 place-items-center rounded-2xl border bg-card text-sm text-muted-foreground">
-				{strings.empty}
+				{t("library.graphEmpty")}
 			</div>
 		);
 	const view = size / zoom;
@@ -125,14 +113,14 @@ export function GraphSurface({
 			</svg>
 			<div className="absolute right-4 bottom-4 flex overflow-hidden rounded-lg border bg-background shadow-sm">
 				<button
-					aria-label={strings.zoomOut}
+					aria-label={t("graph.zoomOut")}
 					className="grid size-9 place-items-center hover:bg-muted"
 					onClick={() => setZoom((value) => Math.max(0.55, value * 0.85))}
 					type="button">
 					<Minus className="size-4" />
 				</button>
 				<button
-					aria-label={strings.zoomIn}
+					aria-label={t("graph.zoomIn")}
 					className="grid size-9 place-items-center border-l hover:bg-muted"
 					onClick={() => setZoom((value) => Math.min(2.25, value * 1.15))}
 					type="button">

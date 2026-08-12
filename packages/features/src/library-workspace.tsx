@@ -1,10 +1,10 @@
+import { useI18n } from "@synapse/i18n";
 import type { Content, CreateContent } from "@synapse/shared/schemas";
 import { Button } from "@synapse/ui/components";
 import { X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ConfiguredAppSidebar, DashboardSurface } from "./app-shell";
-import type { ContentCardStrings } from "./content-card";
 import { ContentCreateDialog } from "./content-create-dialog";
 import { ContentEditDialog } from "./content-edit-dialog";
 import { ContentFilterBar } from "./content-filter-bar";
@@ -17,48 +17,6 @@ import { useAppServices } from "./runtime";
 import type { NavigationItemConfig } from "./runtime/config";
 import { TagEditor } from "./tag-editor";
 
-export interface LibraryWorkspaceStrings extends ContentCardStrings {
-	add: string;
-	clearFilters: string;
-	cancel: string;
-	content: string;
-	deleteConfirm: string;
-	discardChanges: string;
-	emptyDescription: string;
-	emptyTitle: string;
-	graph: string;
-	graphEmpty: string;
-	linkUrl: string;
-	notFoundDescription: string;
-	notFoundTitle: string;
-	save: string;
-	searchAria: string;
-	searchPlaceholder: string;
-	settings: string;
-	tags: string;
-	tagsEmpty: string;
-	title: string;
-	type: string;
-	unsavedDescription: string;
-	unsavedTitle: string;
-	types: Partial<Record<Content["type"], string>>;
-	viewerClose: string;
-	viewerCreated: (date: string) => string;
-	viewerDeleteDescription: string;
-	viewerDeleteTitle: string;
-	viewerDetails: string;
-	viewerDownload: string;
-	viewerEmptyTasks: string;
-	viewerNext: string;
-	viewerPrevious: string;
-	viewerRecommendationsAria: string;
-	viewerRecommendationsEyebrow: string;
-	viewerRecommendationsLoadingMore: string;
-	viewerRecommendationsTitle: string;
-	viewerSuggestTags: string;
-	viewerUpdated: (date: string) => string;
-}
-
 export interface LibraryWorkspaceProps {
 	activePage: "dashboard" | "graph" | "tags";
 	command?: "content.add";
@@ -70,7 +28,6 @@ export interface LibraryWorkspaceProps {
 	onOpenSettings(): void;
 	onSave(input: CreateContent & { id?: string }): Promise<void>;
 	onSelectPage(page: "dashboard" | "graph" | "tags"): void;
-	strings: LibraryWorkspaceStrings;
 }
 
 /** Shared workspace assembly used unchanged by Web and Electron. */
@@ -85,8 +42,8 @@ export function LibraryWorkspace({
 	onOpenSettings,
 	onSave,
 	onSelectPage,
-	strings,
 }: LibraryWorkspaceProps) {
+	const { t } = useI18n();
 	const [search, setSearch] = useState("");
 	const [types, setTypes] = useState<Content["type"][]>([]);
 	const [creating, setCreating] = useState(false);
@@ -110,11 +67,11 @@ export function LibraryWorkspace({
 	);
 	const availableTypes = useMemo(() => Array.from(new Set(items.map((item) => item.type))), [items]);
 	const labels = {
-		add: navigation?.find((item) => item.id === "add")?.label ?? strings.add,
-		dashboard: navigation?.find((item) => item.id === "dashboard")?.label ?? strings.title,
-		graph: navigation?.find((item) => item.id === "graph")?.label ?? strings.graph,
-		settings: navigation?.find((item) => item.id === "settings")?.label ?? strings.settings,
-		tags: navigation?.find((item) => item.id === "tags")?.label ?? strings.tags,
+		add: navigation?.find((item) => item.id === "add")?.label ?? t("library.add"),
+		dashboard: navigation?.find((item) => item.id === "dashboard")?.label ?? t("library.title"),
+		graph: navigation?.find((item) => item.id === "graph")?.label ?? t("library.graph"),
+		settings: navigation?.find((item) => item.id === "settings")?.label ?? t("library.settings"),
+		tags: navigation?.find((item) => item.id === "tags")?.label ?? t("library.tags"),
 	};
 	const viewerSuggestions = useMemo(() => {
 		if (!viewing) return [];
@@ -221,10 +178,22 @@ export function LibraryWorkspace({
 								)
 							}
 							labels={{
-								aria: strings.searchAria,
-								clear: strings.cancel,
-								placeholder: strings.searchPlaceholder,
-								types: strings.types,
+								aria: t("library.searchAria"),
+								clear: t("library.cancel"),
+								placeholder: t("library.searchPlaceholder"),
+								types: {
+									audio: t("library.types.audio"),
+									csv: t("library.types.csv"),
+									doc: t("library.types.doc"),
+									docx: t("library.types.docx"),
+									epub: t("library.types.epub"),
+									link: t("library.types.link"),
+									media: t("library.types.media"),
+									note: t("library.types.note"),
+									pdf: t("library.types.pdf"),
+									todo: t("library.types.todo"),
+									xlsx: t("library.types.xlsx"),
+								},
 							}}
 						/>
 						<div className="p-4">
@@ -241,20 +210,12 @@ export function LibraryWorkspace({
 								onOpen={setViewing}
 								searchQuery={search}
 								selectedContentTypes={types}
-								strings={{
-									...strings,
-									addContent: strings.add,
-									clearFilters: strings.clearFilters,
-									notFoundDescription: strings.notFoundDescription,
-									notFoundTitle: strings.notFoundTitle,
-								}}
 							/>
 						</div>
 					</main>
 				) : activePage === "tags" ? (
 					<TagDirectory
 						items={items}
-						strings={strings}
 						onSelect={(tag) => {
 							setSearch(tag);
 							onSelectPage("dashboard");
@@ -268,7 +229,6 @@ export function LibraryWorkspace({
 							setSearch(tag);
 							onSelectPage("dashboard");
 						}}
-						strings={strings}
 					/>
 				)}
 			</DashboardSurface>
@@ -281,7 +241,7 @@ export function LibraryWorkspace({
 						if (!open) setPreloadedFiles([]);
 					}}
 					open
-					options={createOptions(strings)}
+					options={createOptions(t)}
 					preloadedFiles={preloadedFiles}
 					suggestedType={inferContentTypeFromFiles(preloadedFiles)}
 				/>
@@ -289,7 +249,6 @@ export function LibraryWorkspace({
 			{editing && (
 				<ContentEditorDialog
 					item={editing}
-					strings={strings}
 					onClose={() => setEditing(null)}
 					onSave={async (input) => {
 						await onSave(input);
@@ -328,44 +287,12 @@ export function LibraryWorkspace({
 					}}
 					open
 					suggestionGroups={viewerSuggestions}
-					suggestionStrings={{
-						ariaLabel: strings.viewerRecommendationsAria,
-						delete: strings.delete,
-						done: strings.done,
-						edit: strings.edit,
-						emptyNote: strings.emptyNote,
-						eyebrow: strings.viewerRecommendationsEyebrow,
-						loadingMore: strings.viewerRecommendationsLoadingMore,
-						open: strings.open,
-						title: strings.viewerRecommendationsTitle,
-						untitled: strings.untitled,
-					}}
-					strings={{
-						addTag: strings.tags,
-						cancel: strings.cancel,
-						close: strings.viewerClose,
-						created: strings.viewerCreated,
-						delete: strings.delete,
-						deleteDescription: strings.viewerDeleteDescription,
-						deleteTitle: strings.viewerDeleteTitle,
-						details: strings.viewerDetails,
-						download: strings.viewerDownload,
-						edit: strings.edit,
-						emptyTasks: strings.viewerEmptyTasks,
-						next: strings.viewerNext,
-						previous: strings.viewerPrevious,
-						suggestTags: strings.viewerSuggestTags,
-						tags: strings.tags,
-						types: strings.types,
-						untitled: strings.untitled,
-						updated: strings.viewerUpdated,
-					}}
 				/>
 			)}
 			{dragActive && (
 				<div className="pointer-events-none fixed inset-0 z-100 grid place-items-center bg-black/60 backdrop-blur-sm">
 					<div className="rounded-xl border-2 border-primary bg-background px-8 py-6 text-center text-lg font-semibold">
-						{strings.add}
+						{t("library.add")}
 					</div>
 				</div>
 			)}
@@ -373,56 +300,49 @@ export function LibraryWorkspace({
 	);
 }
 
-function createOptions(strings: LibraryWorkspaceStrings) {
+function createOptions(t: ReturnType<typeof useI18n>["t"]) {
 	return [
 		{
-			description: strings.types.note ?? "",
+			description: t("library.types.note") ?? "",
 			icon: "note" as const,
 			key: "note" as const,
-			label: strings.types.note ?? "Note",
+			label: t("library.types.note") ?? "Note",
 		},
 		{
-			description: strings.types.todo ?? "",
+			description: t("library.types.todo") ?? "",
 			icon: "todo" as const,
 			key: "todo" as const,
-			label: strings.types.todo ?? "Todo",
+			label: t("library.types.todo") ?? "Todo",
 		},
 		{
-			description: strings.types.link ?? "",
+			description: t("library.types.link") ?? "",
 			icon: "link" as const,
 			key: "link" as const,
-			label: strings.types.link ?? "Link",
+			label: t("library.types.link") ?? "Link",
 		},
 		{
-			description: strings.types.media ?? "",
+			description: t("library.types.media") ?? "",
 			icon: "media" as const,
 			key: "media" as const,
-			label: strings.types.media ?? "Media",
+			label: t("library.types.media") ?? "Media",
 		},
 		{
-			description: strings.types.audio ?? "",
+			description: t("library.types.audio") ?? "",
 			icon: "audio" as const,
 			key: "audio" as const,
-			label: strings.types.audio ?? "Audio",
+			label: t("library.types.audio") ?? "Audio",
 		},
 		{
-			description: strings.types.doc ?? "",
+			description: t("library.types.doc") ?? "",
 			icon: "document" as const,
 			key: "doc" as const,
-			label: strings.types.doc ?? "Document",
+			label: t("library.types.doc") ?? "Document",
 		},
 	];
 }
 
-function TagDirectory({
-	items,
-	onSelect,
-	strings,
-}: {
-	items: Content[];
-	onSelect(tag: string): void;
-	strings: LibraryWorkspaceStrings;
-}) {
+function TagDirectory({ items, onSelect }: { items: Content[]; onSelect(tag: string): void }) {
+	const { t } = useI18n();
 	const tags = useMemo(() => {
 		const counts = new Map<string, number>();
 		for (const item of items) for (const tag of item.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
@@ -430,7 +350,7 @@ function TagDirectory({
 	}, [items]);
 	return (
 		<section className="p-6">
-			<h1 className="text-2xl font-semibold">{strings.tags}</h1>
+			<h1 className="text-2xl font-semibold">{t("library.tags")}</h1>
 			{tags.length ? (
 				<div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
 					{tags.map(([tag, count]) => (
@@ -445,7 +365,7 @@ function TagDirectory({
 					))}
 				</div>
 			) : (
-				<p className="mt-5 text-muted-foreground">{strings.tagsEmpty}</p>
+				<p className="mt-5 text-muted-foreground">{t("library.tagsEmpty")}</p>
 			)}
 		</section>
 	);
@@ -454,13 +374,12 @@ function LibraryGraphView({
 	items,
 	onOpenContent,
 	onOpenTag,
-	strings,
 }: {
 	items: Content[];
 	onOpenContent(item: Content): void;
 	onOpenTag(tag: string): void;
-	strings: LibraryWorkspaceStrings;
 }) {
+	const { t } = useI18n();
 	const graph = useMemo(() => {
 		const tags = new Map<string, { id: string; title: string }>();
 		const edges: Array<{ fromNode: string; toNode: string }> = [];
@@ -475,7 +394,7 @@ function LibraryGraphView({
 			nodes: [
 				...items.map((item) => ({
 					color: 0,
-					content: item.title ?? strings.untitled,
+					content: item.title ?? t("library.untitled"),
 					id: item.id,
 					type: item.type,
 				})),
@@ -488,10 +407,10 @@ function LibraryGraphView({
 				})),
 			],
 		};
-	}, [items, strings.untitled]);
+	}, [items, t]);
 	return (
 		<section className="h-full min-h-0 p-6">
-			<h1 className="mb-5 text-2xl font-semibold">{strings.graph}</h1>
+			<h1 className="mb-5 text-2xl font-semibold">{t("library.graph")}</h1>
 			<div className="h-[calc(100%-3.5rem)] min-h-100">
 				<GraphSurface
 					edges={graph.edges}
@@ -502,7 +421,6 @@ function LibraryGraphView({
 							: items.find((item) => item.id === node.id) &&
 								onOpenContent(items.find((item) => item.id === node.id)!)
 					}
-					strings={{ empty: strings.graphEmpty, zoomIn: "+", zoomOut: "−" }}
 				/>
 			</div>
 		</section>
@@ -513,13 +431,12 @@ function ContentEditorDialog({
 	item,
 	onClose,
 	onSave,
-	strings,
 }: {
 	item: Content;
 	onClose(): void;
 	onSave(input: CreateContent & { id?: string }): Promise<void>;
-	strings: LibraryWorkspaceStrings;
 }) {
+	const { t } = useI18n();
 	const { client } = useAppServices();
 	const [draft, setDraft] = useState<CreateContent & { id?: string }>(() => ({
 		content: item.content,
@@ -572,21 +489,6 @@ function ContentEditorDialog({
 					if (!result.success) throw new Error(result.error ?? "Не удалось подобрать теги");
 					return [...result.existing.map((tag) => tag.name), ...result.newTags];
 				}}
-				strings={{
-					addTag: "+ Добавить тег",
-					addTodo: strings.add,
-					cancel: strings.cancel,
-					discard: strings.cancel,
-					emptyTodos: strings.emptyTitle,
-					editNote: strings.edit,
-					editTodo: strings.edit,
-					save: strings.save,
-					saving: strings.save,
-					titlePlaceholder: strings.title,
-					todoPlaceholder: strings.title,
-					unsavedDescription: strings.deleteConfirm,
-					unsavedTitle: strings.title,
-				}}
 			/>
 		);
 	}
@@ -609,18 +511,30 @@ function ContentEditorDialog({
 						}
 					}}>
 					<div className="flex items-center justify-between">
-						<h2 className="text-xl font-semibold">{strings.edit}</h2>
-						<button type="button" aria-label={strings.cancel} onClick={requestClose}>
+						<h2 className="text-xl font-semibold">{t("library.edit")}</h2>
+						<button type="button" aria-label={t("library.cancel")} onClick={requestClose}>
 							<X className="size-5" />
 						</button>
 					</div>
 					<label className="grid gap-2 text-sm font-medium">
-						{strings.type}
+						{t("library.type")}
 						<select
 							value={draft.type}
 							onChange={(event) => setDraft({ ...draft, type: event.target.value as Content["type"] })}
 							className="rounded-lg border bg-background p-2">
-							{Object.entries(strings.types).map(([type, label]) => (
+							{Object.entries({
+								audio: t("library.types.audio"),
+								csv: t("library.types.csv"),
+								doc: t("library.types.doc"),
+								docx: t("library.types.docx"),
+								epub: t("library.types.epub"),
+								link: t("library.types.link"),
+								media: t("library.types.media"),
+								note: t("library.types.note"),
+								pdf: t("library.types.pdf"),
+								todo: t("library.types.todo"),
+								xlsx: t("library.types.xlsx"),
+							}).map(([type, label]) => (
 								<option key={type} value={type}>
 									{label}
 								</option>
@@ -628,7 +542,7 @@ function ContentEditorDialog({
 						</select>
 					</label>
 					<label className="grid gap-2 text-sm font-medium">
-						{strings.title}
+						{t("library.title")}
 						<input
 							value={draft.title ?? ""}
 							onChange={(event) => setDraft({ ...draft, title: event.target.value })}
@@ -637,7 +551,7 @@ function ContentEditorDialog({
 					</label>
 					{draft.type === "link" && (
 						<label className="grid gap-2 text-sm font-medium">
-							{strings.linkUrl}
+							{t("library.linkUrl")}
 							<input
 								value={draft.url ?? ""}
 								onChange={(event) => setDraft({ ...draft, url: event.target.value })}
@@ -646,11 +560,11 @@ function ContentEditorDialog({
 						</label>
 					)}
 					<div className="grid gap-2 text-sm font-medium">
-						<span>{strings.tags}</span>
+						<span>{t("library.tags")}</span>
 						<TagEditor onTagsChange={(tags) => setDraft({ ...draft, tags })} tags={draft.tags ?? []} />
 					</div>
 					<label className="grid gap-2 text-sm font-medium">
-						{strings.content}
+						{t("library.content")}
 						<textarea
 							required
 							value={draft.content}
@@ -660,20 +574,20 @@ function ContentEditorDialog({
 					</label>
 					<div className="flex justify-end gap-2">
 						<Button type="button" variant="tertiary" onClick={requestClose}>
-							{strings.cancel}
+							{t("library.cancel")}
 						</Button>
-						<Button disabled={saving}>{strings.save}</Button>
+						<Button disabled={saving}>{t("library.save")}</Button>
 					</div>
 				</form>
 			</div>
 			<ConfirmDialog
-				cancelText={strings.cancel}
-				confirmText={strings.discardChanges}
-				description={strings.unsavedDescription}
+				cancelText={t("library.cancel")}
+				confirmText={t("library.discardChanges")}
+				description={t("library.unsavedDescription")}
 				onConfirm={onClose}
 				onOpenChange={setConfirmClose}
 				open={confirmClose}
-				title={strings.unsavedTitle}
+				title={t("library.unsavedTitle")}
 			/>
 		</>
 	);

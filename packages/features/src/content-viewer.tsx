@@ -1,14 +1,11 @@
 import { parseAudioJson, parseLinkContent, parseMediaJson } from "@synapse/core";
+import { useI18n } from "@synapse/i18n";
 import type { Content, UpdateContent } from "@synapse/shared/schemas";
 import { CheckboxGroup, CheckboxItem } from "@synapse/ui/components";
 import { Download, Edit2, Image as ImageIcon, Info, Sparkles, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-	ContentSuggestionsSurface,
-	type ContentSuggestionGroup,
-	type ContentSuggestionsSurfaceStrings,
-} from "./content-suggestions-surface";
+import { ContentSuggestionsSurface, type ContentSuggestionGroup } from "./content-suggestions-surface";
 import { BaseModal } from "./dialogs/base-modal";
 import { ConfirmDialog } from "./dialogs/confirm-dialog";
 import { ViewerOverlayControls, type ViewerOverlayAction } from "./dialogs/viewer-overlay-controls";
@@ -17,27 +14,6 @@ import { CustomAudioPlayer, MusicPlayerBackdrop } from "./media/custom-audio-pla
 import { CustomVideoPlayer } from "./media/custom-video-player";
 import type { TagSuggestion } from "./tag-input";
 import { ViewerDetails } from "./viewer-details";
-
-export interface ContentViewerStrings {
-	addTag: string;
-	cancel: string;
-	close: string;
-	created: (date: string) => string;
-	delete: string;
-	deleteDescription: string;
-	deleteTitle: string;
-	details: string;
-	download: string;
-	edit: string;
-	emptyTasks: string;
-	next: string;
-	previous: string;
-	suggestTags: string;
-	tags: string;
-	untitled: string;
-	types: Partial<Record<Content["type"], string>>;
-	updated: (date: string) => string;
-}
 
 export interface ContentViewerProps {
 	autoPlay?: boolean;
@@ -54,21 +30,15 @@ export interface ContentViewerProps {
 	open: boolean;
 	resolveMediaUrl?(url: string): string;
 	suggestionGroups?: ContentSuggestionGroup[];
-	suggestionStrings?: ContentSuggestionsSurfaceStrings;
 	suggestionsHasMore?: boolean;
 	suggestionsLoading?: boolean;
 	suggestionsLoadingMore?: boolean;
 	onLoadMoreSuggestions?(): void;
 	onSuggestionTagNavigate?(tagId: string): void;
-	strings: ContentViewerStrings;
 	tagColors?: Record<string, number>;
 	tagSuggestions?: TagSuggestion[];
 }
 
-/**
- * Canonical fullscreen content presentation. It owns interaction state only;
- * persistence, URL signing and navigation remain explicit platform callbacks.
- */
 export function ContentViewer({
 	autoPlay = false,
 	item,
@@ -84,16 +54,15 @@ export function ContentViewer({
 	open,
 	resolveMediaUrl = (url) => url,
 	suggestionGroups = [],
-	suggestionStrings = defaultSuggestionStrings,
 	suggestionsHasMore = false,
 	suggestionsLoading = false,
 	suggestionsLoadingMore = false,
 	onLoadMoreSuggestions = () => undefined,
 	onSuggestionTagNavigate,
-	strings,
 	tagColors,
 	tagSuggestions,
 }: ContentViewerProps) {
+	const { t } = useI18n();
 	const collection = useMemo(() => {
 		const entries = items.length ? items : [item];
 		return Array.from(new Map(entries.map((entry) => [entry.id, entry])).values());
@@ -175,15 +144,21 @@ export function ContentViewer({
 	const audioCoverUrl = resolveMediaUrl(audio?.cover?.url ?? current.thumbnail_url ?? "");
 	const isMusic = Boolean(audio?.track?.isTrack);
 	const downloadUrl = current.type === "media" ? mediaUrl : current.type === "audio" ? audioUrl : "";
-	const typeLabel = strings.types[current.type] ?? current.type;
+	const typeLabel = current.type;
 	const actions: ViewerOverlayAction[] = [
-		{ icon: Info, label: strings.details, onClick: () => setDetailsOpen((value) => !value) },
+		{ icon: Info, label: t("library.viewer.details"), onClick: () => setDetailsOpen((value) => !value) },
 		...(downloadUrl && onDownload
-			? [{ icon: Download, label: strings.download, onClick: () => void onDownload(current, downloadUrl) }]
+			? [
+					{
+						icon: Download,
+						label: t("library.viewer.download"),
+						onClick: () => void onDownload(current, downloadUrl),
+					},
+				]
 			: []),
-		...(onEdit ? [{ icon: Edit2, label: strings.edit, onClick: () => onEdit(current) }] : []),
+		...(onEdit ? [{ icon: Edit2, label: t("library.edit"), onClick: () => onEdit(current) }] : []),
 		...(onDelete
-			? [{ destructive: true, icon: Trash2, label: strings.delete, onClick: () => setDeleteOpen(true) }]
+			? [{ destructive: true, icon: Trash2, label: t("library.delete"), onClick: () => setDeleteOpen(true) }]
 			: []),
 	];
 	return (
@@ -223,7 +198,6 @@ export function ContentViewer({
 								item={current}
 								media={media}
 								mediaUrl={mediaUrl}
-								strings={strings}
 							/>
 						</div>
 						{(suggestionsLoading || suggestionGroups.length > 0) && (
@@ -239,7 +213,6 @@ export function ContentViewer({
 								onLoadMore={onLoadMoreSuggestions}
 								onOpen={(next) => onSelect?.(next)}
 								onTagNavigate={onSuggestionTagNavigate}
-								strings={suggestionStrings}
 							/>
 						)}
 					</div>
@@ -247,19 +220,19 @@ export function ContentViewer({
 						actions={actions}
 						canGoNext={index < collection.length - 1}
 						canGoPrevious={index > 0}
-						closeLabel={strings.close}
-						nextLabel={strings.next}
+						closeLabel={t("library.viewer.close")}
+						nextLabel={t("library.viewer.next")}
 						onClose={() => onOpenChange(false)}
 						onNext={() => void select(index + 1)}
 						onPrevious={() => void select(index - 1)}
-						previousLabel={strings.previous}
+						previousLabel={t("library.viewer.previous")}
 						visible={controlsVisible}
 					/>
 					{detailsOpen && (
 						<ViewerDetails
-							addTagPlaceholder={strings.addTag}
+							addTagPlaceholder={t("library.tags")}
 							contentTypeLabel={typeLabel}
-							createdLabel={strings.created(formatDate(current.created_at))}
+							createdLabel={t("library.viewer.created", { date: formatDate(current.created_at) })}
 							item={current}
 							onAddTag={(tag) => updateTags([...new Set([...current.tags, tag])])}
 							onRemoveTag={(tag) => updateTags(current.tags.filter((value) => value !== tag))}
@@ -272,17 +245,17 @@ export function ContentViewer({
 										onClick={() => void suggestTags()}
 										type="button">
 										<Sparkles className="size-3.5" />
-										{strings.suggestTags}
+										{t("library.viewer.suggestTags")}
 									</button>
 								) : undefined
 							}
 							tagColors={tagColors}
 							suggestions={tagSuggestions}
-							tagsLabel={strings.tags}
-							title={current.title || strings.untitled}
+							tagsLabel={t("library.tags")}
+							title={current.title || t("library.untitled")}
 							updatedLabel={
 								current.updated_at !== current.created_at
-									? strings.updated(formatDate(current.updated_at))
+									? t("library.viewer.updated", { date: formatDate(current.updated_at) })
 									: undefined
 							}
 						/>
@@ -290,16 +263,16 @@ export function ContentViewer({
 				</div>
 			</BaseModal>
 			<ConfirmDialog
-				cancelText={strings.cancel}
-				confirmText={strings.delete}
-				description={strings.deleteDescription}
+				cancelText={t("library.cancel")}
+				confirmText={t("library.delete")}
+				description={t("library.viewer.deleteDescription")}
 				onConfirm={async () => {
 					await onDelete?.(current);
 					onOpenChange(false);
 				}}
 				onOpenChange={setDeleteOpen}
 				open={deleteOpen}
-				title={strings.deleteTitle}
+				title={t("library.viewer.deleteTitle")}
 			/>
 		</>
 	);
@@ -313,7 +286,6 @@ function ViewerBody({
 	item,
 	media,
 	mediaUrl,
-	strings,
 }: {
 	audio: ReturnType<typeof parseAudioJson>;
 	audioCoverUrl: string;
@@ -322,8 +294,8 @@ function ViewerBody({
 	item: Content;
 	media: NonNullable<ReturnType<typeof parseMediaJson>>["media"] | null | undefined;
 	mediaUrl: string;
-	strings: ContentViewerStrings;
 }) {
+	const { t } = useI18n();
 	if (item.type === "media") {
 		if (media?.type === "video")
 			return (
@@ -363,16 +335,17 @@ function ViewerBody({
 					year: audio?.track?.year,
 				}}
 				src={audioUrl}
-				title={item.title || strings.untitled}
+				title={item.title || t("library.untitled")}
 			/>
 		);
-	if (item.type === "note") return <NoteBody item={item} strings={strings} />;
-	if (item.type === "todo") return <TodoBody item={item} strings={strings} />;
+	if (item.type === "note") return <NoteBody item={item} />;
+	if (item.type === "todo") return <TodoBody item={item} />;
 	if (item.type === "link") return <LinkBody item={item} />;
 	return <DocumentBody item={item} />;
 }
 
-function NoteBody({ item, strings }: { item: Content; strings: ContentViewerStrings }) {
+function NoteBody({ item }: { item: Content }) {
+	const { t } = useI18n();
 	const document = useMemo(() => {
 		try {
 			const parsed = JSON.parse(item.content);
@@ -384,7 +357,7 @@ function NoteBody({ item, strings }: { item: Content; strings: ContentViewerStri
 	return (
 		<article className="w-full max-w-3xl rounded-2xl bg-background px-5 py-10 sm:px-10">
 			<h1 className="mb-7 text-3xl font-semibold tracking-tight sm:text-4xl">
-				{item.title || strings.untitled}
+				{item.title || t("library.untitled")}
 			</h1>
 			{document ? (
 				<RichTextRenderer data={document} />
@@ -395,7 +368,8 @@ function NoteBody({ item, strings }: { item: Content; strings: ContentViewerStri
 	);
 }
 
-function TodoBody({ item, strings }: { item: Content; strings: ContentViewerStrings }) {
+function TodoBody({ item }: { item: Content }) {
+	const { t } = useI18n();
 	const todos = useMemo(() => {
 		try {
 			const parsed: unknown = JSON.parse(item.content);
@@ -410,7 +384,7 @@ function TodoBody({ item, strings }: { item: Content; strings: ContentViewerStri
 	}, [item.content]);
 	return (
 		<section className="max-w-3xl min-w-xl">
-			<h1 className="mb-6 text-2xl font-semibold">{item.title || strings.untitled}</h1>
+			<h1 className="mb-6 text-2xl font-semibold">{item.title || t("library.untitled")}</h1>
 			{todos.length ? (
 				<CheckboxGroup
 					checkedIndices={new Set(todos.flatMap((todo, index) => (todo.marked ? [index] : [])))}
@@ -427,7 +401,7 @@ function TodoBody({ item, strings }: { item: Content; strings: ContentViewerStri
 					))}
 				</CheckboxGroup>
 			) : (
-				<p className="text-muted-foreground">{strings.emptyTasks}</p>
+				<p className="text-muted-foreground">{t("library.viewer.emptyTasks")}</p>
 			)}
 		</section>
 	);
@@ -485,16 +459,3 @@ function toDataUri(value: string) {
 function formatDate(value: string) {
 	return new Date(value).toLocaleDateString();
 }
-
-const defaultSuggestionStrings: ContentSuggestionsSurfaceStrings = {
-	ariaLabel: "Related content",
-	delete: "Delete",
-	done: "done",
-	edit: "Edit",
-	emptyNote: "Empty note",
-	eyebrow: "Continue exploring",
-	loadingMore: "Loading more",
-	open: "Open",
-	title: "Related content",
-	untitled: "Untitled",
-};

@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 import { Button } from "@synapse/ui/components";
 import {
@@ -21,18 +22,9 @@ export interface ContentTypePickerOption {
 	label: string;
 }
 
-export interface ContentTypePickerStrings {
-	description: string;
-	eyebrow: string;
-	fullScreen: string;
-	title: string;
-	windowed: string;
-}
-
 export interface ContentTypePickerProps {
 	onSelect(type: Content["type"]): void;
 	options: ContentTypePickerOption[];
-	strings: Pick<ContentTypePickerStrings, "description" | "eyebrow" | "title">;
 }
 
 export interface ContentTypeHeaderProps {
@@ -40,18 +32,20 @@ export interface ContentTypeHeaderProps {
 	onBack(): void;
 	onToggleFullScreen(): void;
 	options: ContentTypePickerOption[];
-	strings: Pick<ContentTypePickerStrings, "fullScreen" | "windowed">;
 	type: Content["type"];
 }
 
 /** Shared type selection and header visuals for every content creation flow. */
-export function ContentTypePicker({ onSelect, options, strings }: ContentTypePickerProps) {
+export function ContentTypePicker({ onSelect, options }: ContentTypePickerProps) {
+	const { t } = useI18n();
 	return (
 		<div className="flex flex-col gap-6 p-6 sm:p-7">
 			<div className="space-y-2">
-				<p className="text-sm font-medium text-muted-foreground">{strings.eyebrow}</p>
-				<h2 className="text-2xl font-semibold text-foreground">{strings.title}</h2>
-				<p className="max-w-xl text-sm leading-6 text-muted-foreground">{strings.description}</p>
+				<p className="text-sm font-medium text-muted-foreground">{t("content.typePickerEyebrow")}</p>
+				<h2 className="text-2xl font-semibold text-foreground">{t("content.typePickerTitle")}</h2>
+				<p className="max-w-xl text-sm leading-6 text-muted-foreground">
+					{t("content.typePickerDescription")}
+				</p>
 			</div>
 			<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				{options.map((option) => {
@@ -85,9 +79,9 @@ export function ContentTypeHeader({
 	onBack,
 	onToggleFullScreen,
 	options,
-	strings,
 	type,
 }: ContentTypeHeaderProps) {
+	const { t } = useI18n();
 	const option = options.find((entry) => entry.key === type) ?? options[0];
 	if (!option) return null;
 	const Icon = iconFor(option.icon);
@@ -120,7 +114,9 @@ export function ContentTypeHeader({
 					onClick={onToggleFullScreen}
 					size="sm"
 					variant="tertiary">
-					<span className="hidden sm:inline">{isFullScreen ? strings.windowed : strings.fullScreen}</span>
+					<span className="hidden sm:inline">
+						{isFullScreen ? t("content.windowed") : t("content.fullScreen")}
+					</span>
 				</Button>
 			)}
 		</div>

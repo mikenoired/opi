@@ -9,6 +9,7 @@ import {
 } from "@synapse/features";
 import { ConfiguredSettingsNavigation, SettingsModalShell } from "@synapse/features/app-shell";
 import { AppRuntimeProvider, useAppServices } from "@synapse/features/runtime";
+import { I18nProvider, useI18n } from "@synapse/i18n";
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@synapse/shared/preferences";
 import type { Content } from "@synapse/shared/schemas";
 import { useCallback, useEffect, useState } from "react";
@@ -22,7 +23,7 @@ import {
 	type DesktopStatistics,
 	type DesktopSyncPolicy,
 } from "./desktop-bridge";
-import { desktopRuntime } from "./desktop-runtime";
+import { desktopRuntime, getDesktopNavigation, getDesktopSettings } from "./desktop-runtime";
 
 type Page = "dashboard" | "graph" | "tags";
 const bridge = getDesktopBridge();
@@ -92,6 +93,78 @@ function DesktopApp() {
 		setPreferences(next);
 	}, []);
 	return (
+		<I18nProvider language={preferences.interfaceLanguage}>
+			<DesktopAppContent
+				bridge={bridge}
+				command={command}
+				items={items}
+				loading={loading}
+				page={page}
+				preferences={preferences}
+				settings={settings}
+				settingsOpen={settingsOpen}
+				settingsTab={settingsTab}
+				setPage={setPage}
+				setSettingsOpen={setSettingsOpen}
+				setSettingsTab={setSettingsTab}
+				refresh={refresh}
+				session={session}
+				statistics={statistics}
+				syncing={syncing}
+				setSession={setSession}
+				setSyncing={setSyncing}
+				setSettings={setSettings}
+				updatePreferences={updatePreferences}
+			/>
+		</I18nProvider>
+	);
+}
+
+function DesktopAppContent({
+	bridge,
+	command,
+	items,
+	loading,
+	page,
+	preferences,
+	settings,
+	settingsOpen,
+	settingsTab,
+	setPage,
+	setSettingsOpen,
+	setSettingsTab,
+	refresh,
+	session,
+	statistics,
+	syncing,
+	setSession,
+	setSyncing,
+	setSettings,
+	updatePreferences,
+}: {
+	bridge: typeof getDesktopBridge extends () => infer Result ? Result : never;
+	command: "content.add" | undefined;
+	items: Content[];
+	loading: boolean;
+	page: Page;
+	preferences: UserPreferences;
+	settings: { colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy };
+	settingsOpen: boolean;
+	settingsTab: string;
+	setPage: (page: Page) => void;
+	setSettingsOpen: (open: boolean) => void;
+	setSettingsTab: (tab: string) => void;
+	refresh: () => Promise<void>;
+	session?: DesktopSession;
+	statistics?: DesktopStatistics;
+	syncing: boolean;
+	setSession: (session: DesktopSession | undefined) => void;
+	setSyncing: (syncing: boolean) => void;
+	setSettings: (settings: { colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }) => void;
+	updatePreferences: (input: Partial<UserPreferences>) => Promise<void>;
+}) {
+	const { t } = useI18n();
+	return (
 		<div
 			className={
 				bridge.platform === "darwin" ? "desktop-app-shell desktop-app-shell--mac" : "desktop-app-shell"
@@ -102,7 +175,7 @@ function DesktopApp() {
 				command={command}
 				isLoading={loading}
 				items={items}
-				navigation={desktopRuntime.configuration.navigation}
+				navigation={getDesktopNavigation(preferences.interfaceLanguage)}
 				onContentCreated={() => void refresh()}
 				onSelectPage={setPage}
 				onOpenSettings={() => setSettingsOpen(true)}
@@ -114,19 +187,18 @@ function DesktopApp() {
 					await bridge.library.save(input);
 					await refresh();
 				}}
-				strings={desktopStrings}
 			/>
 			{settingsOpen && (
 				<SettingsModalShell
 					activeKey={settingsTab}
 					open
 					onClose={() => setSettingsOpen(false)}
-					title="Настройки"
+					title={t("library.settings")}
 					navigation={
 						<ConfiguredSettingsNavigation
 							activeId={settingsTab}
 							capabilities={desktopRuntime.services.capabilities}
-							tabs={desktopRuntime.configuration.settings}
+							tabs={getDesktopSettings(preferences.interfaceLanguage)}
 							onSelect={setSettingsTab}
 						/>
 					}>
@@ -200,9 +272,7 @@ function DesktopSettingsContent({
 	if (settingsTab === "general")
 		return (
 			<AccountSettingsPanel
-				locale={preferences.interfaceLanguage}
 				onSignOut={() => void onSignOut()}
-				strings={accountStrings}
 				user={
 					session
 						? {
@@ -223,7 +293,6 @@ function DesktopSettingsContent({
 						session={session}
 						statistics={statistics}
 						syncPolicy={settings.syncPolicy}
-						strings={syncStrings}
 					/>
 				}
 			/>
@@ -242,7 +311,6 @@ function DesktopSettingsContent({
 				onNoteSparklesEnabledChange={(value) => void onUpdatePreferences({ noteSparklesEnabled: value })}
 				onThemeChange={(value) => void onThemeChange(value)}
 				theme={settings.colorScheme}
-				strings={appearanceStrings}
 			/>
 		);
 	if (settingsTab === "media")
@@ -250,18 +318,16 @@ function DesktopSettingsContent({
 			<MediaSettingsPanel
 				autoplayEnabled={preferences.mediaAutoplayEnabled}
 				files={statistics?.itemCount ?? 0}
-				locale={preferences.interfaceLanguage}
 				onAutoplayChange={(value) => void onUpdatePreferences({ mediaAutoplayEnabled: value })}
 				onImport={onImport}
 				storageBytes={statistics?.localBytes ?? 0}
-				strings={mediaStrings}
 			/>
 		);
-	if (settingsTab === "ai") return <DesktopAiTab locale={preferences.interfaceLanguage} />;
+	if (settingsTab === "ai") return <DesktopAiTab />;
 	return null;
 }
 
-function DesktopAiTab({ locale }: { locale: string }) {
+function DesktopAiTab() {
 	const { client } = useAppServices();
 	const [data, setData] = useState<AiUsage>();
 	const [isError, setIsError] = useState(false);
@@ -285,145 +351,8 @@ function DesktopAiTab({ locale }: { locale: string }) {
 			disposed = true;
 		};
 	}, [client]);
-	return (
-		<AiSettingsPanel
-			data={data}
-			isError={isError}
-			isLoading={isLoading}
-			locale={locale}
-			strings={aiStrings}
-		/>
-	);
+	return <AiSettingsPanel data={data} isError={isError} isLoading={isLoading} />;
 }
-
-const desktopStrings = {
-	add: "Добавить",
-	cancel: "Сбросить",
-	clearFilters: "Сбросить фильтры",
-	content: "Содержание",
-	delete: "Удалить",
-	deleteConfirm: "Удалить материал?",
-	discardChanges: "Удалить изменения",
-	done: "готово",
-	edit: "Изменить",
-	emptyDescription: "Добавьте заметку, ссылку или материал. Он сохранится локально.",
-	emptyNote: "Пустая заметка",
-	emptyTitle: "Библиотека пока пуста",
-	graph: "Граф",
-	graphEmpty: "Ничего не найдено",
-	linkUrl: "Адрес",
-	notFoundDescription: "Измените запрос или сбросьте фильтры.",
-	notFoundTitle: "Ничего не найдено",
-	open: "Открыть",
-	save: "Сохранить",
-	searchAria: "Поиск",
-	searchPlaceholder: "Найдём то, что вы отложили на потом",
-	settings: "Настройки",
-	tags: "Теги",
-	tagsEmpty: "Тегов пока нет",
-	title: "Главная",
-	type: "Тип",
-	unsavedDescription: "Есть несохранённые изменения. Закрыть без сохранения?",
-	unsavedTitle: "Несохранённые изменения",
-	types: {
-		audio: "Аудио",
-		csv: "CSV",
-		doc: "Документ",
-		docx: "DOCX",
-		epub: "EPUB",
-		link: "Ссылка",
-		media: "Медиа",
-		note: "Заметка",
-		pdf: "PDF",
-		todo: "Задача",
-		xlsx: "XLSX",
-	},
-	untitled: "Без названия",
-	viewerClose: "Закрыть просмотр",
-	viewerCreated: (date: string) => `Создано ${date}`,
-	viewerDeleteDescription: "Материал будет удалён из локальной библиотеки.",
-	viewerDeleteTitle: "Удалить материал?",
-	viewerDetails: "Подробнее",
-	viewerDownload: "Скачать",
-	viewerEmptyTasks: "Список задач пока пуст",
-	viewerNext: "Следующий материал",
-	viewerPrevious: "Предыдущий материал",
-	viewerRecommendationsAria: "Похожие материалы",
-	viewerRecommendationsEyebrow: "Продолжить исследование",
-	viewerRecommendationsLoadingMore: "Ищем дальше",
-	viewerRecommendationsTitle: "Рядом по смыслу",
-	viewerSuggestTags: "AI-теги",
-	viewerUpdated: (date: string) => `Обновлено ${date}`,
-};
-const accountStrings = {
-	createdWithUs: (date: string) => `С нами с ${date}`,
-	noDate: "Дата регистрации неизвестна",
-	sessionDescription: "Управляйте подключением к Synapse Sync.",
-	sessionSignOut: "Выйти",
-	sessionSigningOut: "Выходим…",
-	sessionTitle: "Сеанс Synapse",
-};
-const appearanceStrings = {
-	autoTagColorsDescription: "Автоматически выбирать цвет для новых тегов.",
-	autoTagColorsTitle: "Цвета тегов",
-	description: "Сохранено локально и применяется ко всему интерфейсу.",
-	languageDescription: "Язык интерфейса для этой локальной библиотеки.",
-	languageEnglish: "English",
-	languageRussian: "Русский",
-	languageTitle: "Язык",
-	noteSparklesDescription: "Добавлять деликатную анимацию к заметкам.",
-	noteSparklesTitle: "Анимация заметок",
-	paletteDescription: "Выберите акцентный цвет для интерфейса.",
-	paletteLabels: {
-		arctic: "Арктика",
-		desert: "Пустыня",
-		ember: "Уголь",
-		forest: "Лес",
-		noir: "Нуар",
-		sakura: "Сакура",
-		slate: "Сланец",
-		twilight: "Сумерки",
-	},
-	paletteTitle: "Палитра",
-	themeLabels: { dark: "Тёмная", light: "Светлая", system: "Как в системе" },
-	themeTitle: "Тема",
-	title: "Оформление",
-};
-const mediaStrings = {
-	autoplayDescription: "Автоматически запускать аудио и видео при открытии.",
-	autoplayTitle: "Автовоспроизведение",
-	files: "Материалов",
-	import: "Импортировать файлы",
-	storageLabel: "Локальное хранилище",
-	storageUsed: "Занято",
-};
-const aiStrings = {
-	cost: "Стоимость",
-	error: "AI-статистика появится после подключения совместимого сервера Synapse.",
-	failures: "Ошибки",
-	latency: "Задержка",
-	models: "Модели",
-	noRequests: "Запросов пока нет",
-	planDescription: "Лимиты вашего плана",
-	requests: "Запросы",
-	successRate: "Успешность",
-	thisMonth: (month: string) => `За ${month}`,
-	tokens: "Токены",
-	tokensShort: "ток.",
-};
-const syncStrings = {
-	apiUrl: "Адрес API",
-	automatic: "Ставить новые материалы в очередь автоматически",
-	conflicts: "Локальные конфликтные копии",
-	email: "Email",
-	login: "Войти в Synapse",
-	manual: "Синхронизировать вручную",
-	password: "Пароль",
-	sync: "Синхронизировать",
-	syncUnavailable: "Синхронизация недоступна на текущем плане",
-	syncWithPlan: (plan: string) => `Synapse Sync · ${plan}`,
-	syncing: "Синхронизация…",
-};
 
 createRoot(document.getElementById("app")!).render(
 	<AppRuntimeProvider runtime={desktopRuntime}>

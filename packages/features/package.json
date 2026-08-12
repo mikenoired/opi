@@ -26,6 +26,7 @@
 		"@synapse/core": "workspace:*",
 		"@synapse/ui": "workspace:*",
 		"@synapse/shared": "workspace:*",
+		"@synapse/i18n": "workspace:*",
 		"@tiptap/core": "^3.27.0",
 		"@tiptap/extension-code-block-lowlight": "^3.27.0",
 		"@tiptap/extension-image": "^3.27.0",

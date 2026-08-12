@@ -1,24 +1,20 @@
 import { createParsedLinkFallback, type SynapseClient } from "@synapse/api";
-import { commonAppConfiguration, mergeAppConfiguration, type AppRuntime } from "@synapse/features/runtime";
+import {
+	commonAppConfiguration,
+	mergeAppConfiguration,
+	type AppRuntime,
+	type NavigationItemConfig,
+	type SettingsTabConfig,
+} from "@synapse/features/runtime";
+import { createTranslator, type InterfaceLanguage } from "@synapse/i18n";
 
 import { getDesktopBridge } from "./desktop-bridge";
 
 /** IPC implementation of exactly the same port that the Web implements over REST. */
 export const desktopRuntime: AppRuntime = {
 	configuration: mergeAppConfiguration(commonAppConfiguration, {
-		navigation: [
-			{ command: "content.add", icon: "add", id: "add", label: "Добавить", variant: "action" },
-			{ icon: "home", id: "dashboard", label: "Главная", route: "dashboard" },
-			{ icon: "tags", id: "tags", label: "Теги", route: "tags" },
-			{ icon: "graph", id: "graph", label: "Граф", route: "graph" },
-			{ command: "settings.open", icon: "settings", id: "settings", label: "Настройки" },
-		],
-		settings: [
-			{ groups: [], icon: "settings", id: "general", label: "Профиль", when: { capability: "account" } },
-			{ groups: [], icon: "appearance", id: "appearance", label: "Оформление" },
-			{ groups: [], icon: "media", id: "media", label: "Медиа" },
-			{ groups: [], icon: "ai", id: "ai", label: "AI", when: { capability: "ai" } },
-		],
+		navigation: getDesktopNavigation("ru"),
+		settings: getDesktopSettings("ru"),
 	}),
 	services: {
 		capabilities: {
@@ -28,6 +24,39 @@ export const desktopRuntime: AppRuntime = {
 		commands: { execute: async () => undefined },
 	},
 };
+
+export function getDesktopNavigation(language: InterfaceLanguage): NavigationItemConfig[] {
+	const t = createTranslator(language);
+	return [
+		{
+			command: "content.add" as const,
+			icon: "add",
+			id: "add",
+			label: t("library.add"),
+			variant: "action" as const,
+		},
+		{ icon: "home", id: "dashboard", label: t("library.title"), route: "dashboard" as const },
+		{ icon: "tags", id: "tags", label: t("library.tags"), route: "tags" as const },
+		{ icon: "graph", id: "graph", label: t("library.graph"), route: "graph" as const },
+		{ command: "settings.open" as const, icon: "settings", id: "settings", label: t("library.settings") },
+	];
+}
+
+export function getDesktopSettings(language: InterfaceLanguage): SettingsTabConfig[] {
+	const t = createTranslator(language);
+	return [
+		{
+			groups: [],
+			icon: "settings",
+			id: "general",
+			label: t("navigation.profile"),
+			when: { capability: "account" as const },
+		},
+		{ groups: [], icon: "appearance", id: "appearance", label: t("appearance.title") },
+		{ groups: [], icon: "media", id: "media", label: t("library.types.media") },
+		{ groups: [], icon: "ai", id: "ai", label: "AI", when: { capability: "ai" as const } },
+	];
+}
 
 function createDesktopSynapseClient(): SynapseClient {
 	return {

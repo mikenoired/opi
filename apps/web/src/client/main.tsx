@@ -1,5 +1,6 @@
 import { DashboardSurface } from "@synapse/features/app-shell";
 import { AppRuntimeProvider } from "@synapse/features/runtime";
+import { I18nProvider } from "@synapse/i18n";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	createRootRoute,
@@ -11,7 +12,7 @@ import {
 	useParams,
 } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";
-import { StrictMode, useEffect } from "react";
+import { StrictMode, useEffect, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 
@@ -23,6 +24,7 @@ import { apiUrl } from "@/shared/config/api";
 import { AuthProvider, useAuth } from "@/shared/lib/auth-context";
 import { DashboardProvider } from "@/shared/lib/dashboard-context";
 import { UserPreferencesProvider } from "@/shared/lib/user-preferences-context";
+import { useUserPreferences } from "@/shared/lib/user-preferences-context";
 import { ModalProvider } from "@/widgets/modals/context/modal-context";
 import { ModalManager } from "@/widgets/modals/context/modal-manager";
 import { SettingsModalController } from "@/widgets/settings-modal/ui/settings-modal-controller";
@@ -49,18 +51,25 @@ function Root() {
 				<AuthProvider>
 					<SyncListener />
 					<UserPreferencesProvider>
-						<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-							<ModalProvider>
-								<Outlet />
-								<ModalManager />
-								<Toaster position="bottom-right" />
-							</ModalProvider>
-						</ThemeProvider>
+						<WebI18n>
+							<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+								<ModalProvider>
+									<Outlet />
+									<ModalManager />
+									<Toaster position="bottom-right" />
+								</ModalProvider>
+							</ThemeProvider>
+						</WebI18n>
 					</UserPreferencesProvider>
 				</AuthProvider>
 			</QueryClientProvider>
 		</AppRuntimeProvider>
 	);
+}
+
+function WebI18n({ children }: { children: ReactNode }) {
+	const { interfaceLanguage } = useUserPreferences();
+	return <I18nProvider language={interfaceLanguage}>{children}</I18nProvider>;
 }
 
 function SyncListener() {

@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import type { Editor } from "@tiptap/core";
 import {
 	FileCode2,
@@ -14,7 +15,6 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { filterSlashCommands, type SlashCommandOption } from "./editor-input";
-import type { RichTextEditorStrings } from "./rich-text-editor";
 
 interface SlashCommand extends SlashCommandOption {
 	icon: typeof Pilcrow;
@@ -32,10 +32,10 @@ interface SlashState {
 interface SlashMenuProps {
 	editor: Editor;
 	onImage: () => void;
-	strings: RichTextEditorStrings;
 }
 
-export function SlashMenu({ editor, onImage, strings }: SlashMenuProps) {
+export function SlashMenu({ editor, onImage }: SlashMenuProps) {
+	const { t } = useI18n();
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [state, setState] = useState<SlashState | null>(null);
 
@@ -54,61 +54,61 @@ export function SlashMenu({ editor, onImage, strings }: SlashMenuProps) {
 			{
 				aliases: ["text", "paragraph", "p"],
 				icon: Pilcrow,
-				label: strings.paragraph,
+				label: t("editor.paragraph"),
 				run: () => run((chain) => void chain.setParagraph().run()),
 			},
 			{
 				aliases: ["heading", "h2"],
 				icon: Heading2,
-				label: strings.heading2,
+				label: t("editor.heading2"),
 				run: () => run((chain) => void chain.setHeading({ level: 2 }).run()),
 			},
 			{
 				aliases: ["heading", "h3"],
 				icon: Heading3,
-				label: strings.heading3,
+				label: t("editor.heading3"),
 				run: () => run((chain) => void chain.setHeading({ level: 3 }).run()),
 			},
 			{
 				aliases: ["heading", "h4"],
 				icon: Heading4,
-				label: strings.heading4,
+				label: t("editor.heading4"),
 				run: () => run((chain) => void chain.setHeading({ level: 4 }).run()),
 			},
 			{
 				aliases: ["bullet", "list", "ul"],
 				icon: List,
-				label: strings.bulletList,
+				label: t("editor.bulletList"),
 				run: () => run((chain) => void chain.toggleBulletList().run()),
 			},
 			{
 				aliases: ["ordered", "list", "ol"],
 				icon: ListOrdered,
-				label: strings.orderedList,
+				label: t("editor.orderedList"),
 				run: () => run((chain) => void chain.toggleOrderedList().run()),
 			},
 			{
 				aliases: ["quote", "blockquote"],
 				icon: Quote,
-				label: strings.blockquote,
+				label: t("editor.blockquote"),
 				run: () => run((chain) => void chain.toggleBlockquote().run()),
 			},
 			{
 				aliases: ["code", "codeblock"],
 				icon: FileCode2,
-				label: strings.codeBlock,
+				label: t("editor.codeBlock"),
 				run: () => run((chain) => void chain.toggleCodeBlock().run()),
 			},
 			{
 				aliases: ["divider", "horizontal", "hr"],
 				icon: Minus,
-				label: strings.separator,
+				label: t("editor.separator"),
 				run: () => run((chain) => void chain.setHorizontalRule().run()),
 			},
 			{
 				aliases: ["image", "photo", "picture"],
 				icon: ImageIcon,
-				label: strings.image,
+				label: t("editor.image"),
 				run: () =>
 					run((chain) => {
 						chain.run();
@@ -116,7 +116,7 @@ export function SlashMenu({ editor, onImage, strings }: SlashMenuProps) {
 					}),
 			},
 		],
-		[onImage, run, strings]
+		[onImage, run, t]
 	);
 	const visibleCommands = useMemo(
 		() => filterSlashCommands(commands, state?.query ?? ""),
@@ -212,7 +212,7 @@ export function SlashMenu({ editor, onImage, strings }: SlashMenuProps) {
 					);
 				})
 			) : (
-				<div className="px-2 py-1.5 text-sm text-muted-foreground">{strings.commandsNotFound}</div>
+				<div className="px-2 py-1.5 text-sm text-muted-foreground">{t("editor.commandsNotFound")}</div>
 			)}
 		</div>
 	);
