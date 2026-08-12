@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 
 import { api } from "@/shared/api/hooks";
 import { useI18n } from "@/shared/lib/i18n";
+import { getPresignedMediaUrl } from "@/shared/lib/image-utils";
 
 const EditContentDialog = lazy(() =>
 	import("@/features/edit-content/ui/edit-content-dialog").then((mod) => ({ default: mod.EditContentDialog }))
@@ -56,6 +57,7 @@ export default function Item(props: ItemProps) {
 				onOpen={props.onItemClick}
 				onDelete={(item) => deleteMutation.mutate({ id: item.id })}
 				onEdit={() => void openEditor()}
+				resolveMediaUrl={getPresignedMediaUrl}
 				strings={{
 					delete: t("delete"),
 					done: t("done"),

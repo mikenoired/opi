@@ -1,9 +1,9 @@
-import { getAudioDisplayTitle, parseAudioJson, parseLinkContent } from "@synapse/core";
+import { getAudioDisplayTitle, parseAudioJson, parseLinkContent, parseMediaJson } from "@synapse/core";
 import type { Content, LinkContent } from "@synapse/shared/schemas";
 import { extractTextFromStructuredContent } from "@synapse/shared/schemas";
 import { motion } from "framer-motion";
 import { Check, FileText, ListChecks, Music2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 
 import { ContentCardFrame } from "./content-card-frame";
@@ -143,7 +143,8 @@ function ContentCardBody({
 	if (item.type === "link") return <LinkPreview item={item} tags={tags} untitled={strings.untitled} />;
 	if (item.type === "media" || item.type === "audio")
 		return <MediaPreview item={item} resolveMediaUrl={resolveMediaUrl} />;
-	if (isDocumentType(item.type)) return <DocumentPreview item={item} index={index} tags={tags} />;
+	if (isDocumentType(item.type))
+		return <DocumentPreview item={item} index={index} tags={tags} resolveMediaUrl={resolveMediaUrl} />;
 	return (
 		<>
 			<h3 className="line-clamp-2 text-lg leading-snug font-semibold tracking-tight text-foreground">
@@ -229,43 +230,85 @@ function MediaPreview({
 	resolveMediaUrl?: (url: string) => string;
 }) {
 	const audio = item.type === "audio" ? parseAudioJson(item.content) : null;
+	const media = item.type === "media" ? parseMediaJson(item.content)?.media : null;
+	const isVideo = media?.type === "video" || item.media_type === "video";
 	const source =
 		audio?.cover?.url ||
-		item.thumbnail_url ||
-		(item.type === "media" ? item.media_url : "") ||
+		(isVideo ? media?.thumbnailUrl || item.thumbnail_url : media?.url || item.media_url) ||
 		(audio?.cover?.thumbnailBase64 && `data:image/jpeg;base64,${audio.cover.thumbnailBase64}`) ||
 		(item.thumbnail_base64 && `data:image/jpeg;base64,${item.thumbnail_base64}`);
 	const title = getAudioDisplayTitle(audio, item.title);
 	const subtitle = [audio?.track?.artist, audio?.track?.album].filter(Boolean).join(" · ");
 	const resolvedSource = source ? (resolveMediaUrl ? resolveMediaUrl(source) : source) : "";
+	const metadataAspectRatio = audio
+		? getAspectRatio(audio.cover?.width, audio.cover?.height)
+		: getAspectRatio(
+				media?.width || item.media_width,
+				media?.height || item.media_height,
+				isVideo ? "16 / 9" : "1 / 1"
+			);
+	const [loadedAspectRatio, setLoadedAspectRatio] = useState<string>();
+	const aspectRatio = loadedAspectRatio || metadataAspectRatio;
+	const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+		if (event.currentTarget.naturalWidth && event.currentTarget.naturalHeight)
+			setLoadedAspectRatio(`${event.currentTarget.naturalWidth} / ${event.currentTarget.naturalHeight}`);
+	};
 	return (
-		<div className="relative min-h-44 overflow-hidden rounded-xl bg-card">
+		<div className="relative w-full overflow-hidden rounded-xl bg-card" style={{ aspectRatio }}>
 			{resolvedSource ? (
-				<img src={resolvedSource} alt={title || ""} className="absolute inset-0 h-full w-full object-cover" />
+				<img
+					src={resolvedSource}
+					alt={title || ""}
+					className="absolute inset-0 h-full w-full object-cover"
+					onLoad={handleImageLoad}
+				/>
 			) : (
 				<div className="flex min-h-44 items-center justify-center text-muted-foreground">
 					{item.type === "audio" ? <Music2 /> : <FileText />}
 				</div>
 			)}
-			<div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/65 to-transparent p-4 pt-12 text-sm font-medium text-white">
-				<div className="truncate">{title}</div>
-				{subtitle && <div className="mt-0.5 truncate text-xs font-normal text-white/75">{subtitle}</div>}
+			{item.type !== "media" && (
+				<div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/65 to-transparent p-4 pt-12 text-sm font-medium text-white">
+					<div className="truncate">{title}</div>
+					{subtitle && <div className="mt-0.5 truncate text-xs font-normal text-white/75">{subtitle}</div>}
+				</div>
+			)}
+		</div>
+	);
+}
+
+function DocumentPreview({
+	item,
+	tags,
+	resolveMediaUrl,
+}: {
+	index: number;
+	item: Content;
+	tags: string[];
+	resolveMediaUrl?: (url: string) => string;
+}) {
+	const thumbnail = item.thumbnail_base64
+		? `data:image/jpeg;base64,${item.thumbnail_base64}`
+		: item.thumbnail_url
+			? resolveMediaUrl?.(item.thumbnail_url) || item.thumbnail_url
+			: "";
+	return (
+		<div className="rounded-xl bg-card">
+			{thumbnail && <img src={thumbnail} alt="" className="h-32 w-full object-cover" />}
+			<div className="p-5">
+				<div className="mb-6 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+					<FileText className="size-5" />
+				</div>
+				<h3 className="line-clamp-2 text-base font-semibold">{item.title}</h3>
+				<p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{getNotePreview(item.content, 160)}</p>
+				<TagList tags={tags} className="mt-4" />
 			</div>
 		</div>
 	);
 }
 
-function DocumentPreview({ item, tags }: { index: number; item: Content; tags: string[] }) {
-	return (
-		<div className="min-h-44 rounded-xl bg-card p-5">
-			<div className="mb-6 flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-				<FileText className="size-5" />
-			</div>
-			<h3 className="line-clamp-2 text-base font-semibold">{item.title}</h3>
-			<p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{getNotePreview(item.content, 160)}</p>
-			<TagList tags={tags} className="mt-4" />
-		</div>
-	);
+function getAspectRatio(width?: number, height?: number, fallback = "1 / 1") {
+	return width && height ? `${width} / ${height}` : fallback;
 }
 
 function TagList({ className, tags }: { className?: string; tags: string[] }) {
