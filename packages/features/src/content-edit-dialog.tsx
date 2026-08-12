@@ -1,15 +1,15 @@
-import { uniqueTagTitles } from "@synapse/core";
 import type { Content, UpdateContent } from "@synapse/shared/schemas";
 import { Button, CheckboxGroup, CheckboxItem, InputField } from "@synapse/ui/components";
 import type { JSONContent } from "@tiptap/core";
-import { Plus, Sparkles, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { ContentTypeHeader, type ContentTypePickerOption } from "./content-type-picker";
 import { BaseModal } from "./dialogs/base-modal";
 import { ConfirmDialog } from "./dialogs/confirm-dialog";
 import { RichTextEditor, type RichTextEditorProps } from "./editor/rich-text-editor";
-import { TagInput, type TagSuggestion } from "./tag-input";
+import { TagEditor } from "./tag-editor";
+import type { TagSuggestion } from "./tag-input";
 
 export interface ContentEditDialogStrings {
 	addTag: string;
@@ -113,7 +113,6 @@ export function ContentEditDialog({
 	const [todoInput, setTodoInput] = useState("");
 	const [fullScreen, setFullScreen] = useState(false);
 	const [saving, setSaving] = useState(false);
-	const [suggesting, setSuggesting] = useState(false);
 	const [dirty, setDirty] = useState(false);
 	const [confirmClose, setConfirmClose] = useState(false);
 	const editorOption: ContentTypePickerOption = {
@@ -167,23 +166,6 @@ export function ContentEditDialog({
 			setSaving(false);
 		}
 	};
-	const suggestTags = async () => {
-		if (!onSuggestTags || suggesting) return;
-		setSuggesting(true);
-		try {
-			const generated = await onSuggestTags({
-				content: isTodo ? JSON.stringify(todos) : isEditableText ? JSON.stringify(document) : content.content,
-				title: title.trim() || undefined,
-				type: content.type,
-			});
-			setTags((current) => uniqueTagTitles([...current, ...generated]));
-			setDirty(true);
-		} catch (error) {
-			onError?.(error);
-		} finally {
-			setSuggesting(false);
-		}
-	};
 	const addTodo = () => {
 		const value = todoInput.trim();
 		if (!value) return;
@@ -231,26 +213,41 @@ export function ContentEditDialog({
 									value={title}
 								/>
 								<div className="mt-3">
-									<TagInput
-										action={
-											onSuggestTags ? (
-												<Button
-													disabled={saving || suggesting}
-													leadingIcon={Sparkles}
-													onClick={() => void suggestTags()}
-													size="sm"
-													type="button">
-													{suggesting ? strings.generatingTags : strings.generateTags}
-												</Button>
-											) : undefined
+									<TagEditor
+										aiGenerate={
+											onSuggestTags
+												? {
+														content: isTodo
+															? JSON.stringify(todos)
+															: isEditableText
+																? JSON.stringify(document)
+																: content.content,
+														disabled: saving,
+														mode: "draft",
+														title: title.trim() || undefined,
+														type: content.type,
+													}
+												: undefined
 										}
 										disabled={saving}
+										onGenerateTags={
+											onSuggestTags
+												? async (input) =>
+														onSuggestTags({
+															content: input.mode === "draft" ? (input.content ?? "") : content.content,
+															title: input.mode === "draft" ? input.title : undefined,
+															type: input.mode === "draft" ? input.type : content.type,
+														})
+												: undefined
+										}
 										onTagsChange={(next) => {
 											setTags(next);
 											setDirty(true);
 										}}
+										onError={onError ? (message) => onError(new Error(message)) : undefined}
 										placeholder={strings.addTag}
 										suggestions={tagSuggestions}
+										strings={{ generate: strings.generateTags, generating: strings.generatingTags }}
 										tags={tags}
 									/>
 								</div>

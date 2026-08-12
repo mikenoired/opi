@@ -47,6 +47,8 @@ export { ContentTag } from "./content-tag";
 export type { ContentTagProps } from "./content-tag";
 export { TagInput } from "./tag-input";
 export type { TagInputProps, TagSuggestion } from "./tag-input";
+export { TagEditor } from "./tag-editor";
+export type { TagEditorProps, TagEditorStrings } from "./tag-editor";
 export { TagManager } from "./tag-manager";
 export type { TagManagerProps } from "./tag-manager";
 export { TodoList } from "./todo-list";

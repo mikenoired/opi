@@ -1,9 +1,8 @@
 import type { BinaryFile } from "@synapse/api";
-import { uniqueTagTitles } from "@synapse/core";
 import type { Content } from "@synapse/shared/schemas";
 import { Button, CheckboxGroup, CheckboxItem, InputField, Label } from "@synapse/ui/components";
 import type { JSONContent } from "@tiptap/core";
-import { Plus, Sparkles, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ContentTypeHeader, ContentTypePicker, type ContentTypePickerOption } from "./content-type-picker";
@@ -14,7 +13,7 @@ import { RichTextEditor } from "./editor/rich-text-editor";
 import { inferMimeType } from "./file-import";
 import { MediaDropZone } from "./media-drop-zone";
 import { useAppServices } from "./runtime";
-import { TagInput } from "./tag-input";
+import { TagEditor } from "./tag-editor";
 
 export interface ContentCreateDialogStrings {
 	addItem: string;
@@ -358,17 +357,20 @@ export function ContentCreateDialog({
 										labelHidden
 									/>
 									<div className="mt-3">
-										<DraftTagInput
-											aiDisabled={saving || !hasMeaningfulNoteContent(note)}
-											content={JSON.stringify(note ?? { content: [], type: "doc" })}
+										<TagEditor
+											aiGenerate={{
+												content: JSON.stringify(note ?? { content: [], type: "doc" }),
+												disabled: saving || !hasMeaningfulNoteContent(note),
+												mode: "draft",
+												title: title || undefined,
+												type: "note",
+											}}
 											disabled={saving}
 											onError={fail}
+											onTagsChange={setTags}
 											placeholder={strings.addTag}
-											setTags={setTags}
-											strings={strings}
+											strings={{ generate: strings.suggestTags, generating: strings.suggestingTags }}
 											tags={tags}
-											title={title}
-											type="note"
 										/>
 									</div>
 									<div className="mt-5 min-h-0 flex-1">
@@ -554,17 +556,20 @@ function TodoForm({
 			</div>
 			<div className="grid gap-2 text-sm font-medium">
 				<Label>{strings.tags}</Label>
-				<DraftTagInput
-					aiDisabled={saving || !todos.some((todo) => todo.text.trim())}
-					content={JSON.stringify(todos.filter((todo) => todo.text.trim()))}
+				<TagEditor
+					aiGenerate={{
+						content: JSON.stringify(todos.filter((todo) => todo.text.trim())),
+						disabled: saving || !todos.some((todo) => todo.text.trim()),
+						mode: "draft",
+						title: title || undefined,
+						type: "todo",
+					}}
 					disabled={saving}
 					onError={onError}
+					onTagsChange={setTags}
 					placeholder={strings.addTag}
-					setTags={setTags}
-					strings={strings}
+					strings={{ generate: strings.suggestTags, generating: strings.suggestingTags }}
 					tags={tags}
-					title={title}
-					type="todo"
 				/>
 			</div>
 		</div>
@@ -640,17 +645,20 @@ function LinkForm({
 			</label>
 			<div className="grid gap-2 text-sm font-medium">
 				<Label>{strings.tags}</Label>
-				<DraftTagInput
-					aiDisabled={saving || !url.trim()}
-					content={parsedDescription ?? url}
+				<TagEditor
+					aiGenerate={{
+						content: parsedDescription ?? url,
+						disabled: saving || !url.trim(),
+						mode: "draft",
+						title: title || undefined,
+						type: "link",
+					}}
 					disabled={saving}
 					onError={onError}
+					onTagsChange={setTags}
 					placeholder={strings.addTag}
-					setTags={setTags}
-					strings={strings}
+					strings={{ generate: strings.suggestTags, generating: strings.suggestingTags }}
 					tags={tags}
-					title={title}
-					type="link"
 				/>
 			</div>
 		</div>
@@ -764,7 +772,7 @@ function FileForm({
 					)}
 					<div className="grid gap-2 text-sm font-medium">
 						<Label>{strings.tags}</Label>
-						<TagInput disabled={saving} onTagsChange={setTags} placeholder={strings.addTag} tags={tags} />
+						<TagEditor disabled={saving} onTagsChange={setTags} placeholder={strings.addTag} tags={tags} />
 					</div>
 				</>
 			)}
@@ -789,64 +797,6 @@ function sameTags(left: string[], right: string[]): boolean {
 	return left.length === right.length && left.every((tag) => right.includes(tag));
 }
 
-function DraftTagInput({
-	aiDisabled,
-	content,
-	disabled,
-	onError,
-	placeholder,
-	setTags,
-	strings,
-	tags,
-	title,
-	type,
-}: {
-	aiDisabled: boolean;
-	content: string;
-	disabled: boolean;
-	onError(message: string): void;
-	placeholder: string;
-	setTags(tags: string[]): void;
-	strings: Pick<ContentCreateDialogStrings, "suggestTags" | "suggestingTags">;
-	tags: string[];
-	title: string;
-	type: "link" | "note" | "todo";
-}) {
-	const { client } = useAppServices();
-	const [suggesting, setSuggesting] = useState(false);
-	const suggest = async () => {
-		if (aiDisabled || suggesting) return;
-		setSuggesting(true);
-		try {
-			const result = await client.ai.suggestTags({
-				content,
-				mode: "draft",
-				title: title || undefined,
-				type,
-			});
-			if (!result.success) throw new Error(result.error ?? "Не удалось подобрать теги");
-			setTags(uniqueTagTitles([...tags, ...result.existing.map((tag) => tag.name), ...result.newTags]));
-		} catch (error) {
-			onError(error instanceof Error ? error.message : "Не удалось подобрать теги");
-		} finally {
-			setSuggesting(false);
-		}
-	};
-	return (
-		<TagInput
-			action={
-				<Button disabled={aiDisabled || suggesting} onClick={() => void suggest()} size="sm" type="button">
-					<Sparkles className="size-4" />
-					{suggesting ? strings.suggestingTags : strings.suggestTags}
-				</Button>
-			}
-			disabled={disabled}
-			onTagsChange={setTags}
-			placeholder={placeholder}
-			tags={tags}
-		/>
-	);
-}
 function acceptsFile(type: Content["type"] | null, file: File): boolean {
 	if (!type) return false;
 	const mimeType = inferMimeType(file.name, file.type);

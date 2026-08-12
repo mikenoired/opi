@@ -15,7 +15,7 @@ import { inferContentTypeFromFiles, normalizeDroppedFiles } from "./file-import"
 import { GraphSurface } from "./graph-surface";
 import { useAppServices } from "./runtime";
 import type { NavigationItemConfig } from "./runtime/config";
-import { TagInput } from "./tag-input";
+import { TagEditor } from "./tag-editor";
 
 export interface LibraryWorkspaceStrings extends ContentCardStrings {
 	add: string;
@@ -647,7 +647,7 @@ function ContentEditorDialog({
 					)}
 					<div className="grid gap-2 text-sm font-medium">
 						<span>{strings.tags}</span>
-						<TagInput onTagsChange={(tags) => setDraft({ ...draft, tags })} tags={draft.tags ?? []} />
+						<TagEditor onTagsChange={(tags) => setDraft({ ...draft, tags })} tags={draft.tags ?? []} />
 					</div>
 					<label className="grid gap-2 text-sm font-medium">
 						{strings.content}

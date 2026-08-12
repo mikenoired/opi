@@ -1,8 +1,9 @@
 import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
 import { MAX_TAGS_PER_CONTENT } from "@synapse/shared/schemas";
-import { InputField, Select, SelectContent, SelectItem, SelectTrigger } from "@synapse/ui/components";
+import { InputField } from "@synapse/ui/components";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { ContentTag } from "./content-tag";
 
@@ -42,6 +43,10 @@ export function TagInput({
 }: TagInputProps) {
 	const [currentTag, setCurrentTag] = useState("");
 	const [limitError, setLimitError] = useState("");
+	const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+	const suggestionsId = useId();
+	const inputContainerRef = useRef<HTMLDivElement>(null);
+	const [suggestionsPosition, setSuggestionsPosition] = useState({ left: 0, top: 0, width: 0 });
 	const selectedTags = new Set(tags.map(normalizeTagTitle));
 	const colorByTitle = new Map(suggestions.map((tag) => [normalizeTagTitle(tag.title), tag.color ?? 0]));
 	const availableSuggestions = useMemo(() => {
@@ -51,6 +56,27 @@ export function TagInput({
 			.filter((tag) => !query || normalizeTagTitle(tag.title).includes(query))
 			.sort((left, right) => left.title.localeCompare(right.title));
 	}, [currentTag, selectedTags, suggestions]);
+	useLayoutEffect(() => {
+		if (!suggestionsOpen || !availableSuggestions.length) return;
+		const updatePosition = () => {
+			const rect = inputContainerRef.current?.getBoundingClientRect();
+			if (!rect) return;
+			const horizontalInset = 8;
+			const width = Math.min(rect.width, window.innerWidth - horizontalInset * 2);
+			setSuggestionsPosition({
+				left: Math.min(Math.max(horizontalInset, rect.left), window.innerWidth - horizontalInset - width),
+				top: rect.bottom + 4,
+				width,
+			});
+		};
+		updatePosition();
+		window.addEventListener("resize", updatePosition);
+		document.addEventListener("scroll", updatePosition, true);
+		return () => {
+			window.removeEventListener("resize", updatePosition);
+			document.removeEventListener("scroll", updatePosition, true);
+		};
+	}, [availableSuggestions.length, suggestionsOpen]);
 	const addTag = () => {
 		if (!currentTag.trim()) return;
 		if (tags.length >= maxTags) {
@@ -78,6 +104,7 @@ export function TagInput({
 		onTagsChange(mergeTags(tags, [tag.title]));
 		setLimitError("");
 		setCurrentTag("");
+		setSuggestionsOpen(false);
 	};
 	const removeTag = (tagToRemove: string) => {
 		onTagsChange(tags.filter((tag) => normalizeTagTitle(tag) !== normalizeTagTitle(tagToRemove)));
@@ -88,6 +115,7 @@ export function TagInput({
 		<div className="flex flex-wrap gap-2">
 			{tags.map((tag) => (
 				<ContentTag
+					className="max-w-full"
 					color={colorByTitle.get(normalizeTagTitle(tag)) ?? 0}
 					disabled={disabled}
 					key={tag}
@@ -95,13 +123,18 @@ export function TagInput({
 					tag={tag}
 				/>
 			))}
-			<div className="flex min-w-[180px] flex-1 gap-2">
+			<div className="relative flex min-w-0 flex-1" ref={inputContainerRef}>
 				<InputField
+					aria-autocomplete="list"
+					aria-controls={suggestionsId}
+					aria-expanded={suggestionsOpen && availableSuggestions.length > 0}
 					label="Добавить тег"
 					labelHidden
 					className={inputClassName ?? "min-w-0 flex-1"}
 					disabled={disabled}
 					onChange={setCurrentTag}
+					onFocus={() => setSuggestionsOpen(true)}
+					onBlur={() => setSuggestionsOpen(false)}
 					onKeyDown={(event) => {
 						if (event.key === "Enter" || event.key === " ") {
 							event.preventDefault();
@@ -111,19 +144,30 @@ export function TagInput({
 					placeholder={placeholder}
 					value={currentTag}
 				/>
-				{availableSuggestions.length > 0 && (
-					<Select disabled={disabled} onValueChange={selectTag} value="">
-						<SelectTrigger className="min-w-32" placeholder="Теги" />
-						<SelectContent className="max-h-90 overflow-y-auto">
-							{availableSuggestions.map((tag, index) => (
-								<SelectItem index={index} key={tag.id} value={tag.id}>
-									{tag.title}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				)}
 			</div>
+			{suggestionsOpen &&
+				availableSuggestions.length > 0 &&
+				typeof document !== "undefined" &&
+				createPortal(
+					<div
+						className="fixed z-200 max-h-52 overflow-y-auto rounded-lg border bg-popover p-1 shadow-md"
+						id={suggestionsId}
+						onMouseDown={(event) => event.preventDefault()}
+						role="listbox"
+						style={suggestionsPosition}>
+						{availableSuggestions.map((tag) => (
+							<button
+								className="hover:bg-hover focus-visible:bg-hover block w-full truncate rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors outline-none"
+								key={tag.id}
+								onClick={() => selectTag(tag.id)}
+								role="option"
+								type="button">
+								{tag.title}
+							</button>
+						))}
+					</div>,
+					document.body
+				)}
 			{action}
 			{limitError && (
 				<p className="w-full text-sm text-destructive" role="status">
