@@ -6,7 +6,9 @@ import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
 import dynamic from "@/shared/router/dynamic";
 
 const AddContentModal = dynamic(() =>
-	import("@/widgets/modals/editor/add-content-modal").then((mod) => ({ default: mod.AddContentModal }))
+	import("@/widgets/modals/editor/add-content-modal").then((mod) => ({
+		default: mod.AddContentModal,
+	}))
 );
 
 interface AddDialogOpenOptions {
@@ -46,8 +48,12 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 	const [isAddDialogOpen, setAddDialogOpen] = useState(false);
 	const [searchFocus, setSearchFocus] = useState<() => void>(() => () => {});
 	const [preloadedFiles, setPreloadedFiles] = useState<File[]>([]);
-	const [dialogDefaults, setDialogDefaultsState] = useState<AddDialogConfig>({ initialTags: [] });
-	const [dialogOptions, setDialogOptions] = useState<AddDialogConfig>({ initialTags: [] });
+	const [dialogDefaults, setDialogDefaultsState] = useState<AddDialogConfig>({
+		initialTags: [],
+	});
+	const [dialogOptions, setDialogOptions] = useState<AddDialogConfig>({
+		initialTags: [],
+	});
 	const [sidebarWidth, setSidebarWidth] = useState(72);
 	const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
 
@@ -81,14 +87,19 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
 	const setAddDialogDefaults = useCallback(
 		(defaults: AddDialogDefaults) => {
-			setDialogDefaultsState((prev) => ({
-				initialTags:
-					defaults.initialTags !== undefined ? normalizeTags(defaults.initialTags) : prev.initialTags,
-				onContentAdded:
+			setDialogDefaultsState((prev) => {
+				const initialTags =
+					defaults.initialTags !== undefined ? normalizeTags(defaults.initialTags) : prev.initialTags;
+				const onContentAdded =
 					defaults.onContentAdded !== undefined
 						? (defaults.onContentAdded ?? undefined)
-						: prev.onContentAdded,
-			}));
+						: prev.onContentAdded;
+				return initialTags.length === prev.initialTags.length &&
+					initialTags.every((tag) => prev.initialTags.includes(tag)) &&
+					onContentAdded === prev.onContentAdded
+					? prev
+					: { initialTags, onContentAdded };
+			});
 		},
 		[normalizeTags]
 	);

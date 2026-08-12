@@ -12,14 +12,18 @@ import {
 import { useDashboard } from "@/shared/lib/dashboard-context";
 import { useI18n } from "@/shared/lib/i18n";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
-import { usePathname, useRouter, useSearchParams } from "@/shared/router/navigation";
+import { useRouter, useSearchParams } from "@/shared/router/navigation";
 import { useModal } from "@/widgets/modals/context/modal-context";
 
 const ContentFilter = lazy(() =>
-	import("@/features/content-filter/content-filter").then((mod) => ({ default: mod.ContentFilter }))
+	import("@/features/content-filter/content-filter").then((mod) => ({
+		default: mod.ContentFilter,
+	}))
 );
 const ContentGrid = lazy(() =>
-	import("@/features/content-grid/content-grid").then((mod) => ({ default: mod.ContentGrid }))
+	import("@/features/content-grid/content-grid").then((mod) => ({
+		default: mod.ContentGrid,
+	}))
 );
 
 const FILTER_TYPE_KEYS = contentTypeOptions.map((option) => option.key);
@@ -45,7 +49,6 @@ export default function DashboardClient({
 	const { openModal } = useModal();
 	const { t } = useI18n();
 	const router = useRouter();
-	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState(() => searchParams?.get("search") ?? "");
 	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => searchParams?.get("search") ?? "");
@@ -80,9 +83,10 @@ export default function DashboardClient({
 
 	useEffect(() => {
 		if (availableContentTypes.length === 0) return;
-		setSelectedContentTypes((current) =>
-			current.filter((type) => isContentTypeFilterAvailable(type, availableContentTypes))
-		);
+		setSelectedContentTypes((current) => {
+			const available = current.filter((type) => isContentTypeFilterAvailable(type, availableContentTypes));
+			return available.length === current.length ? current : available;
+		});
 	}, [availableContentTypes]);
 
 	const queryInput = useMemo<ContentListQueryInput>(
@@ -173,28 +177,11 @@ export default function DashboardClient({
 		setSelectedTags((current) => (sameStringSet(current, nextTags) ? current : nextTags));
 	}, [searchParams]);
 
-	// state → URL: обновляем адресную строку через нативный History API, чтобы
-	// НЕ триггерить ре-рендер серверного page.tsx и лишний серверный content.getAll.
-	// Важно: первым аргументом передаём null. Next патчит window.history.replaceState
-	// и при data без __NA/_N диспатчит ACTION_RESTORE — тогда useSearchParams тоже
-	// обновляется (иначе модалки/сайдбар, строящие URL через useSearchParams, теряли
-	// текущие фильтры). ACTION_RESTORE переиспользует кеш (HistoryTraversal), без RSC-fetch.
 	useEffect(() => {
-		const params = new URLSearchParams(window.location.search);
-		if (searchQuery) params.set("search", searchQuery);
-		else params.delete("search");
-		if (selectedContentTypes.length > 0) params.set("types", selectedContentTypes.join(","));
-		else params.delete("types");
-		if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
-		else params.delete("tags");
-
-		const queryString = params.toString();
-		const url = queryString ? `${pathname}?${queryString}` : pathname;
-		window.history.replaceState(null, "", url);
-	}, [searchQuery, selectedContentTypes, selectedTags, pathname]);
-
-	useEffect(() => {
-		setAddDialogDefaults({ initialTags: [], onContentAdded: handleContentAdded });
+		setAddDialogDefaults({
+			initialTags: [],
+			onContentAdded: handleContentAdded,
+		});
 		return () => setAddDialogDefaults({ initialTags: [], onContentAdded: null });
 	}, [setAddDialogDefaults, handleContentAdded]);
 

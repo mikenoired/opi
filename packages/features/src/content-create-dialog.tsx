@@ -349,6 +349,7 @@ export function ContentCreateDialog({
 								<div className="mx-auto flex h-full max-w-3xl flex-col">
 									<Input
 										className="h-auto border-none bg-transparent! px-0 text-3xl! font-semibold tracking-tight shadow-none focus-visible:ring-0"
+										data-testid="content-title"
 										disabled={saving}
 										onChange={(event) => setTitle(event.target.value)}
 										placeholder={strings.titlePlaceholder}
@@ -451,6 +452,7 @@ export function ContentCreateDialog({
 					if (!open) setConfirmAction(null);
 				}}
 				open={confirmAction !== null}
+				testId={confirmAction === "changeType" ? "change-type-confirm" : "discard-draft-confirm"}
 				title={confirmAction === "changeType" ? strings.changeTypeTitle : strings.unsavedTitle}
 			/>
 		</>
@@ -493,6 +495,7 @@ function TodoForm({
 			<label className="grid gap-2 text-sm font-medium">
 				{strings.title}
 				<Input
+					data-testid="content-title"
 					disabled={saving}
 					onChange={(event) => setTitle(event.target.value)}
 					placeholder={strings.todoTitle}
@@ -526,6 +529,7 @@ function TodoForm({
 				))}
 				<div className="flex gap-2">
 					<Input
+						data-testid="todo-item"
 						disabled={saving}
 						onChange={(event) => setTodoInput(event.target.value)}
 						onKeyDown={(event) => {
@@ -594,6 +598,7 @@ function LinkForm({
 				<span>URL</span>
 				<div className="flex gap-2">
 					<Input
+						data-testid="content-url"
 						disabled={saving || parsing}
 						onChange={(event) => setUrl(event.target.value)}
 						placeholder={strings.linkUrl}
@@ -616,6 +621,7 @@ function LinkForm({
 			<label className="grid gap-2 text-sm font-medium">
 				{strings.titleOptional}
 				<Input
+					data-testid="content-title"
 					disabled={saving}
 					onChange={(event) => setTitle(event.target.value)}
 					placeholder={strings.titlePlaceholder}
@@ -723,6 +729,7 @@ function FileForm({
 					<label className="grid gap-2 text-sm font-medium">
 						{strings.titleOptional}
 						<Input
+							data-testid="content-title"
 							disabled={saving}
 							onChange={(event) => setTitle(event.target.value)}
 							placeholder={strings.titlePlaceholder}

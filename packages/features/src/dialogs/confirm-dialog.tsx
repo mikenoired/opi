@@ -13,6 +13,7 @@ export interface ConfirmDialogProps {
 	onConfirm(): void | Promise<void>;
 	onOpenChange(open: boolean): void;
 	open: boolean;
+	testId?: string;
 	title: string;
 	variant?: "tertiary" | "primary" | "secondary" | "ghost";
 }
@@ -28,6 +29,7 @@ export function ConfirmDialog({
 	onConfirm,
 	onOpenChange,
 	open,
+	testId,
 	title,
 }: ConfirmDialogProps) {
 	const cancel = () => {
@@ -45,7 +47,7 @@ export function ConfirmDialog({
 			size="sm"
 			closeOnOverlayClick={!loading}
 			closeOnEscape={!loading}>
-			<div className="p-6">
+			<div className="p-6" data-testid={testId}>
 				<div className="flex items-start gap-4">
 					<div className="rounded-full bg-muted/50 p-3 text-primary">
 						<Icon className="size-6" />
@@ -68,7 +70,11 @@ export function ConfirmDialog({
 					<Button variant="tertiary" onClick={cancel} disabled={loading}>
 						{cancelText}
 					</Button>
-					<Button variant="primary" onClick={() => void confirm()} disabled={loading}>
+					<Button
+						data-testid={testId ? `${testId}-confirm` : undefined}
+						variant="primary"
+						onClick={() => void confirm()}
+						disabled={loading}>
 						{loading ? "Loading…" : confirmText}
 					</Button>
 				</div>

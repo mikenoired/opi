@@ -65,7 +65,7 @@ export default function Item(props: ItemProps) {
 					untitled: t("untitled"),
 				}}
 			/>
-			{editing && (editing.type === "note" || editing.type === "todo") && (
+			{editing && (
 				<Suspense fallback={null}>
 					<EditContentDialog
 						open

@@ -15,7 +15,7 @@ export default defineConfig({
 		sourcemap: true,
 	},
 	server: {
-		port: 5173,
+		port: Number(process.env.WEB_PORT ?? 5173),
 		strictPort: true,
 		proxy: {
 			"/api": {

@@ -2,6 +2,7 @@ import { cn } from "@synapse/ui/cn";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export interface BaseModalProps {
 	children: ReactNode;
@@ -94,12 +95,12 @@ export function BaseModal({
 			: variant === "drawer"
 				? animations.slideUp
 				: animations.content;
-	return (
+	return createPortal(
 		<AnimatePresence mode="wait">
 			{open && (
 				<motion.div
 					key="modal-overlay"
-					className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+					className="fixed inset-0 z-200 flex items-center justify-center bg-black/50 backdrop-blur-sm"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
 					exit={{ opacity: 0 }}
@@ -126,7 +127,8 @@ export function BaseModal({
 					</motion.div>
 				</motion.div>
 			)}
-		</AnimatePresence>
+		</AnimatePresence>,
+		document.body
 	);
 }
 

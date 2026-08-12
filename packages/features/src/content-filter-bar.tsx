@@ -63,6 +63,7 @@ export function ContentFilterBar({
 			onBlur={handleBlur}>
 			<div className="relative mb-0 border border-transparent border-b-border transition-[border-color,box-shadow] duration-150 focus-within:border-ring focus-within:shadow-[0_0_0_3px_color-mix(in_oklch,var(--ring)_18%,transparent)]">
 				<input
+					data-testid="content-search"
 					ref={searchInputRef}
 					id="search"
 					type="text"

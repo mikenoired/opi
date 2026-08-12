@@ -17,6 +17,7 @@ export interface ContentEditDialogStrings {
 	cancel: string;
 	discard: string;
 	emptyTodos: string;
+	editContent: string;
 	editNote: string;
 	editTodo: string;
 	generateTags: string;
@@ -37,6 +38,7 @@ const defaultStrings: ContentEditDialogStrings = {
 	cancel: "Отмена",
 	discard: "Не сохранять",
 	emptyTodos: "Список пока пуст",
+	editContent: "Редактировать материал",
 	editNote: "Редактировать заметку",
 	editTodo: "Редактировать список",
 	generateTags: "AI-теги",
@@ -103,6 +105,7 @@ export function ContentEditDialog({
 }: ContentEditDialogProps) {
 	const strings = { ...defaultStrings, ...stringOverrides };
 	const isTodo = content.type === "todo";
+	const isEditableText = content.type === "note" || isTodo;
 	const [title, setTitle] = useState(content.title ?? "");
 	const [tags, setTags] = useState(content.tags);
 	const [document, setDocument] = useState(() => toEditorDocument(content.content));
@@ -117,7 +120,7 @@ export function ContentEditDialog({
 		description: "",
 		icon: isTodo ? "todo" : "note",
 		key: content.type,
-		label: isTodo ? strings.editTodo : strings.editNote,
+		label: isTodo ? strings.editTodo : content.type === "note" ? strings.editNote : strings.editContent,
 	};
 
 	useEffect(() => {
@@ -133,8 +136,10 @@ export function ContentEditDialog({
 		() =>
 			isTodo
 				? todos.length > 0 && todos.every((todo) => todo.text.trim())
-				: Boolean(document.content?.length),
-		[document.content?.length, isTodo, todos]
+				: isEditableText
+					? Boolean(document.content?.length)
+					: true,
+		[document.content?.length, isEditableText, isTodo, todos]
 	);
 	const requestClose = () => {
 		if (saving) return;
@@ -146,11 +151,12 @@ export function ContentEditDialog({
 		setSaving(true);
 		try {
 			const updated = await onSave({
-				content: isTodo ? JSON.stringify(todos) : JSON.stringify(document),
+				...(isEditableText
+					? { content: isTodo ? JSON.stringify(todos) : JSON.stringify(document), type: content.type }
+					: {}),
 				id: content.id,
 				tags,
 				title: title.trim() || undefined,
-				type: content.type,
 			});
 			setDirty(false);
 			onSaved?.(updated);
@@ -166,7 +172,7 @@ export function ContentEditDialog({
 		setSuggesting(true);
 		try {
 			const generated = await onSuggestTags({
-				content: isTodo ? JSON.stringify(todos) : JSON.stringify(document),
+				content: isTodo ? JSON.stringify(todos) : isEditableText ? JSON.stringify(document) : content.content,
 				title: title.trim() || undefined,
 				type: content.type,
 			});
@@ -213,6 +219,7 @@ export function ContentEditDialog({
 							<div className="mx-auto flex h-full w-full max-w-3xl flex-col">
 								<Input
 									className="h-auto border-none bg-transparent! px-0 text-3xl! font-semibold tracking-tight shadow-none focus-visible:ring-0"
+									data-testid="content-title"
 									disabled={saving}
 									onChange={(event) => {
 										setTitle(event.target.value);
@@ -318,7 +325,7 @@ export function ContentEditDialog({
 											<p className="text-sm text-muted-foreground">{strings.emptyTodos}</p>
 										)}
 									</div>
-								) : (
+								) : isEditableText ? (
 									<div className="mt-5 min-h-0 flex-1">
 										<RichTextEditor
 											{...editor}
@@ -330,6 +337,10 @@ export function ContentEditDialog({
 											readOnly={saving}
 										/>
 									</div>
+								) : (
+									<p className="mt-6 text-sm leading-6 text-muted-foreground">
+										Изменяйте название и теги материала. Исходный файл останется без изменений.
+									</p>
 								)}
 							</div>
 						</div>

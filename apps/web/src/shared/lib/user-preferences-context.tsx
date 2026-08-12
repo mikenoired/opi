@@ -67,6 +67,7 @@ export function UserPreferencesProvider({ children }: { children: ReactNode }) {
 	const updatePreferencesMutation = api.user.updatePreferences.useMutation({ retry: false });
 
 	const applyPreferences = useCallback((nextPreferences: UserPreferences) => {
+		if (JSON.stringify(preferencesRef.current) === JSON.stringify(nextPreferences)) return;
 		preferencesRef.current = nextPreferences;
 		setPreferences(nextPreferences);
 	}, []);

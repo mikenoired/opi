@@ -59,6 +59,7 @@ export function ContentTypePicker({ onSelect, options, strings }: ContentTypePic
 					return (
 						<button
 							className="group rounded-2xl border border-border bg-card p-4 text-left transition-colors duration-150 hover:border-foreground/20 hover:bg-accent/40"
+							data-testid={`content-type-${option.key}`}
 							key={option.key}
 							onClick={() => onSelect(option.key)}
 							type="button">
@@ -93,7 +94,13 @@ export function ContentTypeHeader({
 	return (
 		<div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-6">
 			<div className="flex min-w-0 items-center gap-3">
-				<Button className="h-9 w-9 p-0" onClick={onBack} size="sm" variant="ghost">
+				<Button
+					aria-label="Назад"
+					className="h-9 w-9 p-0"
+					data-testid="content-back"
+					onClick={onBack}
+					size="sm"
+					variant="ghost">
 					<ArrowLeft className="size-4" />
 				</Button>
 				<div className="flex min-w-0 items-center gap-3">

@@ -299,6 +299,7 @@ function DesktopSidebarItem({
 	return (
 		<Tooltip content={item.label} disabled={isExpanded} side="right" sideOffset={5}>
 			<button
+				data-testid={`sidebar-${item.id}`}
 				data-sidebar-index={index}
 				type="button"
 				onClick={item.onSelect}

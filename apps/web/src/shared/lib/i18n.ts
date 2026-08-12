@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 
 import { en, searchPlaceholders as enSearchPlaceholders } from "./locale/en";
 import type { TranslationKey, TranslationMap } from "./locale/en";
@@ -8,7 +8,10 @@ import { useUserPreferences } from "./user-preferences-context";
 export type { TranslationKey } from "./locale/en";
 
 const translations: Record<"ru" | "en", TranslationMap> = { ru, en };
-const localizedSearchPlaceholders = { ru: ruSearchPlaceholders, en: enSearchPlaceholders };
+const localizedSearchPlaceholders = {
+	ru: ruSearchPlaceholders,
+	en: enSearchPlaceholders,
+};
 
 type ExtractParams<
 	S extends string,
@@ -29,14 +32,7 @@ export type KeysWithoutParams = {
 
 export function useI18n() {
 	const { interfaceLanguage } = useUserPreferences();
-	const [searchPlaceholder, setSearchPlaceholder] = useState<string>(
-		() => localizedSearchPlaceholders[interfaceLanguage][0]
-	);
-
-	useEffect(() => {
-		const placeholders = localizedSearchPlaceholders[interfaceLanguage];
-		setSearchPlaceholder(placeholders[Math.floor(Math.random() * placeholders.length)]);
-	}, [interfaceLanguage]);
+	const searchPlaceholder = localizedSearchPlaceholders[interfaceLanguage][0];
 
 	const t = useCallback(
 		<K extends TranslationKey>(

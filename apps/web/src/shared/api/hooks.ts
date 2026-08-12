@@ -275,6 +275,10 @@ const runtimeApi = {
 					...options,
 				}),
 		},
+		deleteAccount: {
+			useMutation: (options: any = {}) =>
+				useMutation({ mutationFn: () => request("/user", { method: "DELETE" }), ...options }),
+		},
 	},
 	ai: {
 		getUsageOverview: {
@@ -344,6 +348,7 @@ interface Client {
 		getStorageUsage: { useQuery: Query<StorageUsage> };
 		getPreferences: { useQuery: Query<Preferences> };
 		updatePreferences: { useMutation: Mutation<PreferencesInput, Preferences> };
+		deleteAccount: { useMutation: Mutation<undefined, unknown> };
 	};
 	ai: {
 		getUsageOverview: { useQuery: Query<AiUsage> };

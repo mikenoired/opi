@@ -1,17 +1,10 @@
 import { getAudioDisplayTitle, parseAudioJson, parseLinkContent } from "@synapse/core";
 import type { Content, LinkContent } from "@synapse/shared/schemas";
 import { extractTextFromStructuredContent } from "@synapse/shared/schemas";
-import {
-	CheckboxGroup,
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuTrigger,
-	ReadonlyCheckboxItem,
-} from "@synapse/ui/components";
 import { motion } from "framer-motion";
-import { FileText, ListChecks, Music2 } from "lucide-react";
-import { useMemo } from "react";
+import { Check, FileText, ListChecks, Music2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { ContentCardFrame } from "./content-card-frame";
 import { ContentTag } from "./content-tag";
@@ -50,33 +43,84 @@ export function ContentCard({
 	resolveMediaUrl,
 }: ContentCardProps) {
 	const visibleTags = excludedTag ? item.tags.filter((tag) => tag !== excludedTag) : item.tags;
+	const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+	const menuRef = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		if (!menuPosition) return;
+		const closeOnOutsidePointer = (event: PointerEvent) => {
+			if (!menuRef.current?.contains(event.target as Node)) setMenuPosition(null);
+		};
+		const closeOnEscape = (event: KeyboardEvent) => {
+			if (event.key === "Escape") setMenuPosition(null);
+		};
+		window.addEventListener("pointerdown", closeOnOutsidePointer);
+		window.addEventListener("keydown", closeOnEscape);
+		return () => {
+			window.removeEventListener("pointerdown", closeOnOutsidePointer);
+			window.removeEventListener("keydown", closeOnEscape);
+		};
+	}, [menuPosition]);
+	const runMenuAction = (action: () => void) => {
+		setMenuPosition(null);
+		action();
+	};
 	return (
-		<ContextMenu>
-			<ContextMenuTrigger>
-				<div className="cursor-pointer" onClick={() => onOpen?.(item)}>
-					<motion.div
-						initial={disableAnimation ? false : { opacity: 0, y: 20 }}
-						animate={disableAnimation ? undefined : { opacity: 1, y: 0 }}
-						transition={disableAnimation ? undefined : { duration: 0.2 }}
-						className="group">
-						<ContentCardFrame type={item.type}>
-							<ContentCardBody
-								item={item}
-								index={index}
-								tags={visibleTags}
-								strings={strings}
-								resolveMediaUrl={resolveMediaUrl}
-							/>
-						</ContentCardFrame>
-					</motion.div>
-				</div>
-			</ContextMenuTrigger>
-			<ContextMenuContent>
-				<ContextMenuItem onClick={() => onOpen?.(item)}>{strings.open}</ContextMenuItem>
-				{onEdit && <ContextMenuItem onClick={() => onEdit(item)}>{strings.edit}</ContextMenuItem>}
-				{onDelete && <ContextMenuItem onClick={() => onDelete(item)}>{strings.delete}</ContextMenuItem>}
-			</ContextMenuContent>
-		</ContextMenu>
+		<>
+			<div
+				className="cursor-pointer"
+				onClick={() => onOpen?.(item)}
+				onContextMenu={(event) => {
+					event.preventDefault();
+					setMenuPosition({ x: event.clientX, y: event.clientY });
+				}}>
+				<motion.div
+					initial={disableAnimation ? false : { opacity: 0, y: 20 }}
+					animate={disableAnimation ? undefined : { opacity: 1, y: 0 }}
+					transition={disableAnimation ? undefined : { duration: 0.2 }}
+					className="group">
+					<ContentCardFrame type={item.type}>
+						<ContentCardBody
+							item={item}
+							index={index}
+							tags={visibleTags}
+							strings={strings}
+							resolveMediaUrl={resolveMediaUrl}
+						/>
+					</ContentCardFrame>
+				</motion.div>
+			</div>
+			{menuPosition &&
+				createPortal(
+					<div
+						className="fixed z-200 min-w-36 rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+						ref={menuRef}
+						role="menu"
+						style={{ left: menuPosition.x, top: menuPosition.y }}>
+						<CardMenuItem onClick={() => runMenuAction(() => onOpen?.(item))}>{strings.open}</CardMenuItem>
+						{onEdit && (
+							<CardMenuItem onClick={() => runMenuAction(() => onEdit(item))}>{strings.edit}</CardMenuItem>
+						)}
+						{onDelete && (
+							<CardMenuItem onClick={() => runMenuAction(() => onDelete(item))}>
+								{strings.delete}
+							</CardMenuItem>
+						)}
+					</div>,
+					document.body
+				)}
+		</>
+	);
+}
+
+function CardMenuItem({ children, onClick }: { children: string; onClick(): void }) {
+	return (
+		<button
+			className="flex w-full cursor-pointer items-center rounded-md px-1.5 py-1 text-left text-sm outline-hidden hover:bg-accent hover:text-accent-foreground"
+			onClick={onClick}
+			role="menuitem"
+			type="button">
+			{children}
+		</button>
 	);
 }
 
@@ -122,11 +166,20 @@ function TodoPreview({ content, doneLabel, tags }: { content: string; doneLabel:
 				<ListChecks className="h-4 w-4" />
 				{done} /{todos.length} {doneLabel}
 			</div>
-			<CheckboxGroup className="gap-1">
+			<div className="flex flex-col gap-1" role="list">
 				{todos.slice(0, 3).map((todo, todoIndex) => (
-					<ReadonlyCheckboxItem key={todoIndex} checked={todo.marked} label={todo.text} className="px-0" />
+					<div className="flex h-8 items-center gap-2.5 px-0 text-[13px]" key={todoIndex} role="listitem">
+						<span
+							aria-hidden="true"
+							className="grid size-[15px] shrink-0 place-items-center rounded-[5px] border-[1.5px] border-border">
+							{todo.marked && <Check className="size-3" strokeWidth={2.5} />}
+						</span>
+						<span className={todo.marked ? "text-foreground line-through opacity-60" : "text-foreground"}>
+							{todo.text}
+						</span>
+					</div>
 				))}
-			</CheckboxGroup>
+			</div>
 			{todos.length > 3 && <div className="text-xs text-muted-foreground">+{todos.length - 3}...</div>}
 			<TagList tags={tags} className="mt-3" />
 		</div>
