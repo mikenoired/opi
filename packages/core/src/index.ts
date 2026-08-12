@@ -11,6 +11,7 @@ export {
 	getContentList,
 	getContentSuggestions,
 	getAvailableContentTypes,
+	getAudioDisplayTitle,
 	getTagsWithContentPreviews,
 	getTagsWithContentPage,
 	mapContentRecord,

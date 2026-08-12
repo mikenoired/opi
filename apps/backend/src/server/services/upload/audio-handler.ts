@@ -6,6 +6,7 @@ import { generateThumbnail, getImageDimensions } from "../../lib/generate-thumbn
 import type { UploadHandlerDeps } from "./upload-handler-types";
 import {
 	audioUploadMaxFileSizeBytes,
+	getAudioFallbackTitle,
 	getImageDimensionsSafe,
 	jpegMimeType,
 	needsPlayableAudioTranscode,
@@ -122,7 +123,8 @@ export async function processAudioUpload(
 			}
 		}
 
-		const entityTitle = params.title || metadata?.common.title || undefined;
+		const entityTitle =
+			params.title?.trim() || metadata?.common.title?.trim() || getAudioFallbackTitle(file.name);
 		const serializedContent = JSON.stringify(
 			buildAudioContent({
 				audioObjectName: audioUpload.objectName,
@@ -135,7 +137,7 @@ export async function processAudioUpload(
 				fileType: playableType,
 				makeTrack: params.makeTrack,
 				metadata: toCoreAudioMetadata(metadata),
-				title: params.title,
+				title: entityTitle,
 			})
 		);
 		const createdContent = await deps.persistContent({

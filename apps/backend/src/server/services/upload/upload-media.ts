@@ -11,6 +11,10 @@ export const jpegMimeType = "image/jpeg";
 export const videoOutputMimeType = "video/mp4";
 export const videoThumbnailTimestamp = "00:00:01.000";
 
+export function getAudioFallbackTitle(fileName: string): string {
+	return fileName.replace(/\.[^.]+$/, "").trim() || "Audio";
+}
+
 export async function getImageDimensionsSafe(
 	getImageDimensions: (buffer: Buffer) => Promise<{ height: number; width: number }>,
 	buffer: Buffer

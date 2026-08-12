@@ -1,4 +1,4 @@
-import { parseAudioJson, parseLinkContent } from "@synapse/core";
+import { getAudioDisplayTitle, parseAudioJson, parseLinkContent } from "@synapse/core";
 import type { Content, LinkContent } from "@synapse/shared/schemas";
 import { extractTextFromStructuredContent } from "@synapse/shared/schemas";
 import {
@@ -182,7 +182,7 @@ function MediaPreview({
 		(item.type === "media" ? item.media_url : "") ||
 		(audio?.cover?.thumbnailBase64 && `data:image/jpeg;base64,${audio.cover.thumbnailBase64}`) ||
 		(item.thumbnail_base64 && `data:image/jpeg;base64,${item.thumbnail_base64}`);
-	const title = audio?.track?.title || item.title;
+	const title = getAudioDisplayTitle(audio, item.title);
 	const subtitle = [audio?.track?.artist, audio?.track?.album].filter(Boolean).join(" · ");
 	const resolvedSource = source ? (resolveMediaUrl ? resolveMediaUrl(source) : source) : "";
 	return (

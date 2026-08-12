@@ -1,4 +1,4 @@
-import { parseAudioJson, parseMediaJson } from "@synapse/core";
+import { getAudioDisplayTitle, parseAudioJson, parseMediaJson } from "@synapse/core";
 import type { Content } from "@synapse/shared/schemas";
 import { Music2 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -79,7 +79,6 @@ function RenderImage({ imageUrl, title, blurThumb, savedWidth, savedHeight }: Re
 export default function MediaItem({ item, onItemClick }: MediaItemProps) {
 	const media = parseMediaJson(item.content)?.media;
 	const audioData = item.type === "audio" ? parseAudioJson(item.content) : null;
-	const audio = audioData?.audio;
 	const isAudio = item.type === "audio";
 	const blurThumb = media?.thumbnailBase64 || "";
 	const isVideo = media?.type === "video";
@@ -95,7 +94,7 @@ export default function MediaItem({ item, onItemClick }: MediaItemProps) {
 	if (isAudio) {
 		const isTrack = Boolean(audioData?.track?.isTrack);
 		const coverUrl = audioData?.cover?.url;
-		const fileName = (audio?.object || audio?.url || "").split("/").pop() || "audio";
+		const displayTitle = getAudioDisplayTitle(audioData, item.title);
 
 		if (isTrack && coverUrl) {
 			return (
@@ -108,9 +107,7 @@ export default function MediaItem({ item, onItemClick }: MediaItemProps) {
 						savedHeight={audioData?.cover?.height}
 					/>
 					<div className="absolute right-0 bottom-0 left-0 z-10 bg-linear-to-t from-black/70 to-transparent p-2 pt-3 text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-						<div className="truncate text-sm font-medium">
-							{audioData?.track?.title || item.title || fileName}
-						</div>
+						<div className="truncate text-sm font-medium">{displayTitle}</div>
 						{(audioData?.track?.artist || audioData?.track?.album) && (
 							<div className="truncate text-xs opacity-80">
 								{[audioData?.track?.artist, audioData?.track?.album].filter(Boolean).join(" • ")}
@@ -126,7 +123,7 @@ export default function MediaItem({ item, onItemClick }: MediaItemProps) {
 				<div className="flex aspect-square w-full items-center justify-center rounded-lg border bg-muted/40">
 					<Music2 className="h-10 w-10 text-muted-foreground" />
 				</div>
-				<div className="mt-2 truncate text-xs text-muted-foreground">{fileName}</div>
+				<div className="mt-2 truncate text-xs text-muted-foreground">{displayTitle}</div>
 			</div>
 		);
 	}

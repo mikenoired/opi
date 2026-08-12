@@ -92,7 +92,11 @@ function DesktopApp() {
 		setPreferences(next);
 	}, []);
 	return (
-		<>
+		<div
+			className={
+				bridge.platform === "darwin" ? "desktop-app-shell desktop-app-shell--mac" : "desktop-app-shell"
+			}>
+			{bridge.platform === "darwin" && <div aria-hidden className="desktop-titlebar-drag-region" />}
 			<LibraryWorkspace
 				activePage={page}
 				command={command}
@@ -160,7 +164,7 @@ function DesktopApp() {
 					/>
 				</SettingsModalShell>
 			)}
-		</>
+		</div>
 	);
 }
 

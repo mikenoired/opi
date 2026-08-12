@@ -112,6 +112,34 @@ export function parseAudioJson(content: string): AudioJson | null {
 	return parsed && isRecord(parsed.audio) ? (parsed as unknown as AudioJson) : null;
 }
 
+/** Returns a human-readable audio title for both new and legacy uploads. */
+export function getAudioDisplayTitle(
+	audio: AudioJson | null,
+	itemTitle?: string | null,
+	fallback = "Audio"
+): string {
+	const title = audio?.track?.title?.trim() || itemTitle?.trim();
+	if (title) return title;
+
+	const source = audio?.audio.object || audio?.audio.url;
+	if (!source) return fallback;
+
+	const path = source.split(/[?#]/, 1)[0] ?? "";
+	const encodedName = path.slice(path.lastIndexOf("/") + 1);
+	if (!encodedName) return fallback;
+
+	let fileName = encodedName;
+	try {
+		fileName = decodeURIComponent(encodedName);
+	} catch {
+		// An invalid URL escape sequence should not prevent rendering the card.
+	}
+
+	const withoutStoragePrefix = fileName.replace(/^\d{10,}-/, "");
+	const withoutExtension = withoutStoragePrefix.replace(/\.[^.]+$/, "").trim();
+	return withoutExtension || fallback;
+}
+
 export function parseLinkContent(content: string): LinkContent | null {
 	try {
 		return linkContentSchema.parse(JSON.parse(content));

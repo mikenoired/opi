@@ -6,6 +6,7 @@ import {
 	getContentList,
 	getContentSuggestions,
 	getAvailableContentTypes,
+	getAudioDisplayTitle,
 	getTagsWithContentPreviews,
 	getTagsWithContentPage,
 	mapContentRecord,
@@ -42,6 +43,11 @@ test("builds platform-neutral content previews", () => {
 		media: { type: "image", url: "https://example.com/image.png" },
 	});
 	expect(parseAudioJson('{"audio":{"durationSec":42}}')).toMatchObject({ audio: { durationSec: 42 } });
+	expect(
+		getAudioDisplayTitle(
+			parseAudioJson('{"audio":{"object":"audio/user/1710000000000-Recorded%20memo.m4a"}}')
+		)
+	).toBe("Recorded memo");
 	expect(parseMediaJson('{"media":{"type":"unsupported"}}')).toMatchObject({
 		media: { type: "unsupported" },
 	});

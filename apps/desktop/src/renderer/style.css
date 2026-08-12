@@ -2,3 +2,28 @@
 
 /* Electron contributes source discovery only; it owns no product visual rules. */
 @source "./";
+
+.desktop-app-shell {
+	height: 100dvh;
+}
+
+/* `hiddenInset` keeps the native traffic lights while exposing this strip to the renderer. */
+.desktop-app-shell--mac {
+	padding-top: 32px;
+	background: var(--background);
+}
+
+.desktop-app-shell--mac > .h-screen {
+	height: calc(100dvh - 32px);
+}
+
+.desktop-titlebar-drag-region {
+	position: fixed;
+	top: 0;
+	right: 0;
+	left: 70px;
+	z-index: 1;
+	height: 32px;
+	background: var(--background);
+	-webkit-app-region: drag;
+}

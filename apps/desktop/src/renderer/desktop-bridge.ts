@@ -51,6 +51,7 @@ export interface DesktopBridge {
 		onCommand(listener: (command: string) => void): () => void;
 		setTheme(dark: boolean): Promise<void>;
 	};
+	platform: NodeJS.Platform;
 }
 
 declare global {
