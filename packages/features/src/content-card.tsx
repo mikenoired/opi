@@ -313,11 +313,16 @@ function getAspectRatio(width?: number, height?: number, fallback = "1 / 1") {
 
 function TagList({ className, tags }: { className?: string; tags: string[] }) {
 	if (tags.length === 0) return null;
+	const displayedTags = tags.slice(0, 3);
+	const remainingTags = tags.length - displayedTags.length;
 	return (
 		<div className={`flex flex-wrap gap-1 ${className ?? ""}`}>
-			{tags.map((tag) => (
+			{displayedTags.map((tag) => (
 				<ContentTag key={tag} tag={tag} className="text-xs" />
 			))}
+			{remainingTags > 0 && (
+				<ContentTag tag={`+${remainingTags}`} className="text-xs text-muted-foreground" />
+			)}
 		</div>
 	);
 }
