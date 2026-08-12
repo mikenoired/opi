@@ -1,5 +1,6 @@
 import { parseAudioJson, parseLinkContent, parseMediaJson } from "@synapse/core";
 import type { Content, UpdateContent } from "@synapse/shared/schemas";
+import { CheckboxGroup, CheckboxItem } from "@synapse/ui/components";
 import { Download, Edit2, Image as ImageIcon, Info, Sparkles, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -408,17 +409,23 @@ function TodoBody({ item, strings }: { item: Content; strings: ContentViewerStri
 		}
 	}, [item.content]);
 	return (
-		<section className="w-full max-w-3xl rounded-2xl bg-card p-6 shadow-xl">
+		<section className="max-w-3xl min-w-xl">
 			<h1 className="mb-6 text-2xl font-semibold">{item.title || strings.untitled}</h1>
 			{todos.length ? (
-				<div className="space-y-3">
+				<CheckboxGroup
+					checkedIndices={new Set(todos.flatMap((todo, index) => (todo.marked ? [index] : [])))}
+					className="w-full gap-3">
 					{todos.map((todo, index) => (
-						<div className="flex gap-3 rounded-xl border border-border p-3" key={`${todo.text}-${index}`}>
-							<input checked={todo.marked} readOnly type="checkbox" />
-							<span className={todo.marked ? "line-through opacity-60" : ""}>{todo.text}</span>
-						</div>
+						<CheckboxItem
+							checked={todo.marked}
+							className="h-auto rounded-xl border border-border p-3"
+							index={index}
+							key={`${todo.text}-${index}`}
+							label={todo.text}
+							onToggle={() => {}}
+						/>
 					))}
-				</div>
+				</CheckboxGroup>
 			) : (
 				<p className="text-muted-foreground">{strings.emptyTasks}</p>
 			)}

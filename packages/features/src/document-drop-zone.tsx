@@ -1,4 +1,4 @@
-import { Button, Input } from "@synapse/ui/components";
+import { Button } from "@synapse/ui/components";
 import { FileText, Upload, X } from "lucide-react";
 import type { DragEvent } from "react";
 import { useRef, useState } from "react";
@@ -95,7 +95,7 @@ export function DocumentDropZone({
 						<p className="text-xs text-muted-foreground">или нажмите для выбора</p>
 						<p className="text-xs text-muted-foreground/70">Макс. 50MB • PDF, DOCX, EPUB, XLSX, CSV</p>
 					</div>
-					<Input
+					<input
 						ref={inputRef}
 						type="file"
 						accept=".pdf,.docx,.epub,.xlsx,.xls,.csv"

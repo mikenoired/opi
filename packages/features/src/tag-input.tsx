@@ -1,6 +1,6 @@
 import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
 import { MAX_TAGS_PER_CONTENT } from "@synapse/shared/schemas";
-import { Input, Select, SelectContent, SelectItem, SelectTrigger } from "@synapse/ui/components";
+import { InputField, Select, SelectContent, SelectItem, SelectTrigger } from "@synapse/ui/components";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 
@@ -96,10 +96,12 @@ export function TagInput({
 				/>
 			))}
 			<div className="flex min-w-[180px] flex-1 gap-2">
-				<Input
+				<InputField
+					label="Добавить тег"
+					labelHidden
 					className={inputClassName ?? "min-w-0 flex-1"}
 					disabled={disabled}
-					onChange={(event) => setCurrentTag(event.target.value)}
+					onChange={setCurrentTag}
 					onKeyDown={(event) => {
 						if (event.key === "Enter" || event.key === " ") {
 							event.preventDefault();

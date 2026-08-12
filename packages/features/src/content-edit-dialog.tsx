@@ -1,6 +1,6 @@
 import { uniqueTagTitles } from "@synapse/core";
 import type { Content, UpdateContent } from "@synapse/shared/schemas";
-import { Button, Input } from "@synapse/ui/components";
+import { Button, CheckboxGroup, CheckboxItem, InputField } from "@synapse/ui/components";
 import type { JSONContent } from "@tiptap/core";
 import { Plus, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -217,12 +217,14 @@ export function ContentEditDialog({
 						}}>
 						<div className="min-h-0 flex-1 overflow-y-auto p-6">
 							<div className="mx-auto flex h-full w-full max-w-3xl flex-col">
-								<Input
+								<InputField
+									labelHidden
+									label={strings.titlePlaceholder}
 									className="h-auto border-none bg-transparent! px-0 text-3xl! font-semibold tracking-tight shadow-none focus-visible:ring-0"
 									data-testid="content-title"
 									disabled={saving}
-									onChange={(event) => {
-										setTitle(event.target.value);
+									onChange={(value) => {
+										setTitle(value);
 										setDirty(true);
 									}}
 									placeholder={strings.titlePlaceholder}
@@ -255,9 +257,11 @@ export function ContentEditDialog({
 								{isTodo ? (
 									<div className="mt-6 space-y-4">
 										<div className="flex gap-2">
-											<Input
+											<InputField
 												disabled={saving}
-												onChange={(event) => setTodoInput(event.target.value)}
+												labelHidden
+												label={strings.todoPlaceholder}
+												onChange={setTodoInput}
 												onKeyDown={(event) => {
 													if (event.key === "Enter") {
 														event.preventDefault();
@@ -279,24 +283,29 @@ export function ContentEditDialog({
 											<div className="space-y-2">
 												{todos.map((todo, index) => (
 													<div className="group flex items-center gap-2" key={`${todo.text}-${index}`}>
-														<Input
-															checked={todo.marked}
+														<CheckboxGroup
+															checkedIndices={todo.marked ? new Set([0]) : new Set()}
+															className="w-auto">
+															<CheckboxItem
+																checked={todo.marked}
+																index={0}
+																label={`Mark todo item ${index + 1}`}
+																onToggle={() => {
+																	setTodos((current) =>
+																		current.map((item, itemIndex) =>
+																			itemIndex === index ? { ...item, marked: !item.marked } : item
+																		)
+																	);
+																	setDirty(true);
+																}}
+																className="size-5 px-0"
+															/>
+														</CheckboxGroup>
+														<InputField
+															label="Todo item"
+															labelHidden
 															disabled={saving}
-															onChange={() => {
-																setTodos((current) =>
-																	current.map((item, itemIndex) =>
-																		itemIndex === index ? { ...item, marked: !item.marked } : item
-																	)
-																);
-																setDirty(true);
-															}}
-															type="checkbox"
-															className="size-5"
-														/>
-														<Input
-															disabled={saving}
-															onChange={(event) => {
-																const value = event.target.value;
+															onChange={(value) => {
 																setTodos((current) =>
 																	current.map((item, itemIndex) =>
 																		itemIndex === index ? { ...item, text: value } : item

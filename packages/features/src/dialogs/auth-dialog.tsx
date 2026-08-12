@@ -1,6 +1,6 @@
 import type { AuthCredentials, AuthError } from "@synapse/api";
 import { authSchema } from "@synapse/shared/schemas";
-import { Button, Input, Label, Modal } from "@synapse/ui/components";
+import { Button, InputField, Modal } from "@synapse/ui/components";
 import { X } from "lucide-react";
 import { useState } from "react";
 
@@ -66,55 +66,44 @@ export function AuthDialog({ mode, onAuthenticate, onModeChange, onOpenChange, o
 				</div>
 			</div>
 			<form onSubmit={handleSubmit} className="space-y-4">
-				<label className="space-y-2" htmlFor="email">
-					<Label>Электронная почта</Label>
-					<Input
+				<div>
+					<InputField
 						id="email"
+						label="Электронная почта"
 						type="email"
 						placeholder="example@mail.com"
 						className="h-11"
 						value={email}
-						onChange={(event) => {
-							setEmail(event.target.value);
+						onChange={(value) => {
+							setEmail(value);
 							setFieldErrors((errors) => ({ ...errors, email: undefined }));
 						}}
-						aria-invalid={Boolean(fieldErrors.email)}
-						aria-describedby={fieldErrors.email ? "email-error" : undefined}
+						error={fieldErrors.email}
 						required
 					/>
-					{fieldErrors.email && (
-						<p id="email-error" role="alert" className="text-xs text-destructive">
-							{fieldErrors.email}
-						</p>
-					)}
-				</label>
-				<label className="space-y-2" htmlFor="password">
-					<Label>Пароль</Label>
-					<Input
+				</div>
+				<div>
+					<InputField
 						id="password"
+						label="Пароль"
 						type="password"
 						placeholder="••••••••"
 						className="h-11"
 						value={password}
-						onChange={(event) => {
-							setPassword(event.target.value);
+						onChange={(value) => {
+							setPassword(value);
 							setFieldErrors((errors) => ({ ...errors, password: undefined }));
 						}}
-						aria-invalid={Boolean(fieldErrors.password)}
-						aria-describedby={fieldErrors.password ? "password-error" : undefined}
+						error={fieldErrors.password}
 						required
 						minLength={8}
 					/>
-					{fieldErrors.password ? (
-						<p id="password-error" role="alert" className="text-xs text-destructive">
-							{fieldErrors.password}
-						</p>
-					) : mode === "register" ? (
+					{!fieldErrors.password && mode === "register" ? (
 						<p className="text-xs text-muted-foreground">
 							Не менее 8 символов: строчная и заглавная буквы, цифра
 						</p>
 					) : null}
-				</label>
+				</div>
 				{submitError && (
 					<p role="alert" className="text-sm text-destructive">
 						{submitError}

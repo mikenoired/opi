@@ -27,10 +27,9 @@ interface ExistingInput {
 type GenerateTagsButtonProps = (DraftInput | ExistingInput) & {
 	disabled?: boolean;
 	onResult: (existing: SuggestedTag[], newTags: string[]) => void;
-	className?: string;
 };
 
-export function GenerateTagsButton({ disabled, onResult, className, ...input }: GenerateTagsButtonProps) {
+export function GenerateTagsButton({ disabled, onResult, ...input }: GenerateTagsButtonProps) {
 	const { t } = useI18n();
 	const mutation = api.ai.suggestTags.useMutation({
 		onSuccess: (res) => {
@@ -55,9 +54,8 @@ export function GenerateTagsButton({ disabled, onResult, className, ...input }: 
 		<Button
 			type="button"
 			variant="primary"
-			size="sm"
+			size="md"
 			leadingIcon={Sparkles}
-			className={className}
 			disabled={disabled || mutation.isPending}
 			onClick={() => mutation.mutate(input)}
 			title={t("generateTags")}>

@@ -1,4 +1,4 @@
-import { Button, Input } from "@synapse/ui/components";
+import { Button, InputField } from "@synapse/ui/components";
 import { Clock, ExternalLink, Globe, X } from "lucide-react";
 
 export interface LinkPreviewData {
@@ -39,12 +39,14 @@ export function LinkPreview({
 		<div className="space-y-2">
 			<div className="space-y-4">
 				<div className="flex gap-2">
-					<Input
+					<InputField
 						id="content"
+						label="URL"
+						labelHidden
 						type="url"
 						placeholder="https://example.com"
 						value={content}
-						onChange={(e: React.ChangeEvent<HTMLInputElement>) => onContentChange(e.target.value)}
+						onChange={onContentChange}
 						required
 						disabled={isLoading || linkParsing}
 					/>

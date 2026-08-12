@@ -1,4 +1,4 @@
-import { Button, Input } from "@synapse/ui/components";
+import { Button, CheckboxGroup, CheckboxItem, InputField } from "@synapse/ui/components";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 
@@ -36,10 +36,12 @@ export function TodoList({
 	return (
 		<div className="flex flex-col gap-4">
 			<div className="flex gap-2">
-				<Input
+				<InputField
+					label="Add item"
+					labelHidden
 					placeholder="Add item..."
 					value={todoInput}
-					onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTodoInput(e.target.value)}
+					onChange={setTodoInput}
 					onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
 						if (e.key === "Enter") handleAddTodo();
 					}}
@@ -55,16 +57,20 @@ export function TodoList({
 				{items.length === 0 && <div className="text-sm text-muted-foreground">There's no items</div>}
 				{items.map((item, idx) => (
 					<div key={idx} className="group flex items-center gap-2">
-						<Input
-							type="checkbox"
-							checked={item.marked}
-							onChange={() => onToggleTodo(idx)}
-							className="h-5 w-5 cursor-pointer"
-							disabled={isLoading}
-						/>
-						<Input
+						<CheckboxGroup checkedIndices={item.marked ? new Set([0]) : new Set()} className="w-auto">
+							<CheckboxItem
+								checked={item.marked}
+								index={0}
+								label={`Mark item ${idx + 1}`}
+								onToggle={() => onToggleTodo(idx)}
+								className="size-5 px-0"
+							/>
+						</CheckboxGroup>
+						<InputField
+							label="Todo item"
+							labelHidden
 							value={item.text}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) => onUpdateTodoText(idx, e.target.value)}
+							onChange={(value) => onUpdateTodoText(idx, value)}
 							className="flex-1 px-2 py-1"
 							disabled={isLoading}
 						/>

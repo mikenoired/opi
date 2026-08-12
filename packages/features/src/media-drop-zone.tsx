@@ -1,4 +1,4 @@
-import { Button, Input } from "@synapse/ui/components";
+import { Button } from "@synapse/ui/components";
 import { Plus, Upload, X } from "lucide-react";
 import type { DragEvent } from "react";
 
@@ -53,7 +53,7 @@ export function MediaDropZone({
 								: "Max 10MB • JPG, PNG, GIF, WebP, MP4, MOV, AVI, WebM"}
 						</p>
 					</div>
-					<Input
+					<input
 						type="file"
 						accept={isAudio ? "audio/*" : "image/*,video/*"}
 						multiple

@@ -1,8 +1,6 @@
-import { SIDEBAR_ANIMATION } from "@synapse/shared/animations";
 import type { ColorPalette, InterfaceLanguage } from "@synapse/shared/preferences";
 import { cn } from "@synapse/ui/cn";
 import { Switch } from "@synapse/ui/components";
-import { motion } from "framer-motion";
 import {
 	Circle,
 	Flame,
@@ -19,6 +17,9 @@ import {
 	Waves,
 } from "lucide-react";
 import type { ReactNode } from "react";
+
+import PaletteSelector from "./palette-selector";
+import ThemeModeSelector from "./theme-mode-selector";
 
 const themeOptions = [
 	{ icon: Monitor, value: "system" },
@@ -68,7 +69,6 @@ export interface AppearanceSettingsPanelProps {
 	};
 }
 
-/** Shared appearance visual; persistence and theme engines are supplied by the app constructor. */
 export function AppearanceSettingsPanel(props: AppearanceSettingsPanelProps) {
 	const { strings } = props;
 	return (
@@ -85,64 +85,27 @@ export function AppearanceSettingsPanel(props: AppearanceSettingsPanelProps) {
 					className="inline-flex rounded-full bg-muted p-1"
 					role="radiogroup"
 					aria-labelledby="appearance-theme-label">
-					{themeOptions.map(({ icon: Icon, value }) => {
-						const selected = props.theme === value;
-						return (
-							<button
-								key={value}
-								type="button"
-								role="radio"
-								aria-checked={selected}
-								aria-label={strings.themeLabels[value]}
-								title={strings.themeLabels[value]}
-								onClick={() => props.onThemeChange(value)}
-								className="group relative flex size-10 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:z-10 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none aria-checked:text-foreground">
-								{selected && (
-									<motion.span
-										layoutId="appearance-theme-selection"
-										className="absolute inset-0 rounded-full bg-background shadow-sm"
-										transition={SIDEBAR_ANIMATION}
-										aria-hidden="true"
-									/>
-								)}
-								<Icon className="relative z-10 size-4 transition-colors" />
-							</button>
-						);
-					})}
+					{themeOptions.map(({ icon: Icon, value }) => (
+						<ThemeModeSelector
+							key={value}
+							icon={Icon}
+							selected={props.theme === value}
+							title={strings.themeLabels[value]}
+							onClick={() => props.onThemeChange(value)}
+						/>
+					))}
 				</div>
 			</fieldset>
 			<fieldset className="space-y-3" disabled={!props.isReady}>
 				<legend className="text-sm font-medium">{strings.paletteTitle}</legend>
 				<p className="text-sm leading-5 text-muted-foreground">{strings.paletteDescription}</p>
-				<div
-					className="grid grid-cols-2 gap-2 sm:grid-cols-4"
-					role="radiogroup"
-					aria-label={strings.paletteTitle}>
-					{paletteOptions.map(({ icon: Icon, preview, value }) => {
-						const selected = props.colorPalette === value;
-						return (
-							<button
-								key={value}
-								type="button"
-								role="radio"
-								aria-checked={selected}
-								onClick={() => props.onColorPaletteChange(value)}
-								className={cn(
-									"group flex min-h-20 flex-col justify-between rounded-xl border p-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-									selected ? "border-primary bg-primary/10" : "hover:bg-hover border-border bg-card"
-								)}>
-								<div className="flex items-center justify-between">
-									<Icon className="size-4 text-muted-foreground" />
-									<span
-										className="size-3 rounded-full ring-1 ring-black/10 dark:ring-white/15"
-										style={{ backgroundColor: preview }}
-									/>
-								</div>
-								<span className="text-sm font-medium text-foreground">{strings.paletteLabels[value]}</span>
-							</button>
-						);
-					})}
-				</div>
+				<PaletteSelector
+					title={strings.paletteTitle}
+					palettes={paletteOptions}
+					currentPalette={props.colorPalette}
+					paletteLables={strings.paletteLabels}
+					onColorPaletteChange={props.onColorPaletteChange}
+				/>
 			</fieldset>
 			<PreferenceRow icon={Languages} title={strings.languageTitle} description={strings.languageDescription}>
 				<div className="inline-flex shrink-0 self-start rounded-xl bg-background p-1 sm:self-center">

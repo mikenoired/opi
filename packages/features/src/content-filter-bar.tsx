@@ -28,7 +28,6 @@ export interface ContentFilterBarProps {
 	setSearchQuery(query: string): void;
 }
 
-/** Canonical search/filter visual shared by every renderer. */
 export function ContentFilterBar({
 	availableTypes,
 	labels,
@@ -61,7 +60,7 @@ export function ContentFilterBar({
 			onMouseLeave={() => setFiltersOpen(false)}
 			onFocus={() => setFiltersOpen(true)}
 			onBlur={handleBlur}>
-			<div className="relative mb-0 border border-transparent border-b-border transition-[border-color,box-shadow] duration-150 focus-within:border-ring focus-within:shadow-[0_0_0_3px_color-mix(in_oklch,var(--ring)_18%,transparent)]">
+			<div className="relative mb-0 border-b-border">
 				<input
 					data-testid="content-search"
 					ref={searchInputRef}
@@ -70,7 +69,6 @@ export function ContentFilterBar({
 					placeholder={labels.placeholder}
 					aria-label={labels.aria}
 					value={searchQuery}
-					autoFocus
 					onChange={(event: ChangeEvent<HTMLInputElement>) => setSearchQuery(event.target.value)}
 					className="w-full rounded-[inherit] bg-muted/50 px-4 py-3 pr-16 text-lg outline-none placeholder:text-muted-foreground sm:text-2xl"
 				/>

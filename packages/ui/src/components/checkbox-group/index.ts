@@ -1,1 +1,1 @@
-export { CheckboxGroup, EditableCheckboxItem, ReadonlyCheckboxItem } from "./checkbox-group";
+export { CheckboxGroup, CheckboxItem, EditableCheckboxItem, ReadonlyCheckboxItem } from "./checkbox-group";

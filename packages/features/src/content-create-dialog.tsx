@@ -1,7 +1,7 @@
 import type { BinaryFile } from "@synapse/api";
 import { uniqueTagTitles } from "@synapse/core";
 import type { Content } from "@synapse/shared/schemas";
-import { Button, Checkbox, Input, Label } from "@synapse/ui/components";
+import { Button, CheckboxGroup, CheckboxItem, InputField, Label } from "@synapse/ui/components";
 import type { JSONContent } from "@tiptap/core";
 import { Plus, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -347,13 +347,15 @@ export function ContentCreateDialog({
 						<div className="min-h-0 flex-1 overflow-y-auto p-6">
 							{type === "note" ? (
 								<div className="mx-auto flex h-full max-w-3xl flex-col">
-									<Input
+									<InputField
 										className="h-auto border-none bg-transparent! px-0 text-3xl! font-semibold tracking-tight shadow-none focus-visible:ring-0"
 										data-testid="content-title"
 										disabled={saving}
-										onChange={(event) => setTitle(event.target.value)}
+										onChange={setTitle}
 										placeholder={strings.titlePlaceholder}
 										value={title}
+										label={strings.titlePlaceholder}
+										labelHidden
 									/>
 									<div className="mt-3">
 										<DraftTagInput
@@ -494,11 +496,13 @@ function TodoForm({
 		<div className="mx-auto max-w-3xl space-y-5">
 			<label className="grid gap-2 text-sm font-medium">
 				{strings.title}
-				<Input
+				<InputField
 					data-testid="content-title"
 					disabled={saving}
-					onChange={(event) => setTitle(event.target.value)}
+					onChange={setTitle}
 					placeholder={strings.todoTitle}
+					labelHidden
+					label={strings.todoTitle}
 					value={title}
 				/>
 			</label>
@@ -506,13 +510,13 @@ function TodoForm({
 				<Label>{strings.addTodo}</Label>
 				{todos.map((todo, index) => (
 					<div className="flex gap-2" key={`${todo.text}-${index}`}>
-						<Input
+						<InputField
+							label="Todo tags"
+							labelHidden
 							disabled={saving}
-							onChange={(event) =>
+							onChange={(value) =>
 								setTodos((current) =>
-									current.map((item, itemIndex) =>
-										itemIndex === index ? { ...item, text: event.target.value } : item
-									)
+									current.map((item, itemIndex) => (itemIndex === index ? { ...item, text: value } : item))
 								)
 							}
 							value={todo.text}
@@ -528,10 +532,12 @@ function TodoForm({
 					</div>
 				))}
 				<div className="flex gap-2">
-					<Input
+					<InputField
 						data-testid="todo-item"
 						disabled={saving}
-						onChange={(event) => setTodoInput(event.target.value)}
+						label={strings.addItem}
+						labelHidden
+						onChange={setTodoInput}
 						onKeyDown={(event) => {
 							if (event.key === "Enter") {
 								event.preventDefault();
@@ -597,10 +603,12 @@ function LinkForm({
 			<label className="grid gap-2 text-sm font-medium">
 				<span>URL</span>
 				<div className="flex gap-2">
-					<Input
+					<InputField
+						label={strings.linkUrl}
+						labelHidden
 						data-testid="content-url"
 						disabled={saving || parsing}
-						onChange={(event) => setUrl(event.target.value)}
+						onChange={setUrl}
 						placeholder={strings.linkUrl}
 						required
 						type="url"
@@ -620,10 +628,12 @@ function LinkForm({
 			)}
 			<label className="grid gap-2 text-sm font-medium">
 				{strings.titleOptional}
-				<Input
+				<InputField
 					data-testid="content-title"
 					disabled={saving}
-					onChange={(event) => setTitle(event.target.value)}
+					label={strings.titlePlaceholder}
+					labelHidden
+					onChange={setTitle}
 					placeholder={strings.titlePlaceholder}
 					value={title}
 				/>
@@ -728,23 +738,28 @@ function FileForm({
 				<>
 					<label className="grid gap-2 text-sm font-medium">
 						{strings.titleOptional}
-						<Input
+						<InputField
+							label={strings.titleOptional}
+							labelHidden
 							data-testid="content-title"
 							disabled={saving}
-							onChange={(event) => setTitle(event.target.value)}
+							onChange={setTitle}
 							placeholder={strings.titlePlaceholder}
 							value={title}
 						/>
 					</label>
 					{type === "audio" && (
-						<div className="flex items-center gap-2">
-							<Checkbox
-								checked={makeTrack}
-								disabled={saving}
-								id="make-track"
-								onCheckedChange={(value) => setMakeTrack(Boolean(value))}
-							/>
-							<Label htmlFor="make-track">{strings.makeTrack}</Label>
+						<div>
+							<CheckboxGroup checkedIndices={makeTrack ? new Set([0]) : new Set()} className="w-auto">
+								<CheckboxItem
+									checked={makeTrack}
+									index={0}
+									label={strings.makeTrack}
+									onToggle={() => setMakeTrack(!makeTrack)}
+									aria-disabled={saving}
+									className={saving ? "pointer-events-none opacity-50" : undefined}
+								/>
+							</CheckboxGroup>
 						</div>
 					)}
 					<div className="grid gap-2 text-sm font-medium">

@@ -1,20 +1,19 @@
 @import "@synapse/features/styles.css";
 
-/* Electron contributes source discovery only; it owns no product visual rules. */
 @source "./";
 
 .desktop-app-shell {
 	height: 100dvh;
 }
 
-/* `hiddenInset` keeps the native traffic lights while exposing this strip to the renderer. */
 .desktop-app-shell--mac {
-	padding-top: 32px;
-	background: var(--background);
+	padding-top: 34px;
+	/*background: var(--background);*/
+	background: transparent;
 }
 
 .desktop-app-shell--mac > .h-screen {
-	height: calc(100dvh - 32px);
+	height: calc(100dvh - 34px);
 }
 
 .desktop-titlebar-drag-region {
@@ -24,6 +23,16 @@
 	left: 70px;
 	z-index: 1;
 	height: 32px;
-	background: var(--background);
+	/*background: var(--background);*/
+	background: transparent;
 	-webkit-app-region: drag;
 }
+
+/*@media (prefers-color-scheme: dark) {
+	.desktop-titlebar-drag-region {
+		background: var(--color-muted);
+	}
+	.desktop-app-shell--mac {
+		background: var(--color-muted);
+	}
+}*/
