@@ -12,10 +12,9 @@ import {
 	type InputHTMLAttributes,
 } from "react";
 
-import type { IconComponent } from "@/lib/icon-context";
-
 import { cn } from "../../cn";
 import { fontWeights } from "../../lib/font-weights";
+import type { IconComponent } from "../../lib/icon-context";
 import { useShape } from "../../lib/shape";
 import { SizeProvider, useSize, type SizeVariant } from "../../lib/size-context";
 import { useProximityHover } from "../../lib/use-proximity-hover";
