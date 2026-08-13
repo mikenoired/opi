@@ -87,6 +87,8 @@ export const openApiDocument = {
 		},
 		"/auth/register": { post: operation("Auth register", { body: true, mutation: true }) },
 		"/auth/login": { post: operation("Auth login", { body: true, mutation: true }) },
+		"/auth/desktop/complete": { post: operation("Auth desktop complete", { body: true, mutation: true }) },
+		"/auth/desktop/exchange": { post: operation("Auth desktop exchange", { body: true, mutation: true }) },
 		"/auth/logout": { post: operation("Auth logout", { mutation: true }) },
 		"/auth/refresh": { post: operation("Auth refresh", { mutation: true }) },
 		"/content": {

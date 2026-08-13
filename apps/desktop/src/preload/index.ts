@@ -41,8 +41,7 @@ contextBridge.exposeInMainWorld("synapseDesktop", {
 	},
 	sync: {
 		deleteRemote: (id: string) => ipcRenderer.invoke("sync:delete-remote", id),
-		login: (input: { apiUrl: string; email: string; password: string }) =>
-			ipcRenderer.invoke("sync:login", input),
+		connectAccount: () => ipcRenderer.invoke("sync:connect-account"),
 		session: () => ipcRenderer.invoke("sync:session"),
 		logout: () => ipcRenderer.invoke("sync:logout"),
 		syncAll: () => ipcRenderer.invoke("sync:all"),

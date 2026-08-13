@@ -42,7 +42,7 @@ export interface DesktopBridge {
 		updatePreferences(preferences: UserPreferencesInput): Promise<UserPreferences>;
 	};
 	sync: {
-		login(input: { apiUrl: string; email: string; password: string }): Promise<DesktopSession>;
+		connectAccount(): Promise<DesktopSession>;
 		logout(): Promise<void>;
 		session(): Promise<DesktopSession | undefined>;
 		syncAll(): Promise<SyncRunResult>;
@@ -62,4 +62,10 @@ declare global {
 
 export function getDesktopBridge(): DesktopBridge {
 	return window.synapseDesktop;
+}
+
+export function hasAccountConnection(bridge: DesktopBridge): bridge is DesktopBridge & {
+	sync: DesktopBridge["sync"] & { connectAccount(): Promise<DesktopSession> };
+} {
+	return typeof bridge.sync.connectAccount === "function";
 }

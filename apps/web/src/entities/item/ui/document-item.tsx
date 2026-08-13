@@ -124,7 +124,7 @@ export default function DocumentItem({ item, index, onItemClick }: DocumentItemP
 									key={tag}
 									tag={tag}
 									tagId={item.tag_ids[tagIndex]}
-									className="hover:bg-hover bg-muted px-2 py-1 text-xs"
+									className="bg-muted px-2 py-1 text-xs hover:bg-hover"
 								/>
 							))}
 							{item.tags.length > 3 && (

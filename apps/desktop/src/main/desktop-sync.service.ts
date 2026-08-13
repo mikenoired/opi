@@ -1,3 +1,5 @@
+import { createHash, randomBytes } from "node:crypto";
+
 import type {
 	AiTagsInput,
 	AiTagsResult,
@@ -6,6 +8,7 @@ import type {
 	SyncPushResult,
 	SyncRunResult,
 } from "@synapse/api";
+import { shell } from "electron";
 
 import type { LocalLibraryRepository } from "./local-library.repository";
 
@@ -20,6 +23,13 @@ interface LoginResponse {
 	user: { email: string };
 }
 
+interface PendingDesktopAuthorization {
+	codeVerifier: string;
+	reject: (error: Error) => void;
+	resolve: (session: DesktopSyncSession) => void;
+	state: string;
+}
+
 /**
  * Desktop-owned HTTP transport. The renderer neither sees a bearer token nor
  * decides how a conflict is resolved; it only observes the durable result
@@ -28,10 +38,12 @@ interface LoginResponse {
 export class DesktopSyncService {
 	private token?: string;
 	private apiUrl?: string;
+	private pendingAuthorization?: PendingDesktopAuthorization;
 	private session?: DesktopSyncSession;
 
 	constructor(private readonly library: LocalLibraryRepository) {}
 
+	/** Kept for main-process service tests and non-UI integrations. Desktop UI uses connectAccount(). */
 	async login(apiUrl: string, email: string, password: string): Promise<DesktopSyncSession> {
 		this.apiUrl = normalizeApiUrl(apiUrl);
 		const result = await this.request<LoginResponse>("/auth/login", { email, password });
@@ -43,6 +55,64 @@ export class DesktopSyncService {
 		);
 		this.session = { email: result.user.email, ...entitlement };
 		return this.session;
+	}
+
+	async connectAccount(): Promise<DesktopSyncSession> {
+		if (this.pendingAuthorization) throw new Error("Подключение аккаунта уже ожидает завершения");
+		this.apiUrl = normalizeApiUrl(process.env.SYNAPSE_API_URL || "http://localhost:3000/api");
+		const state = randomUrlValue(24);
+		const codeVerifier = randomUrlValue(48);
+		const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
+		const webUrl = (process.env.SYNAPSE_WEB_URL || "http://localhost:5173").replace(/\/$/, "");
+		const url = new URL(`${webUrl}/desktop-auth`);
+		url.searchParams.set("code_challenge", codeChallenge);
+		url.searchParams.set("state", state);
+
+		const session = new Promise<DesktopSyncSession>((resolve, reject) => {
+			this.pendingAuthorization = { codeVerifier, reject, resolve, state };
+		});
+		try {
+			await shell.openExternal(url.toString());
+		} catch (cause) {
+			this.pendingAuthorization = undefined;
+			throw cause;
+		}
+		return session;
+	}
+
+	async completeAccountConnection(callbackUrl: string): Promise<void> {
+		const pending = this.pendingAuthorization;
+		if (!pending) return;
+		try {
+			const url = new URL(callbackUrl);
+			const code = url.searchParams.get("code");
+			const state = url.searchParams.get("state");
+			if (
+				url.protocol !== "synapse:" ||
+				url.hostname !== "auth" ||
+				url.pathname !== "/callback" ||
+				!code ||
+				state !== pending.state
+			)
+				throw new Error("Некорректный ответ авторизации Synapse");
+			const result = await this.request<LoginResponse>("/auth/desktop/exchange", {
+				code,
+				codeVerifier: pending.codeVerifier,
+				state,
+			});
+			this.token = result.token;
+			const entitlement = await this.request<{ eligible: boolean; plan: string }>(
+				"/user/sync/entitlement",
+				undefined,
+				"GET"
+			);
+			this.session = { email: result.user.email, ...entitlement };
+			pending.resolve(this.session);
+		} catch (cause) {
+			pending.reject(cause instanceof Error ? cause : new Error("Не удалось подключить аккаунт"));
+		} finally {
+			this.pendingAuthorization = undefined;
+		}
 	}
 
 	getSession(): DesktopSyncSession | undefined {
@@ -158,4 +228,8 @@ function normalizeApiUrl(value: string): string {
 			.replace(/\/$/, "")
 			.replace(/\/api$/, "") + "/api"
 	);
+}
+
+function randomUrlValue(bytes: number) {
+	return randomBytes(bytes).toString("base64url");
 }

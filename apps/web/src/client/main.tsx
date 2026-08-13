@@ -16,6 +16,7 @@ import { StrictMode, useEffect, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 
+import DesktopAuthPage from "@/app/desktop-auth/page";
 import HomePage from "@/app/page";
 import { webRuntime } from "@/platform/web-runtime";
 import { apiClient, unwrap } from "@/shared/api/client";
@@ -138,6 +139,11 @@ const dashboardRoute = createRoute({
 	id: "dashboard-shell",
 	component: DashboardShell,
 });
+const desktopAuthRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/desktop-auth",
+	component: DesktopAuthPage,
+});
 const dashboardIndexRoute = createRoute({
 	getParentRoute: () => dashboardRoute,
 	path: "/",
@@ -152,6 +158,7 @@ const graphRoute = createRoute({
 });
 const routeTree = rootRoute.addChildren([
 	dashboardRoute.addChildren([dashboardIndexRoute, tagsRoute, tagRoute, graphRoute]),
+	desktopAuthRoute,
 ]);
 const router = createRouter({ routeTree, context: {} });
 

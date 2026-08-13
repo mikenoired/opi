@@ -1,28 +1,39 @@
 import type { CurrentUser } from "@synapse/api";
 import { useI18n } from "@synapse/i18n";
 import { Button, Skeleton } from "@synapse/ui/components";
-import { CalendarDays, LogOutIcon, Mail } from "lucide-react";
+import { CalendarDays, LogInIcon, LogOutIcon, Mail } from "lucide-react";
 import type { ReactNode } from "react";
 
 export interface AccountSettingsPanelProps {
+	connectionNotice?: string;
+	isConnectingAccount?: boolean;
 	isLoading?: boolean;
 	isSigningOut?: boolean;
 	onSignOut: () => void;
+	onConnectAccount?: () => void;
 	user: CurrentUser | null | undefined;
 	synapseSync?: ReactNode;
 }
 
 export function AccountSettingsPanel({
+	connectionNotice,
+	isConnectingAccount = false,
 	isLoading = false,
 	isSigningOut = false,
 	onSignOut,
+	onConnectAccount,
 	user,
 	synapseSync,
 }: AccountSettingsPanelProps) {
 	const { t, locale } = useI18n();
 	if (isLoading) return <AccountSettingsSkeleton />;
 	return (
-		<div className="space-y-5 py-1">
+		<div className="space-y-5">
+			{connectionNotice && (
+				<p role="status" className="text-sm text-primary">
+					{connectionNotice}
+				</p>
+			)}
 			{user && (
 				<div className="flex flex-wrap gap-3">
 					<div className="inline-flex items-center gap-3 rounded-full bg-muted px-3 py-2 align-middle text-sm text-foreground">
@@ -47,9 +58,19 @@ export function AccountSettingsPanel({
 					<h2 className="text-sm font-medium">{t("account.session.title")}</h2>
 					<p className="mt-1 text-sm text-muted-foreground">{t("account.session.description")}</p>
 				</div>
-				<Button variant="primary" leadingIcon={LogOutIcon} disabled={isSigningOut} onClick={onSignOut}>
-					{isSigningOut ? t("account.session.signingOut") : t("account.session.signOut")}
-				</Button>
+				{user ? (
+					<Button variant="primary" leadingIcon={LogOutIcon} disabled={isSigningOut} onClick={onSignOut}>
+						{isSigningOut ? t("account.session.signingOut") : t("account.session.signOut")}
+					</Button>
+				) : onConnectAccount ? (
+					<Button
+						variant="primary"
+						leadingIcon={LogInIcon}
+						disabled={isConnectingAccount}
+						onClick={onConnectAccount}>
+						{isConnectingAccount ? "Ожидаем входа…" : "Подключить аккаунт Synapse"}
+					</Button>
+				) : null}
 			</div>
 			{synapseSync}
 		</div>

@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -96,6 +97,15 @@ const aiInput = z.discriminatedUnion("mode", [
 	z.object({ mode: z.literal("existing"), contentId: z.string().min(1) }),
 ]);
 const sessionInput = z.object({ token: z.string().min(1), refreshToken: z.string().optional() });
+const desktopAuthCompleteInput = z.object({
+	codeChallenge: z.string().regex(/^[A-Za-z0-9_-]{43,128}$/),
+	state: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/),
+});
+const desktopAuthExchangeInput = z.object({
+	code: z.string().uuid(),
+	codeVerifier: z.string().regex(/^[A-Za-z0-9_-]{43,128}$/),
+	state: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/),
+});
 const syncMutationInput = z
 	.object({
 		baseRevision: z.number().int().positive().optional(),
@@ -346,6 +356,34 @@ export const api = new Hono()
 			)
 		)
 	)
+	.post("/auth/desktop/complete", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
+		const input = await body(c.req.raw, desktopAuthCompleteInput);
+		const code = crypto.randomUUID();
+		await c
+			.get("apiContext")
+			.cache.setJSON(
+				`desktop-auth:${code}`,
+				{ codeChallenge: input.codeChallenge, state: input.state, user: c.get("apiContext").user },
+				120
+			);
+		return c.json({ code });
+	})
+	.post("/auth/desktop/exchange", protectMutation, rateLimit("mutation"), async (c) => {
+		const input = await body(c.req.raw, desktopAuthExchangeInput);
+		const grant = await c
+			.get("apiContext")
+			.cache.takeJSON<{ codeChallenge: string; state: string; user: { id: string; email: string } }>(
+				`desktop-auth:${input.code}`
+			);
+		const codeChallenge = createHash("sha256").update(input.codeVerifier).digest("base64url");
+		if (!grant || grant.state !== input.state || grant.codeChallenge !== codeChallenge)
+			throw new ApiError("UNAUTHORIZED", "Invalid or expired desktop authorization");
+		return c.json({
+			refreshToken: signRefreshToken({ userId: grant.user.id, email: grant.user.email }),
+			token: signToken({ userId: grant.user.id, email: grant.user.email }),
+			user: grant.user,
+		});
+	})
 	.post("/auth/logout", protectMutation, rateLimit("mutation"), async (c) =>
 		c.json(await new AuthService(serviceContext(c.get("apiContext"))).logout())
 	)

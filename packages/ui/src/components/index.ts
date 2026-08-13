@@ -9,6 +9,7 @@ export * from "./label";
 export * from "./loading-spinner";
 export * from "./logo";
 export * from "./modal";
+export * from "./radio-group";
 export * from "./preview-image";
 export * from "./scroll-area";
 export * from "./select";

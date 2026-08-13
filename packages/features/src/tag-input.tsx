@@ -157,7 +157,7 @@ export function TagInput({
 						style={suggestionsPosition}>
 						{availableSuggestions.map((tag) => (
 							<button
-								className="hover:bg-hover focus-visible:bg-hover block w-full truncate rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors outline-none"
+								className="block w-full truncate rounded-md px-3 py-2 text-left text-sm text-foreground transition-colors outline-none hover:bg-hover focus-visible:bg-hover"
 								key={tag.id}
 								onClick={() => selectTag(tag.id)}
 								role="option"

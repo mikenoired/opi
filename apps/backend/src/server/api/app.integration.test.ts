@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 
 import { eq, like } from "drizzle-orm";
 
@@ -112,6 +113,31 @@ describe.serial("API integration", () => {
 		} finally {
 			process.env.NODE_ENV = previousNodeEnv;
 		}
+	});
+
+	test("exchanges a desktop authorization code once and verifies its PKCE challenge", async () => {
+		const account = await register("desktop-auth");
+		const codeVerifier = "v".repeat(43);
+		const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
+		const state = "s".repeat(24);
+		const complete = await request("POST", "/auth/desktop/complete", {
+			body: { codeChallenge, state },
+			token: account.token,
+		});
+		expect(complete.response.status).toBe(200);
+		expect(typeof complete.body.code).toBe("string");
+
+		const exchange = await request("POST", "/auth/desktop/exchange", {
+			body: { code: complete.body.code as string, codeVerifier, state },
+		});
+		expect(exchange.response.status).toBe(200);
+		expect(exchange.body.user).toMatchObject({ email: account.user.email, id: account.user.id });
+		expect(typeof exchange.body.token).toBe("string");
+
+		const repeated = await request("POST", "/auth/desktop/exchange", {
+			body: { code: complete.body.code as string, codeVerifier, state },
+		});
+		expect(repeated.response.status).toBe(401);
 	});
 
 	test("keeps content private, validates path/body IDs, and preserves the core user flow", async () => {

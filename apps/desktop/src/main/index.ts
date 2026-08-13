@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { basename, extname } from "node:path";
+import { basename, extname, join, resolve } from "node:path";
 
 import type { BinaryFile } from "@synapse/api";
 import {
@@ -36,6 +35,25 @@ protocol.registerSchemesAsPrivileged([
 const objectStorage = new DesktopStorageProvider(join(app.getPath("userData"), "objects"));
 const library = new LocalLibraryRepository(join(app.getPath("userData"), "library"));
 const sync = new DesktopSyncService(library);
+const pendingDeepLinks: string[] = [];
+
+if (!app.requestSingleInstanceLock()) app.quit();
+if (process.defaultApp) {
+	app.setAsDefaultProtocolClient("synapse", process.execPath, [resolve(process.argv[1] || "")]);
+} else {
+	app.setAsDefaultProtocolClient("synapse");
+}
+const initialDeepLink = process.argv.find((argument) => argument.startsWith("synapse://"));
+if (initialDeepLink) pendingDeepLinks.push(initialDeepLink);
+app.on("open-url", (event, url) => {
+	event.preventDefault();
+	void receiveDesktopAuthCallback(url);
+});
+app.on("second-instance", (_event, commandLine) => {
+	const url = commandLine.find((argument) => argument.startsWith("synapse://"));
+	if (url) void receiveDesktopAuthCallback(url);
+	BrowserWindow.getAllWindows()[0]?.focus();
+});
 
 function createWindow(): void {
 	const window = new BrowserWindow({
@@ -59,6 +77,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+	for (const url of pendingDeepLinks.splice(0)) await sync.completeAccountConnection(url);
 	await repairImportedAudioMetadata();
 	await repairUnsupportedAudioCodecs();
 	Menu.setApplicationMenu(
@@ -159,9 +178,7 @@ app.whenReady().then(async () => {
 	});
 	ipcMain.handle("ai:get-usage", () => sync.getAiUsage());
 	ipcMain.handle("ai:suggest-tags", (_event, input) => sync.suggestTags(input));
-	ipcMain.handle("sync:login", (_event, input: { apiUrl: string; email: string; password: string }) =>
-		sync.login(input.apiUrl, input.email, input.password)
-	);
+	ipcMain.handle("sync:connect-account", () => sync.connectAccount());
 	ipcMain.handle("sync:session", () => sync.getSession());
 	ipcMain.handle("sync:logout", () => sync.logout());
 	ipcMain.handle("sync:all", () => sync.syncAll());
@@ -191,6 +208,14 @@ app.whenReady().then(async () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	});
 });
+
+async function receiveDesktopAuthCallback(url: string) {
+	if (!app.isReady()) {
+		pendingDeepLinks.push(url);
+		return;
+	}
+	await sync.completeAccountConnection(url);
+}
 
 function sendCommand(command: string) {
 	return (_menuItem: MenuItem, window?: BaseWindow) => {

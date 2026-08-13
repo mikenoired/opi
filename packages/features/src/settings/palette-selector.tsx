@@ -30,7 +30,7 @@ export default function PaletteSelector({
 						onClick={() => onColorPaletteChange(value)}
 						className={cn(
 							"group flex min-h-20 flex-col justify-between rounded-xl border p-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-							selected ? "border-primary bg-primary/10" : "hover:bg-hover border-border bg-card"
+							selected ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-hover"
 						)}>
 						<div className="flex items-center justify-between">
 							<Icon className="size-4 text-muted-foreground" />

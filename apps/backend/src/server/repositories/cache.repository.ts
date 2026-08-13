@@ -25,6 +25,11 @@ export class CacheRepository {
 		return await redis.del(key);
 	}
 
+	/** Atomically reads and consumes a short-lived value, such as a desktop auth code. */
+	async take(key: string) {
+		return await redis.getdel(key);
+	}
+
 	async setJSON<T>(key: string, value: T, ttlSeconds?: number) {
 		const serialized = JSON.stringify(value);
 		return await this.set(key, serialized, ttlSeconds);
@@ -32,6 +37,16 @@ export class CacheRepository {
 
 	async getJSON<T>(key: string): Promise<T | null> {
 		const value = await redis.get(key);
+		if (!value) return null;
+		try {
+			return JSON.parse(value) as T;
+		} catch {
+			return null;
+		}
+	}
+
+	async takeJSON<T>(key: string): Promise<T | null> {
+		const value = await this.take(key);
 		if (!value) return null;
 		try {
 			return JSON.parse(value) as T;

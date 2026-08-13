@@ -184,7 +184,7 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
 						{activeRect && (
 							<motion.div
 								key={sessionRef.current}
-								className={`absolute ${shape.bg} bg-hover pointer-events-none`}
+								className={`absolute ${shape.bg} pointer-events-none bg-hover`}
 								initial={{
 									opacity: 0,
 									top: activeRect.top,

@@ -18,6 +18,7 @@ import { createRoot } from "react-dom/client";
 import "./style.css";
 import {
 	getDesktopBridge,
+	hasAccountConnection,
 	type DesktopColorScheme,
 	type DesktopSession,
 	type DesktopStatistics,
@@ -45,6 +46,8 @@ function DesktopApp() {
 	const [statistics, setStatistics] = useState<DesktopStatistics>();
 	const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
 	const [session, setSession] = useState<DesktopSession>();
+	const [connectingAccount, setConnectingAccount] = useState(false);
+	const [connectionNotice, setConnectionNotice] = useState<string>();
 	const [syncing, setSyncing] = useState(false);
 	const refresh = useCallback(async () => {
 		const [nextItems, nextSettings, nextStatistics, nextSession, nextPreferences] = await Promise.all([
@@ -109,9 +112,13 @@ function DesktopApp() {
 				setSettingsTab={setSettingsTab}
 				refresh={refresh}
 				session={session}
+				connectingAccount={connectingAccount}
+				connectionNotice={connectionNotice}
 				statistics={statistics}
 				syncing={syncing}
 				setSession={setSession}
+				setConnectingAccount={setConnectingAccount}
+				setConnectionNotice={setConnectionNotice}
 				setSyncing={setSyncing}
 				setSettings={setSettings}
 				updatePreferences={updatePreferences}
@@ -135,9 +142,13 @@ function DesktopAppContent({
 	setSettingsTab,
 	refresh,
 	session,
+	connectingAccount,
+	connectionNotice,
 	statistics,
 	syncing,
 	setSession,
+	setConnectingAccount,
+	setConnectionNotice,
 	setSyncing,
 	setSettings,
 	updatePreferences,
@@ -156,9 +167,13 @@ function DesktopAppContent({
 	setSettingsTab: (tab: string) => void;
 	refresh: () => Promise<void>;
 	session?: DesktopSession;
+	connectingAccount: boolean;
+	connectionNotice?: string;
 	statistics?: DesktopStatistics;
 	syncing: boolean;
 	setSession: (session: DesktopSession | undefined) => void;
+	setConnectingAccount: (connecting: boolean) => void;
+	setConnectionNotice: (notice: string | undefined) => void;
 	setSyncing: (syncing: boolean) => void;
 	setSettings: (settings: { colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }) => void;
 	updatePreferences: (input: Partial<UserPreferences>) => Promise<void>;
@@ -209,10 +224,27 @@ function DesktopAppContent({
 						session={session}
 						statistics={statistics}
 						syncing={syncing}
+						connectingAccount={connectingAccount}
+						connectionNotice={connectionNotice}
 						onImport={() => {
 							void bridge.library.importFiles().then(refresh);
 						}}
-						onLogin={async (input) => setSession(await bridge.sync.login(input))}
+						onConnectAccount={async () => {
+							setConnectingAccount(true);
+							try {
+								if (!hasAccountConnection(bridge)) {
+									throw new Error("Перезапустите Synapse Desktop, чтобы подключить аккаунт");
+								}
+								setSession(await bridge.sync.connectAccount());
+								setConnectionNotice("Аккаунт Synapse подключён");
+							} catch (cause) {
+								setConnectionNotice(
+									cause instanceof Error ? cause.message : "Не удалось подключить аккаунт Synapse"
+								);
+							} finally {
+								setConnectingAccount(false);
+							}
+						}}
 						onSignOut={async () => {
 							await bridge.sync.logout();
 							setSession(undefined);
@@ -242,7 +274,8 @@ function DesktopAppContent({
 
 function DesktopSettingsContent({
 	onImport,
-	onLogin,
+	onConnectAccount,
+	connectionNotice,
 	onSignOut,
 	onSync,
 	onSyncPolicyChange,
@@ -252,11 +285,12 @@ function DesktopSettingsContent({
 	settings,
 	settingsTab,
 	session,
+	connectingAccount,
 	statistics,
 	syncing,
 }: {
 	onImport(): void;
-	onLogin(input: { apiUrl: string; email: string; password: string }): Promise<void>;
+	onConnectAccount(): Promise<void>;
 	onSignOut(): Promise<void>;
 	onSync(): Promise<void>;
 	onSyncPolicyChange(value: DesktopSyncPolicy): Promise<void>;
@@ -266,12 +300,17 @@ function DesktopSettingsContent({
 	settings: { colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy };
 	settingsTab: string;
 	session?: DesktopSession;
+	connectingAccount: boolean;
+	connectionNotice?: string;
 	statistics?: DesktopStatistics;
 	syncing: boolean;
 }) {
 	if (settingsTab === "general")
 		return (
 			<AccountSettingsPanel
+				connectionNotice={connectionNotice}
+				isConnectingAccount={connectingAccount}
+				onConnectAccount={() => void onConnectAccount()}
 				onSignOut={() => void onSignOut()}
 				user={
 					session
@@ -285,15 +324,16 @@ function DesktopSettingsContent({
 						: null
 				}
 				synapseSync={
-					<LocalSyncSettingsPanel
-						isSyncing={syncing}
-						onLogin={onLogin}
-						onSync={onSync}
-						onSyncPolicyChange={onSyncPolicyChange}
-						session={session}
-						statistics={statistics}
-						syncPolicy={settings.syncPolicy}
-					/>
+					session ? (
+						<LocalSyncSettingsPanel
+							isSyncing={syncing}
+							onSync={onSync}
+							onSyncPolicyChange={onSyncPolicyChange}
+							session={session}
+							statistics={statistics}
+							syncPolicy={settings.syncPolicy}
+						/>
+					) : undefined
 				}
 			/>
 		);
