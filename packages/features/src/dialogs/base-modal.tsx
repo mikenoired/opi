@@ -22,7 +22,7 @@ const sizeClasses = {
 	md: "max-w-2xl",
 	lg: "max-w-4xl",
 	xl: "max-w-6xl",
-	full: "max-w-none h-screen w-screen rounded-none",
+	full: "max-w-none h-dvh w-screen rounded-none",
 };
 const animations = {
 	content: {
@@ -116,10 +116,10 @@ export function BaseModal({
 						transition={animation.transition}
 						className={cn(
 							"relative z-10 m-4 flex flex-col overflow-hidden rounded-lg border border-border bg-background shadow-2xl",
-							variant === "fullscreen" && "m-0 h-screen w-screen rounded-none",
+							variant === "fullscreen" && "m-0 h-dvh w-screen rounded-none",
 							variant === "drawer" && "w-full max-w-lg",
 							variant === "default" && sizeClasses[size],
-							variant === "default" && "max-h-[95vh]",
+							variant === "default" && "max-h-[95dvh]",
 							className
 						)}
 						onClick={(event) => event.stopPropagation()}>

@@ -2,6 +2,10 @@ import { useI18n } from "@synapse/i18n";
 import { cn } from "@synapse/ui/cn";
 import {
 	Button,
+	DropdownContent,
+	DropdownMenu,
+	DropdownTrigger,
+	MenuItem,
 	Select,
 	SelectTrigger,
 	Tooltip,
@@ -24,6 +28,9 @@ import {
 	Bold,
 	Code2,
 	FileCode2,
+	Heading2,
+	Heading3,
+	Heading4,
 	ImageIcon,
 	Italic,
 	Link,
@@ -32,13 +39,18 @@ import {
 	Minus,
 	Quote,
 	Redo2,
+	RotateCcw,
+	Save,
 	SquareCheckBig,
 	Strikethrough,
 	Underline,
 	Undo2,
+	MoreHorizontal,
+	Pilcrow,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 import { imageFilesToDataUrls, looksLikeMarkdown } from "./editor-input";
 import { EditableTaskItemView, ReadonlyTaskItemView, TaskListView } from "./readonly-task-item";
@@ -70,7 +82,7 @@ const editorTextSpacing = [
 ] as const;
 
 const editorContentClassName = cn(
-	"synapse-editor-content synapse-prose min-h-[420px] max-w-none px-1 py-5 text-base leading-7 outline-none",
+	"synapse-editor-content synapse-prose min-h-[420px] max-w-none px-1 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] text-base leading-7 outline-none",
 	editorTextSpacing,
 	"[&_p.is-editor-empty:first-child::before]:pointer-events-none",
 	"[&_p.is-editor-empty:first-child::before]:float-left",
@@ -140,11 +152,16 @@ export interface RichTextEditorProps {
 	onChange?: (data: JSONContent) => void;
 	onError?: (message: string) => void;
 	onRequestLink?: (currentHref: string) => string | null | Promise<string | null>;
+	onReset?: () => void;
+	onSave?: () => void;
 	readOnly?: boolean;
+	resetDisabled?: boolean;
+	saveDisabled?: boolean;
 }
 
 interface ToolbarButtonProps {
 	active?: boolean;
+	className?: string;
 	children: ReactNode;
 	disabled?: boolean;
 	label: string;
@@ -152,7 +169,15 @@ interface ToolbarButtonProps {
 	shortcut?: string;
 }
 
-function ToolbarButton({ active, children, disabled, label, onClick, shortcut }: ToolbarButtonProps) {
+function ToolbarButton({
+	active,
+	children,
+	className,
+	disabled,
+	label,
+	onClick,
+	shortcut,
+}: ToolbarButtonProps) {
 	return (
 		<Tooltip
 			side="bottom"
@@ -171,6 +196,7 @@ function ToolbarButton({ active, children, disabled, label, onClick, shortcut }:
 			}>
 			<Button
 				aria-label={label}
+				className={cn("shrink-0", className)}
 				disabled={disabled}
 				onClick={onClick}
 				size="icon"
@@ -187,7 +213,11 @@ export function RichTextEditor({
 	onChange,
 	onError,
 	onRequestLink,
+	onReset,
+	onSave,
 	readOnly = false,
+	resetDisabled = false,
+	saveDisabled = false,
 }: RichTextEditorProps) {
 	const { t } = useI18n();
 	const editorRef = useRef<TiptapEditor | null>(null);
@@ -323,154 +353,291 @@ export function RichTextEditor({
 				ref={fileInputRef}
 				type="file"
 			/>
-			{editor && !readOnly && (
-				<>
+			{editor &&
+				!readOnly &&
+				createPortal(
 					<TooltipProvider delayDuration={400} skipDelayDuration={150}>
-						<div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 border-y border-border/70 bg-background/95 py-2 backdrop-blur">
-							<Select
-								value={
-									editor.isActive("heading", { level: 2 })
-										? "2"
-										: editor.isActive("heading", { level: 3 })
-											? "3"
-											: editor.isActive("heading", { level: 4 })
-												? "4"
-												: "0"
-								}
-								onValueChange={(value) => {
-									const level = Number(value);
-									if (level)
-										editor
-											.chain()
-											.focus()
-											.setHeading({ level: level as 2 | 3 | 4 })
-											.run();
-									else editor.chain().focus().setParagraph().run();
-								}}>
-								<SelectTrigger placeholder={t("editor.paragraph")} />
-								<SelectContent>
-									<SelectItem index={0} value="0">
-										{t("editor.paragraph")}
-									</SelectItem>
-									<SelectItem index={1} value="2">
-										{t("editor.heading2")}
-									</SelectItem>
-									<SelectItem index={2} value="3">
-										{t("editor.heading3")}
-									</SelectItem>
-									<SelectItem index={3} value="4">
-										{t("editor.heading4")}
-									</SelectItem>
-								</SelectContent>
-							</Select>
-							<div className="mx-1 h-5 w-px bg-border" />
-							<ToolbarButton
-								active={editor.isActive("bold")}
-								label={t("editor.bold")}
-								onClick={() => void editor.chain().focus().toggleBold().run()}
-								shortcut="⌘/Ctrl+B">
-								<Bold />
-							</ToolbarButton>
-							<ToolbarButton
-								active={editor.isActive("italic")}
-								label={t("editor.italic")}
-								onClick={() => void editor.chain().focus().toggleItalic().run()}
-								shortcut="⌘/Ctrl+I">
-								<Italic />
-							</ToolbarButton>
-							<ToolbarButton
-								active={editor.isActive("underline")}
-								label={t("editor.underline")}
-								onClick={() => void editor.chain().focus().toggleUnderline().run()}
-								shortcut="⌘/Ctrl+U">
-								<Underline />
-							</ToolbarButton>
-							<ToolbarButton
-								active={editor.isActive("strike")}
-								label={t("editor.strike")}
-								onClick={() => void editor.chain().focus().toggleStrike().run()}
-								shortcut="⌘/Ctrl+Shift+S">
-								<Strikethrough />
-							</ToolbarButton>
-							<ToolbarButton
-								active={editor.isActive("code")}
-								label={t("editor.code")}
-								onClick={() => void editor.chain().focus().toggleCode().run()}
-								shortcut="⌘/Ctrl+E">
-								<Code2 />
-							</ToolbarButton>
-							<ToolbarButton
-								active={editor.isActive("link")}
-								label={t("editor.link")}
-								onClick={() => void editLink(editor, onRequestLink)}
-								shortcut="⌘/Ctrl+K">
-								<Link />
-							</ToolbarButton>
-							<div className="mx-1 h-5 w-px bg-border" />
-							<ToolbarButton
-								active={editor.isActive("bulletList")}
-								label={t("editor.bulletList")}
-								onClick={() => void editor.chain().focus().toggleBulletList().run()}
-								shortcut="⌘/Ctrl+Shift+8">
-								<List />
-							</ToolbarButton>
-							<ToolbarButton
-								active={editor.isActive("orderedList")}
-								label={t("editor.orderedList")}
-								onClick={() => void editor.chain().focus().toggleOrderedList().run()}
-								shortcut="⌘/Ctrl+Shift+7">
-								<ListOrdered />
-							</ToolbarButton>
-							<ToolbarButton
-								active={editor.isActive("taskList")}
-								label={t("editor.taskList")}
-								onClick={() => void editor.chain().focus().toggleTaskList().run()}
-								shortcut="⌘/Ctrl+Shift+9">
-								<SquareCheckBig />
-							</ToolbarButton>
-							<ToolbarButton
-								active={editor.isActive("blockquote")}
-								label={t("editor.blockquote")}
-								onClick={() => void editor.chain().focus().toggleBlockquote().run()}
-								shortcut="⌘/Ctrl+Shift+B">
-								<Quote />
-							</ToolbarButton>
-							<ToolbarButton
-								active={editor.isActive("codeBlock")}
-								label={t("editor.codeBlock")}
-								onClick={() => void editor.chain().focus().toggleCodeBlock().run()}
-								shortcut="⌘/Ctrl+Alt+C">
-								<FileCode2 />
-							</ToolbarButton>
-							<ToolbarButton
-								label={t("editor.separator")}
-								onClick={() => void editor.chain().focus().setHorizontalRule().run()}>
-								<Minus />
-							</ToolbarButton>
-							<ToolbarButton label={t("editor.image")} onClick={openImagePicker}>
-								<ImageIcon />
-							</ToolbarButton>
-							<div className="mx-1 h-5 w-px bg-border" />
-							<ToolbarButton
-								disabled={!editor.can().undo()}
-								label={t("editor.undo")}
-								onClick={() => void editor.chain().focus().undo().run()}
-								shortcut="⌘/Ctrl+Z">
-								<Undo2 />
-							</ToolbarButton>
-							<ToolbarButton
-								disabled={!editor.can().redo()}
-								label={t("editor.redo")}
-								onClick={() => void editor.chain().focus().redo().run()}
-								shortcut="⌘/Ctrl+Shift+Z">
-								<Redo2 />
-							</ToolbarButton>
+						<div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-210 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-xl border border-border/80 bg-background/95 p-1.5 shadow-xl backdrop-blur">
+							<div className="flex items-center justify-center gap-1">
+								<div className="max-sm:hidden">
+									<Select
+										value={
+											editor.isActive("heading", { level: 2 })
+												? "2"
+												: editor.isActive("heading", { level: 3 })
+													? "3"
+													: editor.isActive("heading", { level: 4 })
+														? "4"
+														: "0"
+										}
+										onValueChange={(value) => {
+											const level = Number(value);
+											if (level)
+												editor
+													.chain()
+													.focus()
+													.setHeading({ level: level as 2 | 3 | 4 })
+													.run();
+											else editor.chain().focus().setParagraph().run();
+										}}>
+										<SelectTrigger placeholder={t("editor.paragraph")} />
+										<SelectContent>
+											<SelectItem index={0} value="0">
+												{t("editor.paragraph")}
+											</SelectItem>
+											<SelectItem index={1} value="2">
+												{t("editor.heading2")}
+											</SelectItem>
+											<SelectItem index={2} value="3">
+												{t("editor.heading3")}
+											</SelectItem>
+											<SelectItem index={3} value="4">
+												{t("editor.heading4")}
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="mx-1 h-5 w-px bg-border max-sm:hidden" />
+								<ToolbarButton
+									active={editor.isActive("bold")}
+									label={t("editor.bold")}
+									onClick={() => void editor.chain().focus().toggleBold().run()}
+									shortcut="⌘/Ctrl+B">
+									<Bold />
+								</ToolbarButton>
+								<ToolbarButton
+									active={editor.isActive("italic")}
+									label={t("editor.italic")}
+									onClick={() => void editor.chain().focus().toggleItalic().run()}
+									shortcut="⌘/Ctrl+I">
+									<Italic />
+								</ToolbarButton>
+								<ToolbarButton
+									active={editor.isActive("underline")}
+									className="max-sm:hidden"
+									label={t("editor.underline")}
+									onClick={() => void editor.chain().focus().toggleUnderline().run()}
+									shortcut="⌘/Ctrl+U">
+									<Underline />
+								</ToolbarButton>
+								<ToolbarButton
+									active={editor.isActive("strike")}
+									className="max-[900px]:hidden"
+									label={t("editor.strike")}
+									onClick={() => void editor.chain().focus().toggleStrike().run()}
+									shortcut="⌘/Ctrl+Shift+S">
+									<Strikethrough />
+								</ToolbarButton>
+								<ToolbarButton
+									active={editor.isActive("code")}
+									className="max-[900px]:hidden"
+									label={t("editor.code")}
+									onClick={() => void editor.chain().focus().toggleCode().run()}
+									shortcut="⌘/Ctrl+E">
+									<Code2 />
+								</ToolbarButton>
+								<ToolbarButton
+									active={editor.isActive("link")}
+									className="max-sm:hidden"
+									label={t("editor.link")}
+									onClick={() => void editLink(editor, onRequestLink)}
+									shortcut="⌘/Ctrl+K">
+									<Link />
+								</ToolbarButton>
+								<div className="mx-1 h-5 w-px bg-border max-[900px]:hidden" />
+								<ToolbarButton
+									active={editor.isActive("bulletList")}
+									className="max-[900px]:hidden"
+									label={t("editor.bulletList")}
+									onClick={() => void editor.chain().focus().toggleBulletList().run()}
+									shortcut="⌘/Ctrl+Shift+8">
+									<List />
+								</ToolbarButton>
+								<ToolbarButton
+									active={editor.isActive("orderedList")}
+									className="max-[900px]:hidden"
+									label={t("editor.orderedList")}
+									onClick={() => void editor.chain().focus().toggleOrderedList().run()}
+									shortcut="⌘/Ctrl+Shift+7">
+									<ListOrdered />
+								</ToolbarButton>
+								<ToolbarButton
+									active={editor.isActive("taskList")}
+									className="max-[900px]:hidden"
+									label={t("editor.taskList")}
+									onClick={() => void editor.chain().focus().toggleTaskList().run()}
+									shortcut="⌘/Ctrl+Shift+9">
+									<SquareCheckBig />
+								</ToolbarButton>
+								<ToolbarButton
+									active={editor.isActive("blockquote")}
+									className="max-[900px]:hidden"
+									label={t("editor.blockquote")}
+									onClick={() => void editor.chain().focus().toggleBlockquote().run()}
+									shortcut="⌘/Ctrl+Shift+B">
+									<Quote />
+								</ToolbarButton>
+								<ToolbarButton
+									active={editor.isActive("codeBlock")}
+									className="max-[900px]:hidden"
+									label={t("editor.codeBlock")}
+									onClick={() => void editor.chain().focus().toggleCodeBlock().run()}
+									shortcut="⌘/Ctrl+Alt+C">
+									<FileCode2 />
+								</ToolbarButton>
+								<ToolbarButton
+									className="max-[900px]:hidden"
+									label={t("editor.separator")}
+									onClick={() => void editor.chain().focus().setHorizontalRule().run()}>
+									<Minus />
+								</ToolbarButton>
+								<ToolbarButton className="max-sm:hidden" label={t("editor.image")} onClick={openImagePicker}>
+									<ImageIcon />
+								</ToolbarButton>
+								<div className="mx-1 h-5 w-px bg-border max-[900px]:hidden" />
+								<DropdownMenu>
+									<DropdownTrigger
+										aria-label={t("editor.more")}
+										className="hidden max-[900px]:inline-flex"
+										render={
+											<Button size="icon" type="button" variant="ghost">
+												<MoreHorizontal />
+											</Button>
+										}
+									/>
+									<DropdownContent align="center" className="w-56" side="top">
+										<MenuItem
+											icon={Strikethrough}
+											index={0}
+											label={t("editor.strike")}
+											onSelect={() => editor.chain().focus().toggleStrike().run()}
+										/>
+										<MenuItem
+											icon={Code2}
+											index={1}
+											label={t("editor.code")}
+											onSelect={() => editor.chain().focus().toggleCode().run()}
+										/>
+										<MenuItem
+											icon={List}
+											index={2}
+											label={t("editor.bulletList")}
+											onSelect={() => editor.chain().focus().toggleBulletList().run()}
+										/>
+										<MenuItem
+											icon={ListOrdered}
+											index={3}
+											label={t("editor.orderedList")}
+											onSelect={() => editor.chain().focus().toggleOrderedList().run()}
+										/>
+										<MenuItem
+											icon={SquareCheckBig}
+											index={4}
+											label={t("editor.taskList")}
+											onSelect={() => editor.chain().focus().toggleTaskList().run()}
+										/>
+										<MenuItem
+											icon={Quote}
+											index={5}
+											label={t("editor.blockquote")}
+											onSelect={() => editor.chain().focus().toggleBlockquote().run()}
+										/>
+										<MenuItem
+											icon={FileCode2}
+											index={6}
+											label={t("editor.codeBlock")}
+											onSelect={() => editor.chain().focus().toggleCodeBlock().run()}
+										/>
+										<MenuItem
+											icon={Minus}
+											index={7}
+											label={t("editor.separator")}
+											onSelect={() => editor.chain().focus().setHorizontalRule().run()}
+										/>
+										<div className="hidden max-sm:contents">
+											<MenuItem
+												icon={Pilcrow}
+												index={8}
+												label={t("editor.paragraph")}
+												onSelect={() => editor.chain().focus().setParagraph().run()}
+											/>
+											<MenuItem
+												icon={Heading2}
+												index={9}
+												label={t("editor.heading2")}
+												onSelect={() => editor.chain().focus().setHeading({ level: 2 }).run()}
+											/>
+											<MenuItem
+												icon={Heading3}
+												index={10}
+												label={t("editor.heading3")}
+												onSelect={() => editor.chain().focus().setHeading({ level: 3 }).run()}
+											/>
+											<MenuItem
+												icon={Heading4}
+												index={11}
+												label={t("editor.heading4")}
+												onSelect={() => editor.chain().focus().setHeading({ level: 4 }).run()}
+											/>
+											<MenuItem
+												icon={Underline}
+												index={12}
+												label={t("editor.underline")}
+												onSelect={() => editor.chain().focus().toggleUnderline().run()}
+											/>
+											<MenuItem
+												icon={Link}
+												index={13}
+												label={t("editor.link")}
+												onSelect={() => void editLink(editor, onRequestLink)}
+											/>
+											<MenuItem
+												icon={ImageIcon}
+												index={14}
+												label={t("editor.image")}
+												onSelect={openImagePicker}
+											/>
+										</div>
+									</DropdownContent>
+								</DropdownMenu>
+								<ToolbarButton
+									disabled={!editor.can().undo()}
+									label={t("editor.undo")}
+									onClick={() => void editor.chain().focus().undo().run()}
+									shortcut="⌘/Ctrl+Z">
+									<Undo2 />
+								</ToolbarButton>
+								<ToolbarButton
+									disabled={!editor.can().redo()}
+									label={t("editor.redo")}
+									onClick={() => void editor.chain().focus().redo().run()}
+									shortcut="⌘/Ctrl+Shift+Z">
+									<Redo2 />
+								</ToolbarButton>
+								{(onReset || onSave) && (
+									<>
+										<div className="mx-1 h-5 w-px bg-border" />
+										<ToolbarButton
+											disabled={resetDisabled}
+											label={t("editor.reset")}
+											onClick={() => onReset?.()}>
+											<RotateCcw />
+										</ToolbarButton>
+										<ToolbarButton
+											disabled={saveDisabled}
+											label={t("editor.save")}
+											onClick={() => onSave?.()}>
+											<Save />
+										</ToolbarButton>
+									</>
+								)}
+							</div>
 						</div>
-					</TooltipProvider>
-					<SlashMenu editor={editor} onImage={openImagePicker} />
-				</>
-			)}
+					</TooltipProvider>,
+					document.body
+				)}
 			<EditorContent editor={editor} />
+			{editor && !readOnly && <SlashMenu editor={editor} onImage={openImagePicker} />}
 		</div>
 	);
 }

@@ -374,7 +374,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(({ classNam
 				align="start"
 				sideOffset={6}
 				alignItemWithTrigger={false}
-				className="z-50 outline-none">
+				className="z-210 outline-none">
 				<motion.div
 					initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
 					animate={open ? { opacity: 1, y: 0, scaleY: 1 } : { opacity: 0, y: -4, scaleY: 0.96 }}

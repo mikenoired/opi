@@ -106,6 +106,12 @@ export function ContentEditDialog({
 		if (dirty) setConfirmClose(true);
 		else onOpenChange(false);
 	};
+	const resetDraft = () => {
+		setTitle(content.title ?? "");
+		setTags(content.tags);
+		setDocument(toEditorDocument(content.content));
+		setDirty(false);
+	};
 	const save = async () => {
 		if (!canSave || saving) return;
 		setSaving(true);
@@ -137,7 +143,7 @@ export function ContentEditDialog({
 	return (
 		<>
 			<BaseModal
-				className={!fullScreen ? "h-[min(840px,calc(100vh-2rem))]" : undefined}
+				className={!fullScreen ? "h-[min(840px,calc(100dvh-2rem))]" : undefined}
 				closeOnOverlayClick={false}
 				onOpenChange={(next) => (next ? onOpenChange(true) : requestClose())}
 				open={open}
@@ -158,18 +164,18 @@ export function ContentEditDialog({
 							void save();
 						}}>
 						<div className="min-h-0 flex-1 overflow-y-auto p-6">
-							<div className="mx-auto flex h-full w-full max-w-3xl flex-col">
-								<InputField
-									labelHidden
-									label={t("content.titlePlaceholder")}
-									className="h-auto border-none bg-transparent! px-0 text-3xl! font-semibold tracking-tight shadow-none focus-visible:ring-0"
+							<div className="mx-auto w-full max-w-3xl">
+								<input
+									aria-label={t("content.titlePlaceholder")}
+									className="h-auto w-full border-0 bg-transparent px-0 text-3xl leading-tight font-semibold tracking-tight outline-none placeholder:text-muted-foreground focus-visible:ring-0"
 									data-testid="content-title"
 									disabled={saving}
-									onChange={(value) => {
-										setTitle(value);
+									onChange={(event) => {
+										setTitle(event.target.value);
 										setDirty(true);
 									}}
 									placeholder={t("content.titlePlaceholder")}
+									type="text"
 									value={title}
 								/>
 								<div className="mt-3">
@@ -291,7 +297,7 @@ export function ContentEditDialog({
 										)}
 									</div>
 								) : isEditableText ? (
-									<div className="mt-5 min-h-0 flex-1">
+									<div className="mt-5">
 										<RichTextEditor
 											{...editor}
 											data={document}
@@ -299,7 +305,11 @@ export function ContentEditDialog({
 												setDocument(next);
 												setDirty(true);
 											}}
+											onReset={resetDraft}
+											onSave={() => void save()}
 											readOnly={saving}
+											resetDisabled={saving || !dirty}
+											saveDisabled={saving || !canSave}
 										/>
 									</div>
 								) : (
@@ -309,14 +319,16 @@ export function ContentEditDialog({
 								)}
 							</div>
 						</div>
-						<div className="flex shrink-0 justify-end gap-2 border-t bg-background p-4 sm:px-6">
-							<Button disabled={saving} onClick={requestClose} type="button" variant="tertiary">
-								{t("library.cancel")}
-							</Button>
-							<Button disabled={saving || !canSave} type="submit">
-								{saving ? t("content.saving") : t("library.save")}
-							</Button>
-						</div>
+						{content.type !== "note" && (
+							<div className="flex shrink-0 justify-end gap-2 border-t bg-background p-4 sm:px-6">
+								<Button disabled={saving} onClick={requestClose} type="button" variant="tertiary">
+									{t("library.cancel")}
+								</Button>
+								<Button disabled={saving || !canSave} type="submit">
+									{saving ? t("content.saving") : t("library.save")}
+								</Button>
+							</div>
+						)}
 					</form>
 				</div>
 			</BaseModal>

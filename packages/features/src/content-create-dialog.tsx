@@ -228,7 +228,7 @@ export function ContentCreateDialog({
 	return (
 		<>
 			<BaseModal
-				className={type === "note" && !isFullScreen ? "h-[min(840px,calc(100vh-2rem))]" : undefined}
+				className={type === "note" && !isFullScreen ? "h-[min(840px,calc(100dvh-2rem))]" : undefined}
 				onOpenChange={(next) => (next ? onOpenChange(true) : requestClose())}
 				open={open}
 				size={size}
@@ -253,16 +253,16 @@ export function ContentCreateDialog({
 						}}>
 						<div className="min-h-0 flex-1 overflow-y-auto p-6">
 							{type === "note" ? (
-								<div className="mx-auto flex h-full max-w-3xl flex-col">
-									<InputField
-										className="h-auto border-none bg-transparent! px-0 text-3xl! font-semibold tracking-tight shadow-none focus-visible:ring-0"
+								<div className="mx-auto max-w-3xl">
+									<input
+										aria-label={t("content.titlePlaceholder")}
+										className="h-auto w-full border-0 bg-transparent px-0 text-3xl leading-tight font-semibold tracking-tight outline-none placeholder:text-muted-foreground focus-visible:ring-0"
 										data-testid="content-title"
 										disabled={saving}
-										onChange={setTitle}
+										onChange={(event) => setTitle(event.target.value)}
 										placeholder={t("content.titlePlaceholder")}
 										value={title}
-										label={t("content.titlePlaceholder")}
-										labelHidden
+										type="text"
 									/>
 									<div className="mt-3">
 										<TagEditor
@@ -280,8 +280,16 @@ export function ContentCreateDialog({
 											tags={tags}
 										/>
 									</div>
-									<div className="mt-5 min-h-0 flex-1">
-										<RichTextEditor data={note} onChange={setNote} readOnly={saving} />
+									<div className="mt-5">
+										<RichTextEditor
+											data={note}
+											onChange={setNote}
+											onReset={resetDraft}
+											onSave={() => void save()}
+											readOnly={saving}
+											resetDisabled={saving || !isDirty}
+											saveDisabled={saving}
+										/>
 									</div>
 								</div>
 							) : type === "todo" ? (
@@ -328,20 +336,26 @@ export function ContentCreateDialog({
 								/>
 							)}
 						</div>
-						<div className="flex shrink-0 justify-end gap-2 border-t bg-background p-4 sm:px-6">
-							<Button disabled={saving} onClick={() => onOpenChange(false)} type="button" variant="tertiary">
-								{t("library.cancel")}
-							</Button>
-							<Button disabled={saving} loading={saving} type="submit">
-								{saving
-									? type === "audio" || type === "media" || isDocument(type)
-										? t("content.uploading", { count: files.length })
-										: t("content.creating")
-									: type === "audio" || type === "media" || isDocument(type)
-										? t("content.upload")
-										: t("library.save")}
-							</Button>
-						</div>
+						{type !== "note" && (
+							<div className="flex shrink-0 justify-end gap-2 border-t bg-background p-4 sm:px-6">
+								<Button
+									disabled={saving}
+									onClick={() => onOpenChange(false)}
+									type="button"
+									variant="tertiary">
+									{t("library.cancel")}
+								</Button>
+								<Button disabled={saving} loading={saving} type="submit">
+									{saving
+										? type === "audio" || type === "media" || isDocument(type)
+											? t("content.uploading", { count: files.length })
+											: t("content.creating")
+										: type === "audio" || type === "media" || isDocument(type)
+											? t("content.upload")
+											: t("library.save")}
+								</Button>
+							</div>
+						)}
 					</form>
 				)}
 			</BaseModal>
