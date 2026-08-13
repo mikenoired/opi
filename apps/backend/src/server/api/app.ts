@@ -18,7 +18,7 @@ import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 
-import { deleteUserFiles, getPresignedUrl } from "../../storage/minio";
+import { deleteUserFiles, getFileBuffer, getFileMetadata, getPresignedUrl } from "../../storage/minio";
 import { backendSyncProvider } from "../adapters/backend-sync.provider";
 import type { Context } from "../context";
 import { ApiError, STATUS_CODES } from "../lib/api-error";
@@ -31,6 +31,7 @@ import AuthService from "../services/auth.service";
 import ContentService from "../services/content.service";
 import { DurableSyncService } from "../services/durable-sync.service";
 import GraphService from "../services/graph.service";
+import { SyncJournalService } from "../services/sync-journal.service";
 import UploadService from "../services/upload.service";
 import UserService from "../services/user.service";
 import { protectMutation, rateLimit, requestLogger, requireAuth, withContext } from "./middleware";
@@ -292,6 +293,44 @@ export const api = new Hono()
 		return c.json(
 			await new DurableSyncService(context).push((await body(c.req.raw, syncPushInput)).mutations)
 		);
+	})
+	.post("/sync/upload", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
+		const context = serviceContext(c.get("apiContext"));
+		await requireSyncSubscription(context);
+		const uploaded = await new UploadService(context).handleUpload(await uploadBody(c.req.raw));
+		const journal = new SyncJournalService(context);
+		return c.json({
+			...uploaded,
+			contents: await Promise.all(
+				uploaded.contents.map(async (content) => ({
+					content,
+					revision: await journal.ensureSnapshot(content),
+				}))
+			),
+		});
+	})
+	.get("/sync/assets", requireAuth, rateLimit("query"), async (c) => {
+		const context = serviceContext(c.get("apiContext"));
+		await requireSyncSubscription(context);
+		const keys = (c.req.queries("key") ?? []).slice(0, 100);
+		return c.json({
+			assets: await Promise.all(
+				keys.map(async (storageKey) => {
+					const metadata = await getFileMetadata(storageKey);
+					const bytes = await getFileBuffer(storageKey);
+					const [, ownerId] = storageKey.split("/");
+					if (!metadata || !bytes || ownerId !== context.user!.id)
+						throw new ApiError("FORBIDDEN", "Asset access denied");
+					return {
+						assetId: storageKey,
+						mimeType: metadata.contentType || "application/octet-stream",
+						sha256: createHash("sha256").update(bytes).digest("hex"),
+						size: metadata.size,
+						storageKey,
+					};
+				})
+			),
+		});
 	})
 	.get("/files/*", rateLimit("query"), async (c) => {
 		const requestPath = new URL(c.req.url).pathname;

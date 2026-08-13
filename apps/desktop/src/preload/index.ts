@@ -45,6 +45,20 @@ contextBridge.exposeInMainWorld("synapseDesktop", {
 		session: () => ipcRenderer.invoke("sync:session"),
 		logout: () => ipcRenderer.invoke("sync:logout"),
 		syncAll: () => ipcRenderer.invoke("sync:all"),
+		onProgress: (
+			listener: (progress: {
+				completed: number;
+				phase: "download" | "upload" | "finalizing";
+				total: number;
+			}) => void
+		) => {
+			const callback = (
+				_event: IpcRendererEvent,
+				progress: { completed: number; phase: "download" | "upload" | "finalizing"; total: number }
+			) => listener(progress);
+			ipcRenderer.on("sync:progress", callback);
+			return () => ipcRenderer.removeListener("sync:progress", callback);
+		},
 	},
 	window: {
 		onCommand: (listener: (command: string) => void) => {

@@ -1,6 +1,6 @@
 import { authSchema } from "@synapse/shared/schemas";
 import { Button, InputField } from "@synapse/ui/components";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { apiUrl } from "@/shared/config/api";
 import { useAuth } from "@/shared/lib/auth-context";
@@ -9,7 +9,7 @@ import { useSearchParams } from "@/shared/router/navigation";
 type Mode = "login" | "register";
 
 export default function DesktopAuthPage() {
-	const { signIn, signUp } = useAuth();
+	const { signIn, signUp, user, loading: isSessionLoading } = useAuth();
 	const search = useSearchParams();
 	const [mode, setMode] = useState<Mode>("login");
 	const [email, setEmail] = useState("");
@@ -22,6 +22,26 @@ export default function DesktopAuthPage() {
 	const validRequest = Boolean(
 		state?.match(/^[A-Za-z0-9_-]{16,128}$/) && codeChallenge?.match(/^[A-Za-z0-9_-]{43,128}$/)
 	);
+	const complete = useCallback(async () => {
+		const response = await fetch(apiUrl("/auth/desktop/complete"), {
+			body: JSON.stringify({ codeChallenge, state }),
+			credentials: "include",
+			headers: { "Content-Type": "application/json" },
+			method: "POST",
+		});
+		const payload = (await response.json()) as { code?: string; error?: string };
+		if (!response.ok || !payload.code) throw new Error(payload.error || "Не удалось завершить подключение");
+		setCallbackUrl(
+			`synapse://auth/callback?code=${encodeURIComponent(payload.code)}&state=${encodeURIComponent(state!)}`
+		);
+	}, [codeChallenge, state]);
+
+	useEffect(() => {
+		if (!validRequest || !user || isSessionLoading || callbackUrl || isLoading) return;
+		void complete().catch((cause) =>
+			setError(cause instanceof Error ? cause.message : "Не удалось подключить аккаунт")
+		);
+	}, [callbackUrl, complete, isLoading, isSessionLoading, user, validRequest]);
 
 	useEffect(() => {
 		if (!callbackUrl) return;
@@ -40,17 +60,7 @@ export default function DesktopAuthPage() {
 				? signIn(email, password, { redirect: false })
 				: signUp(email, password, { redirect: false }));
 			if (result.error) return setError(result.error.message);
-			const response = await fetch(apiUrl("/auth/desktop/complete"), {
-				body: JSON.stringify({ codeChallenge, state }),
-				credentials: "include",
-				headers: { "Content-Type": "application/json" },
-				method: "POST",
-			});
-			const payload = (await response.json()) as { code?: string; error?: string };
-			if (!response.ok || !payload.code) throw new Error(payload.error || "Не удалось завершить подключение");
-			setCallbackUrl(
-				`synapse://auth/callback?code=${encodeURIComponent(payload.code)}&state=${encodeURIComponent(state!)}`
-			);
+			await complete();
 		} catch (cause) {
 			setError(cause instanceof Error ? cause.message : "Не удалось подключить аккаунт");
 		} finally {
@@ -85,6 +95,13 @@ export default function DesktopAuthPage() {
 					<p role="alert" className="text-sm text-destructive">
 						Ссылка подключения недействительна. Вернитесь в приложение и начните заново.
 					</p>
+				) : user && !isSessionLoading ? (
+					<div className="space-y-4">
+						<p className="text-sm text-muted-foreground">Подключаем аккаунт {user.email}…</p>
+						<Button className="w-full" variant="ghost" onClick={() => setMode("login")}>
+							Войти в другой аккаунт
+						</Button>
+					</div>
 				) : (
 					<form className="space-y-4" onSubmit={submit}>
 						<InputField

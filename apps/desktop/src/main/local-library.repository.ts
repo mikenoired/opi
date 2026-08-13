@@ -22,11 +22,23 @@ export type SyncState = "local-only" | "queued" | "synced" | "failed" | "remote-
  * a local copy even when the server record wins.
  */
 export interface LocalItem extends Content {
+	assets?: LocalAsset[];
 	conflictOf?: string;
 	deleted?: boolean;
 	remoteId?: string;
 	serverRevision?: number;
 	syncState: SyncState;
+	syncVersion?: number;
+	lastSyncedAt?: string;
+}
+
+export interface LocalAsset {
+	assetId: string;
+	checksum: string;
+	localObjectName: string;
+	mimeType: string;
+	size: number;
+	storageKey: string;
 }
 
 export interface LocalSettings {
@@ -220,6 +232,21 @@ export class LocalLibraryRepository {
 		return (await this.read()).outbox;
 	}
 
+	/** Imported media stays local until Sync is requested; queue it just before the run. */
+	async queueLocalAttachmentsForSync(): Promise<void> {
+		const data = await this.read();
+		for (const item of data.items) {
+			if (
+				!item.deleted &&
+				(item.type === "media" || item.type === "audio") &&
+				hasLocalObjectReference(item) &&
+				!data.outbox.some((entry) => entry.itemId === item.id)
+			)
+				this.replaceOutboxEntry(data, item);
+		}
+		await this.write(data);
+	}
+
 	async markOperationFailed(id: string): Promise<void> {
 		const data = await this.read();
 		const entry = data.outbox.find((candidate) => candidate.id === id);
@@ -259,6 +286,10 @@ export class LocalLibraryRepository {
 		await this.write(data);
 	}
 
+	getAssets(remoteId: string): Promise<LocalAsset[]> {
+		return this.read().then((data) => data.items.find((item) => item.remoteId === remoteId)?.assets ?? []);
+	}
+
 	/** Server wins. The complete local revision is retained as an unsynced, local-only conflict copy. */
 	async resolveConflict(entryId: string, remote: Content, revision: number): Promise<string> {
 		const data = await this.read();
@@ -292,6 +323,7 @@ export class LocalLibraryRepository {
 	}
 
 	async applyRemoteChange(change: {
+		assets?: LocalAsset[];
 		content?: Content;
 		entityId: string;
 		operation: "delete" | "upsert";
@@ -300,7 +332,18 @@ export class LocalLibraryRepository {
 		const data = await this.read();
 		const local = data.items.find((item) => item.remoteId === change.entityId || item.id === change.entityId);
 		const pending = local && data.outbox.find((entry) => entry.itemId === local.id);
-		if (pending && change.content) return this.resolveConflict(pending.id, change.content, change.revision);
+		if (pending && change.content) {
+			// Equal IDs describe the same entity, not necessarily the same revision.
+			// Timestamp decides the winner; a newer local mutation is rebased and pushed.
+			if (new Date(local.updated_at).getTime() > new Date(change.content.updated_at).getTime()) {
+				pending.mutation.baseRevision = change.revision;
+				local.serverRevision = change.revision;
+				local.syncState = "queued";
+				await this.write(data);
+				return undefined;
+			}
+			return this.resolveConflict(pending.id, change.content, change.revision);
+		}
 		if (change.operation === "delete") {
 			if (local) data.items = data.items.filter((item) => item.id !== local.id);
 			await this.write(data);
@@ -309,10 +352,14 @@ export class LocalLibraryRepository {
 		if (!change.content) throw new Error("Sync upsert has no content payload");
 		const replacement: LocalItem = {
 			...change.content,
+			assets: change.assets,
 			id: local?.id ?? change.content.id,
+			lastSyncedAt: new Date().toISOString(),
 			remoteId: change.content.id,
 			serverRevision: change.revision,
-			syncState: "synced",
+			syncState:
+				change.assets?.every((asset) => Boolean(asset.localObjectName)) === false ? "failed" : "synced",
+			syncVersion: change.revision,
 		};
 		data.items = local
 			? data.items.map((item) => (item.id === local.id ? replacement : item))
@@ -437,17 +484,30 @@ export class LocalLibraryRepository {
 
 function toCreateContent(item: LocalItem): CreateContent {
 	return {
-		content: item.content,
+		content: toRemoteAssetUrls(item.content, item.assets),
 		document_images: item.document_images,
 		media_type: item.media_type ?? "image",
-		media_url: item.media_url,
+		media_url: toRemoteAssetUrl(item.media_url, item.assets),
 		tags: item.tags,
 		thumbnail_base64: item.thumbnail_base64,
-		thumbnail_url: item.thumbnail_url,
+		thumbnail_url: toRemoteAssetUrl(item.thumbnail_url, item.assets),
 		title: item.title,
 		type: item.type,
-		url: item.url,
+		url: toRemoteAssetUrl(item.url, item.assets),
 	};
+}
+
+function toRemoteAssetUrls(value: string, assets: LocalAsset[] | undefined): string {
+	let remote = value;
+	for (const asset of assets ?? []) {
+		const localUrl = `synapse-object://local/${encodeURIComponent(asset.localObjectName)}`;
+		remote = remote.replaceAll(localUrl, `/api/files/${asset.storageKey}`);
+	}
+	return remote;
+}
+
+function toRemoteAssetUrl(value: string | undefined, assets: LocalAsset[] | undefined): string | undefined {
+	return value === undefined ? undefined : toRemoteAssetUrls(value, assets);
 }
 
 function emptyLibrary(): LocalLibraryDataV2 {

@@ -46,12 +46,19 @@ export interface DesktopBridge {
 		logout(): Promise<void>;
 		session(): Promise<DesktopSession | undefined>;
 		syncAll(): Promise<SyncRunResult>;
+		onProgress(listener: (progress: SyncProgress) => void): () => void;
 	};
 	window: {
 		onCommand(listener: (command: string) => void): () => void;
 		setTheme(dark: boolean): Promise<void>;
 	};
 	platform: NodeJS.Platform;
+}
+
+export interface SyncProgress {
+	completed: number;
+	phase: "download" | "upload" | "finalizing";
+	total: number;
 }
 
 declare global {

@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import { basename, extname, relative, resolve } from "node:path";
 
@@ -35,6 +35,22 @@ export class DesktopStorageProvider implements StorageProvider {
 		await mkdir(resolve(objectPath, ".."), { recursive: true });
 		await writeFile(objectPath, data);
 		return { objectName, size: data.byteLength };
+	}
+
+	/** A local object name is device-specific; identity is carried by the asset manifest, never this path. */
+	async putSyncedAsset(
+		data: Uint8Array,
+		storageKey: string
+	): Promise<{ objectName: string; sha256: string; size: number }> {
+		const objectName = createObjectName({
+			fileName: basename(storageKey),
+			folder: "synced-assets",
+			userId: "local",
+		});
+		const objectPath = this.getObjectPath(objectName);
+		await mkdir(resolve(objectPath, ".."), { recursive: true });
+		await writeFile(objectPath, data);
+		return { objectName, sha256: createHash("sha256").update(data).digest("hex"), size: data.byteLength };
 	}
 
 	getObjectPath(objectName: string): string {

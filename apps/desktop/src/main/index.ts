@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { basename, extname, join, resolve } from "node:path";
+import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, extname, join, resolve } from "node:path";
 
 import type { BinaryFile } from "@synapse/api";
 import {
@@ -9,12 +9,12 @@ import {
 	parseAudioJson,
 } from "@synapse/core";
 import type { UserPreferencesInput } from "@synapse/shared/preferences";
-import { app, BaseWindow, BrowserWindow, dialog, Menu, protocol, type MenuItem } from "electron";
+import { app, BaseWindow, BrowserWindow, dialog, Menu, protocol, safeStorage, type MenuItem } from "electron";
 import { ipcMain } from "electron";
 
 import { createDesktopObjectResponse } from "./desktop-object-response";
 import { DesktopStorageProvider } from "./desktop-storage.provider";
-import { DesktopSyncService } from "./desktop-sync.service";
+import { DesktopSyncService, type StoredDesktopSession } from "./desktop-sync.service";
 import {
 	needsPlayableAudioTranscode,
 	readLocalAudioMetadata,
@@ -34,7 +34,8 @@ protocol.registerSchemesAsPrivileged([
 
 const objectStorage = new DesktopStorageProvider(join(app.getPath("userData"), "objects"));
 const library = new LocalLibraryRepository(join(app.getPath("userData"), "library"));
-const sync = new DesktopSyncService(library);
+const sync = new DesktopSyncService(library, objectStorage);
+const sessionPath = join(app.getPath("userData"), "desktop-session.bin");
 const pendingDeepLinks: string[] = [];
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -77,6 +78,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+	await restoreDesktopSession();
 	for (const url of pendingDeepLinks.splice(0)) await sync.completeAccountConnection(url);
 	await repairImportedAudioMetadata();
 	await repairUnsupportedAudioCodecs();
@@ -178,10 +180,20 @@ app.whenReady().then(async () => {
 	});
 	ipcMain.handle("ai:get-usage", () => sync.getAiUsage());
 	ipcMain.handle("ai:suggest-tags", (_event, input) => sync.suggestTags(input));
-	ipcMain.handle("sync:connect-account", () => sync.connectAccount());
+	ipcMain.handle("sync:connect-account", async () => {
+		const session = await sync.connectAccount();
+		await saveDesktopSession();
+		return session;
+	});
 	ipcMain.handle("sync:session", () => sync.getSession());
-	ipcMain.handle("sync:logout", () => sync.logout());
-	ipcMain.handle("sync:all", () => sync.syncAll());
+	ipcMain.handle("sync:logout", async () => {
+		sync.logout();
+		await rm(sessionPath, { force: true });
+	});
+	ipcMain.handle("sync:all", (event) => {
+		sync.setProgressListener((progress) => event.sender.send("sync:progress", progress));
+		return sync.syncAll().finally(() => sync.setProgressListener(undefined));
+	});
 	ipcMain.handle("window:set-theme", (_event, dark: boolean) => {
 		const window = BrowserWindow.getFocusedWindow();
 		if (!window) return;
@@ -528,4 +540,26 @@ function contentTypeFor(extension: string): string {
 			webp: "image/webp",
 		}[extension] ?? "application/octet-stream"
 	);
+}
+
+async function restoreDesktopSession(): Promise<void> {
+	try {
+		if (!safeStorage.isEncryptionAvailable()) return;
+		const encrypted = await readFile(sessionPath);
+		const stored = JSON.parse(safeStorage.decryptString(encrypted)) as StoredDesktopSession;
+		if (await sync.restoreSession(stored)) await saveDesktopSession();
+		else await rm(sessionPath, { force: true });
+	} catch {
+		await rm(sessionPath, { force: true });
+	}
+}
+
+async function saveDesktopSession(): Promise<void> {
+	const stored = sync.getStoredSession();
+	if (!stored) return;
+	if (!safeStorage.isEncryptionAvailable()) throw new Error("Защищённое хранилище ОС недоступно");
+	await mkdir(dirname(sessionPath), { recursive: true });
+	const temporary = `${sessionPath}.next`;
+	await writeFile(temporary, safeStorage.encryptString(JSON.stringify(stored)));
+	await rename(temporary, sessionPath);
 }

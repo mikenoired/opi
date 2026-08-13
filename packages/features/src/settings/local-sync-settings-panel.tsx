@@ -15,6 +15,7 @@ export interface LocalSyncSettingsPanelProps {
 		tagCount: number;
 	};
 	syncPolicy: "automatic" | "manual";
+	progress?: { completed: number; phase: "download" | "upload" | "finalizing"; total: number };
 }
 
 /** Shared Desktop extension visual. It receives only declared settings and service callbacks. */
@@ -24,6 +25,7 @@ export function LocalSyncSettingsPanel({
 	onSyncPolicyChange,
 	session,
 	syncPolicy,
+	progress,
 }: LocalSyncSettingsPanelProps) {
 	const { t } = useI18n();
 	return (
@@ -46,6 +48,28 @@ export function LocalSyncSettingsPanel({
 					onClick={() => void onSync()}>
 					{isSyncing ? t("sync.syncing") : t("sync.sync")}
 				</Button>
+				{isSyncing && progress && (
+					<div aria-live="polite" className="space-y-1.5">
+						<div className="flex justify-between text-xs text-muted-foreground">
+							<span>
+								{progress.phase === "download"
+									? "Получаем изменения"
+									: progress.phase === "upload"
+										? "Передаём материалы"
+										: "Завершаем синхронизацию"}
+							</span>
+							<span>
+								{progress.completed} / {progress.total}
+							</span>
+						</div>
+						<div className="h-1.5 overflow-hidden rounded-full bg-muted">
+							<div
+								className="h-full rounded-full bg-primary transition-[width] duration-300"
+								style={{ width: `${Math.round((progress.completed / Math.max(progress.total, 1)) * 100)}%` }}
+							/>
+						</div>
+					</div>
+				)}
 			</div>
 		</section>
 	);

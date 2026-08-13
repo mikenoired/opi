@@ -23,6 +23,7 @@ import {
 	type DesktopSession,
 	type DesktopStatistics,
 	type DesktopSyncPolicy,
+	type SyncProgress,
 } from "./desktop-bridge";
 import { desktopRuntime, getDesktopNavigation, getDesktopSettings } from "./desktop-runtime";
 
@@ -49,6 +50,8 @@ function DesktopApp() {
 	const [connectingAccount, setConnectingAccount] = useState(false);
 	const [connectionNotice, setConnectionNotice] = useState<string>();
 	const [syncing, setSyncing] = useState(false);
+	const [syncProgress, setSyncProgress] = useState<SyncProgress>();
+	useEffect(() => bridge.sync.onProgress(setSyncProgress), []);
 	const refresh = useCallback(async () => {
 		const [nextItems, nextSettings, nextStatistics, nextSession, nextPreferences] = await Promise.all([
 			bridge.library.list(),
@@ -116,10 +119,12 @@ function DesktopApp() {
 				connectionNotice={connectionNotice}
 				statistics={statistics}
 				syncing={syncing}
+				syncProgress={syncProgress}
 				setSession={setSession}
 				setConnectingAccount={setConnectingAccount}
 				setConnectionNotice={setConnectionNotice}
 				setSyncing={setSyncing}
+				setSyncProgress={setSyncProgress}
 				setSettings={setSettings}
 				updatePreferences={updatePreferences}
 			/>
@@ -146,10 +151,12 @@ function DesktopAppContent({
 	connectionNotice,
 	statistics,
 	syncing,
+	syncProgress,
 	setSession,
 	setConnectingAccount,
 	setConnectionNotice,
 	setSyncing,
+	setSyncProgress,
 	setSettings,
 	updatePreferences,
 }: {
@@ -171,10 +178,12 @@ function DesktopAppContent({
 	connectionNotice?: string;
 	statistics?: DesktopStatistics;
 	syncing: boolean;
+	syncProgress?: SyncProgress;
 	setSession: (session: DesktopSession | undefined) => void;
 	setConnectingAccount: (connecting: boolean) => void;
 	setConnectionNotice: (notice: string | undefined) => void;
 	setSyncing: (syncing: boolean) => void;
+	setSyncProgress: (progress: SyncProgress | undefined) => void;
 	setSettings: (settings: { colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }) => void;
 	updatePreferences: (input: Partial<UserPreferences>) => Promise<void>;
 }) {
@@ -203,6 +212,28 @@ function DesktopAppContent({
 					await refresh();
 				}}
 			/>
+			{syncing && (
+				<div
+					aria-live="assertive"
+					aria-modal="true"
+					className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm"
+					role="alertdialog">
+					<div className="w-full max-w-sm space-y-3 rounded-xl border bg-background p-5 shadow-xl">
+						<p className="font-medium">Синхронизация библиотеки</p>
+						<p className="text-sm text-muted-foreground">
+							Не закрывайте и не изменяйте материалы до завершения.
+						</p>
+						<div className="h-1.5 overflow-hidden rounded-full bg-muted">
+							<div
+								className="h-full rounded-full bg-primary transition-[width] duration-300"
+								style={{
+									width: `${Math.round(((syncProgress?.completed ?? 0) / Math.max(syncProgress?.total ?? 1, 1)) * 100)}%`,
+								}}
+							/>
+						</div>
+					</div>
+				</div>
+			)}
 			{settingsOpen && (
 				<SettingsModalShell
 					activeKey={settingsTab}
@@ -224,6 +255,7 @@ function DesktopAppContent({
 						session={session}
 						statistics={statistics}
 						syncing={syncing}
+						syncProgress={syncProgress}
 						connectingAccount={connectingAccount}
 						connectionNotice={connectionNotice}
 						onImport={() => {
@@ -251,6 +283,7 @@ function DesktopAppContent({
 						}}
 						onSync={async () => {
 							setSyncing(true);
+							setSyncProgress(undefined);
 							try {
 								await bridge.sync.syncAll();
 								await refresh();
@@ -288,6 +321,7 @@ function DesktopSettingsContent({
 	connectingAccount,
 	statistics,
 	syncing,
+	syncProgress,
 }: {
 	onImport(): void;
 	onConnectAccount(): Promise<void>;
@@ -304,6 +338,7 @@ function DesktopSettingsContent({
 	connectionNotice?: string;
 	statistics?: DesktopStatistics;
 	syncing: boolean;
+	syncProgress?: SyncProgress;
 }) {
 	if (settingsTab === "general")
 		return (
@@ -327,6 +362,7 @@ function DesktopSettingsContent({
 					session ? (
 						<LocalSyncSettingsPanel
 							isSyncing={syncing}
+							progress={syncProgress}
 							onSync={onSync}
 							onSyncPolicyChange={onSyncPolicyChange}
 							session={session}

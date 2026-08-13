@@ -58,7 +58,7 @@ describe("LocalLibraryRepository", () => {
 		});
 	});
 
-	test("keeps device objects local until the binary sync transport exists", async () => {
+	test("queues device objects when a sync run starts", async () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);
 		await library.updateSettings({ syncPolicy: "automatic" });
@@ -75,7 +75,8 @@ describe("LocalLibraryRepository", () => {
 
 		expect(item.syncState).toBe("local-only");
 		expect(await library.getPendingOperations()).toEqual([]);
-		await expect(library.queueSync(item.id)).rejects.toThrow("бинарных объектов");
+		await library.queueLocalAttachmentsForSync();
+		expect(await library.getPendingOperations()).toHaveLength(1);
 	});
 
 	test("turns a remotely deleted item into a new local-only item after an edit", async () => {
