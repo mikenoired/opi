@@ -1,4 +1,4 @@
-import { buildAudioContent } from "@synapse/core";
+import { buildAudioContent, scrapeAudioMetadata } from "@synapse/core";
 import sharp from "sharp";
 
 import { deleteFile, getPublicUrl, uploadFile } from "../../../storage/minio";
@@ -15,41 +15,6 @@ import {
 } from "./upload-media";
 import type { AudioUploadParams, FilePayload, ProcessOutcome } from "./upload-types";
 
-function toCoreAudioMetadata(metadata: Awaited<ReturnType<typeof parseAudioMetadataSafe>>) {
-	if (!metadata) return null;
-
-	return {
-		common: {
-			album: metadata.common.album,
-			artist: metadata.common.artist,
-			disk: metadata.common.disk,
-			genre: metadata.common.genre,
-			lyrics: normalizeLyrics(metadata.common.lyrics),
-			title: metadata.common.title,
-			track: metadata.common.track,
-			year: metadata.common.year,
-		},
-		format: {
-			bitrate: metadata.format.bitrate,
-			duration: metadata.format.duration,
-			numberOfChannels: metadata.format.numberOfChannels,
-			sampleRate: metadata.format.sampleRate,
-		},
-	};
-}
-
-function normalizeLyrics(lyrics: unknown[] | undefined): string[] | undefined {
-	const values = lyrics
-		?.map((lyric) => {
-			if (typeof lyric === "string") return lyric;
-			if (typeof lyric === "object" && lyric && "text" in lyric && typeof lyric.text === "string")
-				return lyric.text;
-			return undefined;
-		})
-		.filter((lyric): lyric is string => Boolean(lyric?.trim()));
-	return values?.length ? values : undefined;
-}
-
 export async function processAudioUpload(
 	deps: UploadHandlerDeps,
 	file: FilePayload,
@@ -59,6 +24,7 @@ export async function processAudioUpload(
 		return { errors: [`File "${file.name}" is too large (max 50MB)`] };
 
 	const sourceMetadata = await parseAudioMetadataSafe(file.buffer, file.type);
+	const sourceScraped = sourceMetadata ? scrapeAudioMetadata(sourceMetadata, file.name) : undefined;
 	const audioWasTranscoded = needsPlayableAudioTranscode(sourceMetadata?.format.codec);
 	const playableBuffer = audioWasTranscoded ? await transcodeAlacToAac(file.buffer, file.name) : file.buffer;
 	const playableType = audioWasTranscoded ? "audio/mp4" : file.type;
@@ -66,6 +32,7 @@ export async function processAudioUpload(
 	const metadata = audioWasTranscoded
 		? ((await parseAudioMetadataSafe(playableBuffer, playableType)) ?? sourceMetadata)
 		: sourceMetadata;
+	const scraped = metadata ? scrapeAudioMetadata(metadata, file.name) : undefined;
 	const audioUpload = await uploadFile(playableBuffer, playableName, playableType, params.userId, "audio", {
 		maxFileSize: audioUploadMaxFileSizeBytes,
 	});
@@ -87,12 +54,12 @@ export async function processAudioUpload(
 	let coverFileSize: number | undefined;
 	let contentPersisted = false;
 
-	const picture = sourceMetadata?.common.picture?.find((candidate) => candidate.data?.length);
+	const picture = sourceScraped?.artwork;
 	try {
-		if (picture?.data?.length) {
+		if (picture?.bytes.length) {
 			let uploadedCoverObject: string | undefined;
 			try {
-				const jpeg = await sharp(picture.data).jpeg({ quality: 85 }).toBuffer();
+				const jpeg = await sharp(picture.bytes).jpeg({ quality: 85 }).toBuffer();
 				const coverUpload = await uploadFile(
 					jpeg,
 					file.name.replace(/\.[^.]+$/, ".jpg"),
@@ -123,8 +90,7 @@ export async function processAudioUpload(
 			}
 		}
 
-		const entityTitle =
-			params.title?.trim() || metadata?.common.title?.trim() || getAudioFallbackTitle(file.name);
+		const entityTitle = params.title?.trim() || scraped?.title?.trim() || getAudioFallbackTitle(file.name);
 		const serializedContent = JSON.stringify(
 			buildAudioContent({
 				audioObjectName: audioUpload.objectName,
@@ -136,7 +102,7 @@ export async function processAudioUpload(
 				coverUrl,
 				fileType: playableType,
 				makeTrack: params.makeTrack,
-				metadata: toCoreAudioMetadata(metadata),
+				metadata: scraped?.metadata ?? null,
 				title: entityTitle,
 			})
 		);

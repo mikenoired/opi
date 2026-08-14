@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test";
 
+import { scrapeAudioMetadata } from "@synapse/core";
+
 import {
 	detectArtworkMimeType,
 	needsPlayableAudioTranscode,
@@ -37,4 +39,26 @@ test("uses artwork bytes when the embedded MIME label is wrong", () => {
 test("marks Apple Lossless as requiring browser-compatible transcoding", () => {
 	expect(needsPlayableAudioTranscode("ALAC")).toBe(true);
 	expect(needsPlayableAudioTranscode("AAC")).toBe(false);
+});
+
+test("uses the shared audio scraper for metadata and embedded artwork", () => {
+	const result = scrapeAudioMetadata(
+		{
+			common: {
+				artist: "Artist",
+				lyrics: [{ text: "line" }],
+				picture: [{ data: new Uint8Array([0xff, 0xd8, 0xff, 0xe0]), format: "image/png" }],
+				title: "Track",
+			},
+			format: { codec: "MP3", duration: 42 },
+		},
+		"song.mp3"
+	);
+
+	expect(result).toMatchObject({
+		artwork: { fileName: "song-cover.jpg", mimeType: "image/jpeg" },
+		codec: "MP3",
+		metadata: { common: { artist: "Artist", lyrics: ["line"], title: "Track" }, format: { duration: 42 } },
+		title: "Track",
+	});
 });

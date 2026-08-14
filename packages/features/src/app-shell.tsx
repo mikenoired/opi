@@ -54,6 +54,7 @@ export interface ConfiguredAppSidebarProps {
 	onCommand?(command: string): void;
 	onItemHover?(id: string): void;
 	onNavigate?(route: AppRouteId): void;
+	footer?: ReactNode;
 }
 
 /**
@@ -71,6 +72,7 @@ export function ConfiguredAppSidebar({
 	onCommand,
 	onItemHover,
 	onNavigate,
+	footer,
 }: ConfiguredAppSidebarProps) {
 	const visibleItems = items.filter((item) => isVisible(item.when, capabilities));
 	return (
@@ -89,6 +91,7 @@ export function ConfiguredAppSidebar({
 				selected: activeId ? item.id === activeId : item.route === activeRoute,
 				variant: item.variant,
 			}))}
+			footer={footer}
 		/>
 	);
 }
@@ -100,6 +103,7 @@ export function AppSidebar({
 	expandLabel = "Развернуть",
 	initiallyExpanded = true,
 	items,
+	footer,
 	onExpandedChange,
 }: {
 	collapseLabel?: string;
@@ -107,6 +111,7 @@ export function AppSidebar({
 	expandLabel?: string;
 	initiallyExpanded?: boolean;
 	items: AppSidebarItem[];
+	footer?: ReactNode;
 	onExpandedChange?: (expanded: boolean) => void;
 }) {
 	const [uncontrolledExpanded, setUncontrolledExpanded] = useState(initiallyExpanded);
@@ -137,6 +142,7 @@ export function AppSidebar({
 							))}
 						</SidebarButtonGroup>
 					</nav>
+					{footer && <div className="border-t px-3 py-3">{footer}</div>}
 				</motion.aside>
 			</TooltipProvider>
 			<nav className="fixed right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-3 z-50 rounded-full border bg-background/95 p-2 backdrop-blur-sm sm:hidden">

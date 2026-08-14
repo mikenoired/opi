@@ -58,6 +58,54 @@ describe("LocalLibraryRepository", () => {
 		});
 	});
 
+	test("merges remote tag metadata into the local tag without creating a duplicate", async () => {
+		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const library = new LocalLibraryRepository(root);
+		await library.save({ content: "", tags: ["Работа"], title: "План", type: "note" });
+		const [localTag] = await library.getTags();
+		if (!localTag) throw new Error("Expected local tag");
+		await library.updateTagColor(localTag.id, 7);
+
+		await library.mergeRemoteTags([{ color: 2, id: "remote-work", title: "работа" }]);
+
+		expect(await library.getTags()).toEqual([
+			expect.objectContaining({
+				color: 7,
+				id: localTag.id,
+				pendingColor: true,
+				remoteId: "remote-work",
+				title: "работа",
+			}),
+		]);
+		expect((await library.list())[0]?.tag_ids).toEqual([localTag.id]);
+	});
+
+	test("links one exact server match before replaying the local outbox", async () => {
+		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const library = new LocalLibraryRepository(root);
+		await library.updateSettings({ syncPolicy: "automatic" });
+		const local = await library.save({ content: "Same note", tags: ["work"], title: "Plan", type: "note" });
+		const remote = {
+			...local,
+			id: "remote-note",
+			tag_ids: ["remote-tag"],
+			updated_at: new Date().toISOString(),
+			user_id: "remote-user",
+		};
+
+		await library.applyRemoteChange({
+			content: remote,
+			entityId: remote.id,
+			operation: "upsert",
+			revision: 1,
+		});
+
+		expect(await library.getPendingOperations()).toEqual([]);
+		expect(await library.list()).toEqual([
+			expect.objectContaining({ id: local.id, remoteId: remote.id, syncState: "synced" }),
+		]);
+	});
+
 	test("queues device objects when a sync run starts", async () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);

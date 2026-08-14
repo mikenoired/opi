@@ -26,22 +26,21 @@ export class RedisRateLimiter {
 		const redisKey = `rate_limit:${key}`;
 
 		try {
-			const pipeline = redis.pipeline();
-
-			pipeline.zremrangebyscore(redisKey, 0, windowStart);
-			pipeline.zadd(redisKey, now, `${now}:${Math.random()}`);
-			pipeline.zcard(redisKey);
-			pipeline.expire(redisKey, Math.ceil(this.windowMs / 1000));
-
-			const results = await pipeline.exec();
-
-			if (!results) {
-				return false;
-			}
-
-			const count = results[2]?.[1] as number;
-
-			return count <= this.limit;
+			const cleanup = redis.pipeline();
+			cleanup.zremrangebyscore(redisKey, 0, windowStart);
+			cleanup.zcard(redisKey);
+			const results = await cleanup.exec();
+			if (!results) return false;
+			// Do not record rejected requests: otherwise every retry moves a sliding
+			// window forward and can keep a client rate-limited indefinitely.
+			const count = results[1]?.[1] as number;
+			if (count >= this.limit) return false;
+			await redis
+				.multi()
+				.zadd(redisKey, now, `${now}:${Math.random()}`)
+				.expire(redisKey, Math.ceil(this.windowMs / 1000))
+				.exec();
+			return true;
 		} catch {
 			return true;
 		}

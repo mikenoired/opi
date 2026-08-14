@@ -20,6 +20,12 @@ const mutationLimiter = new RedisRateLimiter({
 	windowMs,
 	limit: Number(process.env.API_RATE_LIMIT_MUTATION ?? 20),
 });
+// A single Desktop sync legitimately fetches a manifest and binary object for many files.
+// Keep it isolated from interactive reads instead of exhausting the normal query budget.
+const syncLimiter = new RedisRateLimiter({
+	windowMs,
+	limit: Number(process.env.API_RATE_LIMIT_SYNC ?? 300),
+});
 
 export const withContext: MiddlewareHandler = async (c, next) => {
 	c.set("apiContext", await createContext(c));
@@ -58,14 +64,17 @@ export const protectMutation: MiddlewareHandler = async (c, next) => {
 	await next();
 };
 
-export function rateLimit(kind: "query" | "mutation"): MiddlewareHandler {
+export function rateLimit(kind: "query" | "mutation" | "sync"): MiddlewareHandler {
 	return async (c, next) => {
 		const ctx = c.get("apiContext");
 		const identity = ctx.user?.id || ctx.ip || "anonymous";
-		const allowed = await (kind === "query" ? queryLimiter : mutationLimiter).checkLimit(
-			`${identity}:${kind}`
-		);
-		if (!allowed) throw new ApiError("TOO_MANY_REQUESTS", "Rate limit exceeded");
+		const limiter = kind === "query" ? queryLimiter : kind === "mutation" ? mutationLimiter : syncLimiter;
+		const allowed = await limiter.checkLimit(`${identity}:${kind}`);
+		if (!allowed) {
+			// Desktop can resume the durable sync once the current rate window ends.
+			c.header("Retry-After", String(Math.ceil(windowMs / 1000)));
+			throw new ApiError("TOO_MANY_REQUESTS", "Rate limit exceeded");
+		}
 		await next();
 	};
 }

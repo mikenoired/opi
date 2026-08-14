@@ -64,8 +64,11 @@ export interface LocalOutboxEntry {
 	mutation: SyncMutation;
 }
 
-interface LocalTag {
+export interface LocalTag {
+	color: number;
 	id: string;
+	pendingColor?: boolean;
+	remoteId?: string;
 	title: string;
 }
 
@@ -73,7 +76,7 @@ interface LocalLibraryDataV2 {
 	items: LocalItem[];
 	outbox: LocalOutboxEntry[];
 	settings: LocalSettings;
-	sync: { cursor?: string; lastSyncedAt?: string };
+	sync: { bulkDeleteRequested?: boolean; cursor?: string; lastSyncedAt?: string };
 	tags: LocalTag[];
 	version: 2;
 }
@@ -204,6 +207,28 @@ export class LocalLibraryRepository {
 		await this.write(data);
 	}
 
+	/** Queues durable tombstones for every synced item; local-only records are removed immediately. */
+	async deleteAll(): Promise<void> {
+		const data = await this.read();
+		const ids = data.items.filter((item) => !item.deleted).map((item) => item.id);
+		for (const id of ids) await this.delete(id);
+		const updated = await this.read();
+		updated.sync.bulkDeleteRequested = true;
+		await this.write(updated);
+	}
+
+	async hasBulkDeleteRequest(): Promise<boolean> {
+		return Boolean((await this.read()).sync.bulkDeleteRequested);
+	}
+
+	async acknowledgeBulkDelete(): Promise<void> {
+		const data = await this.read();
+		data.sync.bulkDeleteRequested = false;
+		data.items = [];
+		data.outbox = [];
+		await this.write(data);
+	}
+
 	async queueSync(id: string): Promise<LocalItem> {
 		const data = await this.read();
 		const item = data.items.find((candidate) => candidate.id === id && !candidate.deleted);
@@ -230,6 +255,66 @@ export class LocalLibraryRepository {
 
 	async getPendingOperations(): Promise<LocalOutboxEntry[]> {
 		return (await this.read()).outbox;
+	}
+
+	async getTags(): Promise<LocalTag[]> {
+		return (await this.read()).tags;
+	}
+
+	async updateTagColor(id: string, color: number): Promise<LocalTag> {
+		const data = await this.read();
+		const tag = data.tags.find((candidate) => candidate.id === id || candidate.remoteId === id);
+		if (!tag) throw new Error("Local tag not found");
+		tag.color = color;
+		tag.pendingColor = true;
+		await this.write(data);
+		return tag;
+	}
+
+	/** Merge server tags by normalized title so a local provisional ID never creates a duplicate. */
+	async mergeRemoteTags(
+		remoteTags: Array<{ color: number; id: string; title: string }>
+	): Promise<LocalTag[]> {
+		const data = await this.read();
+		const byTitle = new Map<string, LocalTag>();
+		for (const tag of data.tags) {
+			const key = normalizeTagTitle(tag.title);
+			const existing = byTitle.get(key);
+			if (!existing) byTitle.set(key, tag);
+			else if (!existing.pendingColor && tag.pendingColor) byTitle.set(key, tag);
+		}
+		for (const remote of remoteTags) {
+			const key = normalizeTagTitle(remote.title);
+			const local = byTitle.get(key);
+			if (local) {
+				local.remoteId = remote.id;
+				local.title = remote.title;
+				if (!local.pendingColor) local.color = remote.color;
+			} else {
+				byTitle.set(key, { color: remote.color, id: remote.id, remoteId: remote.id, title: remote.title });
+			}
+		}
+		data.tags = [...byTitle.values()];
+		for (const item of data.items) {
+			item.tag_ids = item.tags.map(
+				(title) => byTitle.get(normalizeTagTitle(title))?.id ?? stableLocalTagId(title)
+			);
+		}
+		await this.write(data);
+		return data.tags;
+	}
+
+	async getPendingTagColors(): Promise<LocalTag[]> {
+		return (await this.read()).tags.filter((tag) => tag.pendingColor && tag.remoteId);
+	}
+
+	async acknowledgeTagColor(id: string, color: number): Promise<void> {
+		const data = await this.read();
+		const tag = data.tags.find((candidate) => candidate.id === id || candidate.remoteId === id);
+		if (!tag) return;
+		tag.color = color;
+		tag.pendingColor = false;
+		await this.write(data);
 	}
 
 	/** Imported media stays local until Sync is requested; queue it just before the run. */
@@ -330,8 +415,37 @@ export class LocalLibraryRepository {
 		revision: number;
 	}): Promise<string | undefined> {
 		const data = await this.read();
-		const local = data.items.find((item) => item.remoteId === change.entityId || item.id === change.entityId);
+		const directlyMatched = data.items.find(
+			(item) => item.remoteId === change.entityId || item.id === change.entityId
+		);
+		// On the first connection, a local item and an existing server item have
+		// different IDs. Link a single exact semantic match before replaying the
+		// local outbox; otherwise the replay would create a second server record.
+		const semanticMatches = change.content
+			? data.items.filter(
+					(item) =>
+						!item.deleted && !item.remoteId && contentIdentity(item) === contentIdentity(change.content!)
+				)
+			: [];
+		const local = directlyMatched ?? (semanticMatches.length === 1 ? semanticMatches[0] : undefined);
+		const linkedByIdentity = !directlyMatched && Boolean(local);
 		const pending = local && data.outbox.find((entry) => entry.itemId === local.id);
+		if (linkedByIdentity && local && change.content) {
+			const replacement: LocalItem = {
+				...change.content,
+				assets: change.assets,
+				id: local.id,
+				lastSyncedAt: new Date().toISOString(),
+				remoteId: change.content.id,
+				serverRevision: change.revision,
+				syncState: "synced",
+				syncVersion: change.revision,
+			};
+			data.items = data.items.map((item) => (item.id === local.id ? replacement : item));
+			data.outbox = data.outbox.filter((entry) => entry.itemId !== local.id);
+			await this.write(data);
+			return undefined;
+		}
 		if (pending && change.content) {
 			// Equal IDs describe the same entity, not necessarily the same revision.
 			// Timestamp decides the winner; a newer local mutation is rebased and pushed.
@@ -536,7 +650,7 @@ function normalizeV2(data: LocalLibraryDataV2): LocalLibraryDataV2 {
 			preferences: normalizeUserPreferences(data.settings?.preferences),
 			syncPolicy: data.settings?.syncPolicy === "automatic" ? "automatic" : "manual",
 		},
-		tags: Array.isArray(data.tags) ? data.tags : [],
+		tags: normalizeLocalTags(data.tags),
 	};
 }
 
@@ -587,10 +701,10 @@ function migrateV1(data: LegacyLocalLibraryData): LocalLibraryDataV2 {
 }
 
 function ensureTag(tags: LocalTag[], title: string): string {
-	const existing = tags.find((tag) => tag.title === title);
+	const existing = tags.find((tag) => normalizeTagTitle(tag.title) === normalizeTagTitle(title));
 	if (existing) return existing.id;
 	const id = stableLocalTagId(title);
-	tags.push({ id, title });
+	tags.push({ color: 0, id, title });
 	return id;
 }
 
@@ -608,6 +722,45 @@ function normalizeTags(tags: string[]): string[] {
 				.map((tag) => tag.toLocaleLowerCase())
 		),
 	];
+}
+
+function normalizeTagTitle(title: string): string {
+	return title.trim().toLocaleLowerCase();
+}
+
+/** Deliberately excludes IDs, timestamps and device-local object URLs. */
+function contentIdentity(item: Content): string {
+	return JSON.stringify({
+		content: item.content,
+		tags: [...item.tags].map(normalizeTagTitle).sort(),
+		title: item.title?.trim() ?? "",
+		type: item.type,
+		url: item.url?.trim() ?? "",
+	});
+}
+
+function normalizeLocalTags(tags: unknown): LocalTag[] {
+	if (!Array.isArray(tags)) return [];
+	const result = new Map<string, LocalTag>();
+	for (const value of tags) {
+		if (!value || typeof value !== "object" || !("title" in value) || typeof value.title !== "string")
+			continue;
+		const tag = value as Partial<LocalTag>;
+		const title = value.title;
+		const key = normalizeTagTitle(title);
+		if (!key) continue;
+		const current = result.get(key);
+		if (!current || tag.pendingColor) {
+			result.set(key, {
+				color: Number.isInteger(tag.color) ? tag.color! : 0,
+				id: tag.id || stableLocalTagId(title),
+				pendingColor: Boolean(tag.pendingColor),
+				remoteId: tag.remoteId,
+				title,
+			});
+		}
+	}
+	return [...result.values()];
 }
 
 function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {

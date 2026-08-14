@@ -21,6 +21,8 @@ export {
 	parseMediaJson,
 	parseTagContentPageCursor,
 } from "./content";
+export { detectArtworkMimeType, needsPlayableAudioTranscode, scrapeAudioMetadata } from "./audio-metadata";
+export type { ParsedAudioMetadata, ScrapedAudioArtwork, ScrapedAudioMetadata } from "./audio-metadata";
 export type {
 	AudioJson,
 	AudioContentMetadata,

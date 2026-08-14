@@ -202,6 +202,11 @@ export class DesktopSyncService {
 		);
 		this.session = { ...this.session, ...entitlement };
 		if (!this.session.eligible) throw new Error("Synapse Sync доступен на платных планах");
+		if (await this.library.hasBulkDeleteRequest()) {
+			await this.request<{ success: true }>("/sync/delete-all");
+			await this.library.acknowledgeBulkDelete();
+			return { conflicts: [], failed: 0, synced: 0 };
+		}
 		let failed = 0;
 		let synced = 0;
 		const conflicts: SyncRunResult["conflicts"] = [];
@@ -216,41 +221,64 @@ export class DesktopSyncService {
 		completed += 1;
 		this.reportProgress({ completed, phase: "upload", total: pending.length + 2 });
 
-		for (const entry of pending) {
+		for (const batch of chunk(pending, 100)) {
+			let entries = [] as typeof batch;
 			try {
-				const uploaded = await this.uploadLocalAsset(entry.itemId);
-				if (uploaded) {
-					await this.library.acknowledgeOperation(entry.id, uploaded.content, uploaded.revision);
-					synced += 1;
-					continue;
+				for (const entry of batch) {
+					try {
+						// A tombstone has no local payload to upload. Trying to load it via
+						// library.get() fails by design because deleted records are hidden.
+						const uploaded =
+							entry.mutation.kind === "delete" ? undefined : await this.uploadLocalAsset(entry.itemId);
+						if (uploaded) {
+							await this.library.acknowledgeOperation(entry.id, uploaded.content, uploaded.revision);
+							synced += 1;
+						} else entries.push(entry);
+					} catch {
+						// A missing/corrupt local attachment must not block unrelated notes,
+						// edits or deletes in the same durable sync run.
+						await this.library.markOperationFailed(entry.id);
+						failed += 1;
+					}
 				}
-				const result = await this.request<SyncPushResult>("/sync/push", { mutations: [entry.mutation] });
-				const outcome = result.outcomes[0];
-				if (!outcome) throw new Error("Sync server returned no mutation outcome");
-				if (outcome.status === "conflict") {
-					if (!outcome.content) throw new Error("Sync conflict has no server content");
-					const conflictCopyId = await this.library.resolveConflict(
-						entry.id,
-						outcome.content,
-						outcome.revision
-					);
-					conflicts.push({
-						conflictCopyId,
-						entityId: outcome.content.id,
-						localUpdatedAt: new Date().toISOString(),
-						remote: outcome.content,
-						remoteUpdatedAt: outcome.content.updated_at,
-						resolution: "server-wins-local-copy",
+				if (entries.length) {
+					const result = await this.request<SyncPushResult>("/sync/push", {
+						mutations: entries.map((entry) => entry.mutation),
 					});
-					continue;
+					for (const [index, outcome] of result.outcomes.entries()) {
+						const entry = entries[index];
+						if (!entry || !outcome) throw new Error("Sync server returned no mutation outcome");
+						if (outcome.status === "conflict") {
+							if (!outcome.content) throw new Error("Sync conflict has no server content");
+							const conflictCopyId = await this.library.resolveConflict(
+								entry.id,
+								outcome.content,
+								outcome.revision
+							);
+							conflicts.push({
+								conflictCopyId,
+								entityId: outcome.content.id,
+								localUpdatedAt: new Date().toISOString(),
+								remote: outcome.content,
+								remoteUpdatedAt: outcome.content.updated_at,
+								resolution: "server-wins-local-copy",
+							});
+						} else {
+							await this.library.acknowledgeOperation(
+								entry.id,
+								outcome.content,
+								outcome.revision,
+								outcome.deleted
+							);
+							synced += 1;
+						}
+					}
 				}
-				await this.library.acknowledgeOperation(entry.id, outcome.content, outcome.revision, outcome.deleted);
-				synced += 1;
 			} catch {
-				await this.library.markOperationFailed(entry.id);
-				failed += 1;
+				for (const entry of entries) await this.library.markOperationFailed(entry.id);
+				failed += entries.length;
 			} finally {
-				completed += 1;
+				completed += batch.length;
 				this.reportProgress({ completed, phase: "upload", total: pending.length + 2 });
 			}
 		}
@@ -259,7 +287,26 @@ export class DesktopSyncService {
 		conflicts.push(...(await this.pullRemoteChanges()));
 		await this.repairMissingAssets();
 		this.reportProgress({ completed: pending.length + 2, phase: "finalizing", total: pending.length + 2 });
+		await this.syncTagMetadata();
 		return { conflicts, failed, synced };
+	}
+
+	/** Tags are independent metadata: reconcile them after content creates, then replay offline color edits. */
+	private async syncTagMetadata(): Promise<void> {
+		const remoteTags = await this.request<Array<{ color: number; id: string; title: string }>>(
+			"/content/tags",
+			undefined,
+			"GET"
+		);
+		await this.library.mergeRemoteTags(remoteTags);
+		for (const tag of await this.library.getPendingTagColors()) {
+			const remote = await this.request<{ color: number; id: string; title: string }>(
+				`/content/tags/${encodeURIComponent(tag.remoteId!)}/color`,
+				{ color: tag.color },
+				"PATCH"
+			);
+			await this.library.acknowledgeTagColor(tag.id, remote.color);
+		}
 	}
 
 	private async uploadLocalAsset(
@@ -369,6 +416,7 @@ export class DesktopSyncService {
 	private async repairMissingAssets(): Promise<void> {
 		for (const local of await this.library.list()) {
 			if (!local.remoteId || !getAssetStorageKeys(local).length) continue;
+			if (await this.hasAllLocalAssets(local.remoteId, getAssetStorageKeys(local))) continue;
 			const hydrated = await this.hydrateAssets({ ...local, id: local.remoteId });
 			await this.library.applyRemoteChange({
 				assets: hydrated.assets,
@@ -378,6 +426,17 @@ export class DesktopSyncService {
 				revision: local.serverRevision ?? local.syncVersion ?? 1,
 			});
 		}
+	}
+
+	/** Pull already hydrates changed content. Only issue a manifest request when a local object is actually absent. */
+	private async hasAllLocalAssets(remoteId: string, storageKeys: string[]): Promise<boolean> {
+		if (!this.storage) return true;
+		const assets = await this.library.getAssets(remoteId);
+		for (const storageKey of storageKeys) {
+			const asset = assets.find((candidate) => candidate.storageKey === storageKey);
+			if (!asset || !(await this.storage.getObjectMetadata(asset.localObjectName))) return false;
+		}
+		return true;
 	}
 
 	private async fetchAsset(storageKey: string): Promise<Uint8Array> {
@@ -396,21 +455,38 @@ export class DesktopSyncService {
 		extraHeaders?: Record<string, string>
 	): Promise<T> {
 		if (!this.apiUrl) throw new Error("Сначала укажите адрес Synapse API");
-		const response = await fetch(`${this.apiUrl}${path}`, {
-			...(body === undefined ? {} : { body: JSON.stringify(body) }),
-			headers: {
-				"Content-Type": "application/json",
-				...(this.token ? { "x-synapse-access-token": this.token } : {}),
-				...extraHeaders,
-			},
-			method,
-		});
+		let response: Response | undefined;
+		for (let attempt = 0; attempt < 2; attempt++) {
+			response = await fetch(`${this.apiUrl}${path}`, {
+				...(body === undefined ? {} : { body: JSON.stringify(body) }),
+				headers: {
+					"Content-Type": "application/json",
+					...(this.token ? { "x-synapse-access-token": this.token } : {}),
+					...extraHeaders,
+				},
+				method,
+			});
+			if (response.status !== 429 || attempt === 1) break;
+			const retryAfter = Number(response.headers.get("retry-after"));
+			await wait(Math.max(1, Number.isFinite(retryAfter) ? retryAfter : 60) * 1_000);
+		}
+		if (!response) throw new Error("Synapse API returned no response");
 		if (!response.ok) {
 			const payload = (await response.json().catch(() => null)) as { error?: string } | null;
 			throw new Error(payload?.error || `Synapse API returned ${response.status}`);
 		}
 		return (await response.json()) as T;
 	}
+}
+
+function chunk<T>(values: T[], size: number): T[][] {
+	const batches: T[][] = [];
+	for (let index = 0; index < values.length; index += size) batches.push(values.slice(index, index + size));
+	return batches;
+}
+
+function wait(milliseconds: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function getAssetStorageKeys(content: Content): string[] {

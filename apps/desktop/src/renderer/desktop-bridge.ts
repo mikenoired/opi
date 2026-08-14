@@ -1,4 +1,5 @@
 import type { AiTagsInput, AiTagsResult, AiUsage, BinaryFile, SyncRunResult } from "@synapse/api";
+import type { ContentTag } from "@synapse/api";
 import type { UserPreferences, UserPreferencesInput } from "@synapse/shared/preferences";
 import type { Content, CreateContent } from "@synapse/shared/schemas";
 
@@ -25,6 +26,7 @@ export interface DesktopBridge {
 	};
 	library: {
 		delete(id: string): Promise<void>;
+		deleteAll(): Promise<void>;
 		importFiles(input?: {
 			files?: BinaryFile[];
 			makeTrack?: boolean;
@@ -32,6 +34,7 @@ export interface DesktopBridge {
 			title?: string;
 		}): Promise<Content[]>;
 		list(search?: string): Promise<Content[]>;
+		tags(): Promise<ContentTag[]>;
 		preferences(): Promise<UserPreferences>;
 		save(input: CreateContent & { id?: string }): Promise<Content>;
 		settings(): Promise<{ colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }>;
@@ -40,6 +43,7 @@ export interface DesktopBridge {
 			settings: Partial<{ colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }>
 		): Promise<{ colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }>;
 		updatePreferences(preferences: UserPreferencesInput): Promise<UserPreferences>;
+		updateTagColor(id: string, color: number): Promise<ContentTag>;
 	};
 	sync: {
 		connectAccount(): Promise<DesktopSession>;

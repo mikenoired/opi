@@ -8,7 +8,10 @@ contextBridge.exposeInMainWorld("synapseDesktop", {
 	},
 	library: {
 		delete: (id: string) => ipcRenderer.invoke("library:delete", id),
+		deleteAll: () => ipcRenderer.invoke("library:delete-all"),
 		list: (search?: string) => ipcRenderer.invoke("library:list", search),
+		tags: () => ipcRenderer.invoke("library:tags"),
+		updateTagColor: (id: string, color: number) => ipcRenderer.invoke("library:update-tag-color", id, color),
 		settings: () => ipcRenderer.invoke("library:settings"),
 		preferences: () => ipcRenderer.invoke("library:preferences"),
 		queueSync: (id: string) => ipcRenderer.invoke("library:queue-sync", id),

@@ -9,7 +9,17 @@ import {
 	parseAudioJson,
 } from "@synapse/core";
 import type { UserPreferencesInput } from "@synapse/shared/preferences";
-import { app, BaseWindow, BrowserWindow, dialog, Menu, protocol, safeStorage, type MenuItem } from "electron";
+import {
+	app,
+	BaseWindow,
+	BrowserWindow,
+	dialog,
+	Menu,
+	nativeImage,
+	protocol,
+	safeStorage,
+	type MenuItem,
+} from "electron";
 import { ipcMain } from "electron";
 
 import { createDesktopObjectResponse } from "./desktop-object-response";
@@ -98,6 +108,7 @@ app.whenReady().then(async () => {
 						accelerator: "CommandOrControl+N",
 						click: sendCommand("content.add"),
 					},
+					{ label: "Удалить все материалы", click: sendCommand("content.delete-all") },
 					{ type: "separator" },
 					{ role: "close" },
 				],
@@ -128,6 +139,7 @@ app.whenReady().then(async () => {
 	ipcMain.handle("library:list", (_event, search?: string) => library.list(search));
 	ipcMain.handle("library:save", (_event, input: LocalItemInput & { id?: string }) => library.save(input));
 	ipcMain.handle("library:delete", (_event, id: string) => library.delete(id));
+	ipcMain.handle("library:delete-all", () => library.deleteAll());
 	ipcMain.handle("library:settings", () => library.getSettings());
 	ipcMain.handle("library:update-settings", (_event, settings: Partial<LocalSettings>) =>
 		library.updateSettings(settings)
@@ -138,6 +150,10 @@ app.whenReady().then(async () => {
 	);
 	ipcMain.handle("library:queue-sync", (_event, id: string) => library.queueSync(id));
 	ipcMain.handle("library:statistics", () => library.getStatistics());
+	ipcMain.handle("library:tags", () => library.getTags());
+	ipcMain.handle("library:update-tag-color", (_event, id: string, color: number) =>
+		library.updateTagColor(id, color)
+	);
 	ipcMain.handle("library:import-files", async (_event, input?: LocalImportInput) => {
 		if (input?.files?.length) return Promise.all(input.files.map((file) => importLocalBytes(file, input)));
 		const result = await dialog.showOpenDialog({
@@ -327,9 +343,14 @@ async function importLocalBytes(file: BinaryFile, input?: LocalImportInput) {
 		});
 	}
 	if (isAudio) {
-		const audio = transcodeForPlayback
+		const parsedStoredAudio = transcodeForPlayback
 			? await readLocalAudioMetadata(storedFile.bytes, storedFile.fileName, storedFile.mimeType)
 			: (sourceAudio ?? { metadata: null });
+		// FFmpeg does not reliably retain M4A artwork. Keep the cover found in
+		// the original tag while using the playable file's technical metadata.
+		const audio = transcodeForPlayback
+			? { ...parsedStoredAudio, artwork: sourceAudio?.artwork ?? parsedStoredAudio.artwork }
+			: parsedStoredAudio;
 		let coverObjectName: string | undefined;
 		try {
 			const cover = audio.artwork ? await storeLocalAudioArtwork(audio.artwork) : undefined;
@@ -502,13 +523,25 @@ function audioMetadataNeedsRefresh(audio: ReturnType<typeof parseAudioJson>): bo
 }
 
 async function storeLocalAudioArtwork(artwork: LocalAudioArtwork) {
-	const stored = await objectStorage.putObject(artwork.bytes, {
-		contentType: artwork.mimeType,
-		fileName: artwork.fileName,
+	const normalized = normalizeLocalAudioArtwork(artwork);
+	const stored = await objectStorage.putObject(normalized.bytes, {
+		contentType: normalized.mimeType,
+		fileName: normalized.fileName,
 		folder: "audio-covers",
 		userId: "local",
 	});
 	return { objectName: stored.objectName, url: objectStorage.getObjectUrl(stored.objectName) };
+}
+
+/** Match the server upload adapter: persist a Chromium-decodable JPEG, never the tag's raw image payload. */
+function normalizeLocalAudioArtwork(artwork: LocalAudioArtwork): LocalAudioArtwork {
+	const image = nativeImage.createFromBuffer(Buffer.from(artwork.bytes));
+	if (image.isEmpty()) return artwork;
+	return {
+		bytes: image.toJPEG(85),
+		fileName: artwork.fileName.replace(/\.[^.]+$/, ".jpg"),
+		mimeType: "image/jpeg",
+	};
 }
 
 function documentTypeFor(extension: string): "csv" | "docx" | "epub" | "pdf" | "xlsx" {

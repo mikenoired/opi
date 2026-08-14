@@ -1,8 +1,8 @@
 import { useI18n } from "@synapse/i18n";
 import type { Content, CreateContent } from "@synapse/shared/schemas";
 import { Button } from "@synapse/ui/components";
-import { X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, FileText, LinkIcon, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { ConfiguredAppSidebar, DashboardSurface } from "./app-shell";
 import { ContentCreateDialog } from "./content-create-dialog";
@@ -16,6 +16,8 @@ import { GraphSurface } from "./graph-surface";
 import { useAppServices } from "./runtime";
 import type { NavigationItemConfig } from "./runtime/config";
 import { TagEditor } from "./tag-editor";
+import { TagHeader, TagLabel } from "./tag-header";
+import { TagStack } from "./tag-stack";
 
 export interface LibraryWorkspaceProps {
 	activePage: "dashboard" | "graph" | "tags";
@@ -28,6 +30,7 @@ export interface LibraryWorkspaceProps {
 	onOpenSettings(): void;
 	onSave(input: CreateContent & { id?: string }): Promise<void>;
 	onSelectPage(page: "dashboard" | "graph" | "tags"): void;
+	sidebarFooter?: ReactNode;
 }
 
 /** Shared workspace assembly used unchanged by Web and Electron. */
@@ -42,6 +45,7 @@ export function LibraryWorkspace({
 	onOpenSettings,
 	onSave,
 	onSelectPage,
+	sidebarFooter,
 }: LibraryWorkspaceProps) {
 	const { t } = useI18n();
 	const [search, setSearch] = useState("");
@@ -162,6 +166,7 @@ export function LibraryWorkspace({
 				onNavigate={(route) => {
 					if (route === "dashboard" || route === "graph" || route === "tags") onSelectPage(route);
 				}}
+				footer={sidebarFooter}
 			/>
 			<DashboardSurface>
 				{activePage === "dashboard" ? (
@@ -214,13 +219,7 @@ export function LibraryWorkspace({
 						</div>
 					</main>
 				) : activePage === "tags" ? (
-					<TagDirectory
-						items={items}
-						onSelect={(tag) => {
-							setSearch(tag);
-							onSelectPage("dashboard");
-						}}
-					/>
+					<TagDirectory items={items} />
 				) : (
 					<LibraryGraphView
 						items={items}
@@ -341,26 +340,88 @@ function createOptions(t: ReturnType<typeof useI18n>["t"]) {
 	];
 }
 
-function TagDirectory({ items, onSelect }: { items: Content[]; onSelect(tag: string): void }) {
+function TagDirectory({ items }: { items: Content[] }) {
 	const { t } = useI18n();
+	const { client } = useAppServices();
+	const [colors, setColors] = useState<Record<string, number>>({});
+	const [ids, setIds] = useState<Record<string, string>>({});
+	const [selectedTag, setSelectedTag] = useState<{ key: string; title: string }>();
+	useEffect(() => {
+		let active = true;
+		void client.content.getTags().then((tags) => {
+			if (!active) return;
+			setColors(Object.fromEntries(tags.map((tag) => [tag.title.trim().toLocaleLowerCase(), tag.color])));
+			setIds(Object.fromEntries(tags.map((tag) => [tag.title.trim().toLocaleLowerCase(), tag.id])));
+		});
+		return () => {
+			active = false;
+		};
+	}, [client]);
 	const tags = useMemo(() => {
-		const counts = new Map<string, number>();
-		for (const item of items) for (const tag of item.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
-		return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b));
+		const groups = new Map<string, { items: Content[]; title: string }>();
+		for (const item of items)
+			for (const title of item.tags) {
+				const key = title.trim().toLocaleLowerCase();
+				const group = groups.get(key) ?? { items: [], title };
+				group.items.push(item);
+				groups.set(key, group);
+			}
+		return [...groups.entries()].sort(([, a], [, b]) => a.title.localeCompare(b.title));
 	}, [items]);
+	const selectedItems = selectedTag
+		? items.filter((item) => item.tags.some((tag) => tag.trim().toLocaleLowerCase() === selectedTag.key))
+		: [];
+
+	if (selectedTag)
+		return (
+			<section className="flex h-full min-h-0 flex-col">
+				<header className="flex items-center gap-3 px-6 py-4">
+					<Button
+						aria-label="Back to tags"
+						onClick={() => setSelectedTag(undefined)}
+						size="icon"
+						variant="ghost">
+						<ArrowLeft className="size-4" />
+					</Button>
+					<TagHeader
+						color={colors[selectedTag.key] ?? 0}
+						labels={tagColorLabels()}
+						onColorChange={(color) => {
+							const id = ids[selectedTag.key];
+							if (!id) return;
+							void client.content
+								.updateTagColor({ id, color })
+								.then((tag) => setColors((current) => ({ ...current, [selectedTag.key]: tag.color })));
+						}}
+						title={selectedTag.title}
+					/>
+				</header>
+				<main className="min-h-0 flex-1 overflow-y-auto p-6">
+					<ContentGridSurface
+						excludedTag={selectedTag.title}
+						isLoading={false}
+						items={selectedItems}
+						selectedTags={[selectedTag.key]}
+					/>
+				</main>
+			</section>
+		);
 	return (
 		<section className="p-6">
 			<h1 className="text-2xl font-semibold">{t("library.tags")}</h1>
 			{tags.length ? (
-				<div className="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-					{tags.map(([tag, count]) => (
+				<div className="mt-6 grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					{tags.map(([key, tag]) => (
 						<button
 							type="button"
-							key={tag}
-							onClick={() => onSelect(tag)}
-							className="flex items-center justify-between rounded-xl bg-card p-4 text-left shadow-sm hover:bg-muted">
-							<span>#{tag}</span>
-							<span className="text-sm text-muted-foreground">{count}</span>
+							key={key}
+							onClick={() => setSelectedTag({ key, title: tag.title })}
+							className="group text-left">
+							<div className="mb-3 flex items-center justify-between text-lg font-medium">
+								<TagLabel color={colors[key] ?? 0} title={tag.title} />
+								<span className="text-sm text-muted-foreground">{tag.items.length}</span>
+							</div>
+							<TagStack items={tag.items} renderPreview={DesktopTagPreview} />
 						</button>
 					))}
 				</div>
@@ -368,6 +429,38 @@ function TagDirectory({ items, onSelect }: { items: Content[]; onSelect(tag: str
 				<p className="mt-5 text-muted-foreground">{t("library.tagsEmpty")}</p>
 			)}
 		</section>
+	);
+}
+
+function tagColorLabels() {
+	return {
+		none: "Без цвета",
+		option: (number: number) => `Цвет ${number}`,
+		picker: "Цвет тега",
+	};
+}
+
+function DesktopTagPreview(item: Content) {
+	if (item.type === "media" && item.thumbnail_url)
+		return <img alt="" className="h-full w-full object-cover" src={item.thumbnail_url} />;
+	if (item.type === "note")
+		return (
+			<div className="h-full bg-card p-4">
+				<h3 className="line-clamp-2 font-semibold">{item.title}</h3>
+			</div>
+		);
+	if (item.type === "link")
+		return (
+			<div className="flex h-full flex-col items-center justify-center gap-2 bg-card p-4">
+				<LinkIcon className="size-8 text-primary" />
+				<p className="line-clamp-2 text-sm">{item.title || item.url}</p>
+			</div>
+		);
+	return (
+		<div className="flex h-full flex-col items-center justify-center gap-2 bg-card p-4">
+			<FileText className="size-8 text-primary" />
+			<p className="line-clamp-2 text-sm">{item.title}</p>
+		</div>
 	);
 }
 function LibraryGraphView({

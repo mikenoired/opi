@@ -12,7 +12,8 @@ import { AppRuntimeProvider, useAppServices } from "@synapse/features/runtime";
 import { I18nProvider, useI18n } from "@synapse/i18n";
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@synapse/shared/preferences";
 import type { Content } from "@synapse/shared/schemas";
-import { useCallback, useEffect, useState } from "react";
+import { AlertCircle, CheckCircle2, LoaderCircle, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./style.css";
@@ -51,6 +52,7 @@ function DesktopApp() {
 	const [connectionNotice, setConnectionNotice] = useState<string>();
 	const [syncing, setSyncing] = useState(false);
 	const [syncProgress, setSyncProgress] = useState<SyncProgress>();
+	const [syncError, setSyncError] = useState<string>();
 	useEffect(() => bridge.sync.onProgress(setSyncProgress), []);
 	const refresh = useCallback(async () => {
 		const [nextItems, nextSettings, nextStatistics, nextSession, nextPreferences] = await Promise.all([
@@ -88,8 +90,28 @@ function DesktopApp() {
 				window.setTimeout(() => setCommand("content.add"), 0);
 			}
 			if (command === "settings.open") setSettingsOpen(true);
+			if (
+				command === "content.delete-all" &&
+				window.confirm("Удалить все материалы на этом устройстве и в Synapse?")
+			) {
+				void (async () => {
+					await bridge.library.deleteAll();
+					await refresh();
+					if (settings.syncPolicy !== "automatic" || !session) return;
+					setSyncError(undefined);
+					setSyncing(true);
+					try {
+						await bridge.sync.syncAll();
+						await refresh();
+					} catch (cause) {
+						setSyncError(cause instanceof Error ? cause.message : "Не удалось синхронизировать");
+					} finally {
+						setSyncing(false);
+					}
+				})();
+			}
 		});
-	}, []);
+	}, [refresh, session, settings.syncPolicy]);
 	useEffect(() => {
 		document.documentElement.dataset.palette = preferences.colorPalette;
 		document.documentElement.lang = preferences.interfaceLanguage;
@@ -124,7 +146,8 @@ function DesktopApp() {
 				setConnectingAccount={setConnectingAccount}
 				setConnectionNotice={setConnectionNotice}
 				setSyncing={setSyncing}
-				setSyncProgress={setSyncProgress}
+				syncError={syncError}
+				setSyncError={setSyncError}
 				setSettings={setSettings}
 				updatePreferences={updatePreferences}
 			/>
@@ -152,11 +175,12 @@ function DesktopAppContent({
 	statistics,
 	syncing,
 	syncProgress,
+	syncError,
 	setSession,
 	setConnectingAccount,
 	setConnectionNotice,
 	setSyncing,
-	setSyncProgress,
+	setSyncError,
 	setSettings,
 	updatePreferences,
 }: {
@@ -179,15 +203,42 @@ function DesktopAppContent({
 	statistics?: DesktopStatistics;
 	syncing: boolean;
 	syncProgress?: SyncProgress;
+	syncError?: string;
 	setSession: (session: DesktopSession | undefined) => void;
 	setConnectingAccount: (connecting: boolean) => void;
 	setConnectionNotice: (notice: string | undefined) => void;
 	setSyncing: (syncing: boolean) => void;
-	setSyncProgress: (progress: SyncProgress | undefined) => void;
+	setSyncError: (error: string | undefined) => void;
 	setSettings: (settings: { colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }) => void;
 	updatePreferences: (input: Partial<UserPreferences>) => Promise<void>;
 }) {
 	const { t } = useI18n();
+	const lastQueued = useRef<number | undefined>(undefined);
+	const runSync = useCallback(async () => {
+		if (syncing) return;
+		setSyncError(undefined);
+		setSyncing(true);
+		try {
+			const result = await bridge.sync.syncAll();
+			await refresh();
+			if (result.failed) throw new Error(`Не удалось синхронизировать ${result.failed} материал(а)`);
+		} catch (cause) {
+			setSyncError(cause instanceof Error ? cause.message : "Не удалось синхронизировать");
+		} finally {
+			setSyncing(false);
+		}
+	}, [bridge.sync, refresh, setSyncError, setSyncing, syncing]);
+	useEffect(() => {
+		if (settings.syncPolicy !== "automatic" || !session?.eligible || syncing || syncError) return;
+		if (lastQueued.current === statistics?.pendingSyncCount) return;
+		lastQueued.current = statistics?.pendingSyncCount;
+		if (statistics?.pendingSyncCount) void runSync();
+	}, [runSync, session?.eligible, settings.syncPolicy, statistics?.pendingSyncCount, syncError, syncing]);
+	useEffect(() => {
+		if (settings.syncPolicy !== "automatic" || !session?.eligible) return;
+		const timer = window.setInterval(() => void runSync(), 30_000);
+		return () => window.clearInterval(timer);
+	}, [runSync, session?.eligible, settings.syncPolicy]);
 	return (
 		<div
 			className={
@@ -199,6 +250,14 @@ function DesktopAppContent({
 				command={command}
 				isLoading={loading}
 				items={items}
+				sidebarFooter={
+					<DesktopSidebarStatus
+						error={syncError}
+						progress={syncProgress}
+						syncing={syncing}
+						onRetry={runSync}
+					/>
+				}
 				navigation={getDesktopNavigation(preferences.interfaceLanguage)}
 				onContentCreated={() => void refresh()}
 				onSelectPage={setPage}
@@ -281,16 +340,7 @@ function DesktopAppContent({
 							await bridge.sync.logout();
 							setSession(undefined);
 						}}
-						onSync={async () => {
-							setSyncing(true);
-							setSyncProgress(undefined);
-							try {
-								await bridge.sync.syncAll();
-								await refresh();
-							} finally {
-								setSyncing(false);
-							}
-						}}
+						onSync={runSync}
 						onSyncPolicyChange={async (syncPolicy) =>
 							setSettings(await bridge.library.updateSettings({ syncPolicy }))
 						}
@@ -301,6 +351,58 @@ function DesktopAppContent({
 					/>
 				</SettingsModalShell>
 			)}
+		</div>
+	);
+}
+
+function DesktopSidebarStatus({
+	error,
+	onRetry,
+	progress,
+	syncing,
+}: {
+	error?: string;
+	onRetry(): Promise<void>;
+	progress?: SyncProgress;
+	syncing: boolean;
+}) {
+	if (error)
+		return (
+			<div className="space-y-2 rounded-lg bg-destructive/10 p-2 text-xs text-destructive">
+				<div className="flex gap-2">
+					<AlertCircle className="mt-0.5 size-4 shrink-0" />
+					<span>{error}</span>
+				</div>
+				<button
+					className="flex h-8 w-full items-center justify-center gap-1.5 rounded-md bg-background px-2 font-medium text-foreground hover:bg-muted"
+					onClick={() => void onRetry()}
+					type="button">
+					<RefreshCw className="size-3.5" />
+					Повторить
+				</button>
+			</div>
+		);
+	if (syncing)
+		return (
+			<div className="rounded-lg bg-muted p-2 text-xs">
+				<div className="mb-2 flex items-center gap-2">
+					<LoaderCircle className="size-4 animate-spin" />
+					Синхронизация
+				</div>
+				<div className="h-1.5 overflow-hidden rounded-full bg-background">
+					<div
+						className="h-full bg-primary transition-[width]"
+						style={{
+							width: `${Math.round(((progress?.completed ?? 0) / Math.max(progress?.total ?? 1, 1)) * 100)}%`,
+						}}
+					/>
+				</div>
+			</div>
+		);
+	return (
+		<div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
+			<CheckCircle2 className="size-4 text-emerald-500" />
+			Синхронизировано
 		</div>
 	);
 }

@@ -155,9 +155,7 @@ function createDesktopSynapseClient(): SynapseClient {
 				});
 			},
 			updateTagColor: async (input) => {
-				const tag = (await tags()).find((candidate) => candidate.id === input.id);
-				if (!tag) throw new Error("Tag not found");
-				return { ...tag, color: input.color };
+				return getDesktopBridge().library.updateTagColor(input.id, input.color);
 			},
 			upload: async ({ files, makeTrack, tags, title }) => {
 				const contents = await getDesktopBridge().library.importFiles({ files, makeTrack, tags, title });
@@ -199,11 +197,5 @@ function createDesktopSynapseClient(): SynapseClient {
 }
 
 async function tags() {
-	const items = await getDesktopBridge().library.list();
-	const values = new Map<string, { color: number; id: string; title: string }>();
-	for (const item of items)
-		item.tags.forEach((title, index) =>
-			values.set(item.tag_ids[index] ?? title, { color: 0, id: item.tag_ids[index] ?? title, title })
-		);
-	return [...values.values()];
+	return getDesktopBridge().library.tags();
 }

@@ -55,6 +55,14 @@ export class DurableSyncService {
 		return { outcomes };
 	}
 
+	async deleteAll(): Promise<void> {
+		const contents = await this.content.getAllForSync();
+		for (const content of contents) {
+			await this.content.delete(content.id);
+			await this.journal.recordDeletion(this.ctx.user!.id, content.id);
+		}
+	}
+
 	private async applyMutation(mutation: SyncMutation): Promise<SyncMutationOutcome> {
 		if (!mutation.remoteId) {
 			if (mutation.kind === "delete") {

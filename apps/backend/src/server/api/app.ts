@@ -282,19 +282,25 @@ export const api = new Hono()
 			});
 		});
 	})
-	.get("/sync/pull", requireAuth, rateLimit("query"), async (c) => {
+	.get("/sync/pull", requireAuth, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
 		await requireSyncSubscription(context);
 		return c.json(await new DurableSyncService(context).pull(c.req.query("cursor")));
 	})
-	.post("/sync/push", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
+	.post("/sync/push", requireAuth, protectMutation, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
 		await requireSyncSubscription(context);
 		return c.json(
 			await new DurableSyncService(context).push((await body(c.req.raw, syncPushInput)).mutations)
 		);
 	})
-	.post("/sync/upload", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
+	.post("/sync/delete-all", requireAuth, protectMutation, rateLimit("sync"), async (c) => {
+		const context = serviceContext(c.get("apiContext"));
+		await requireSyncSubscription(context);
+		await new DurableSyncService(context).deleteAll();
+		return c.json({ success: true });
+	})
+	.post("/sync/upload", requireAuth, protectMutation, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
 		await requireSyncSubscription(context);
 		const uploaded = await new UploadService(context).handleUpload(await uploadBody(c.req.raw));
@@ -309,7 +315,7 @@ export const api = new Hono()
 			),
 		});
 	})
-	.get("/sync/assets", requireAuth, rateLimit("query"), async (c) => {
+	.get("/sync/assets", requireAuth, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
 		await requireSyncSubscription(context);
 		const keys = (c.req.queries("key") ?? []).slice(0, 100);
@@ -332,7 +338,7 @@ export const api = new Hono()
 			),
 		});
 	})
-	.get("/files/*", rateLimit("query"), async (c) => {
+	.get("/files/*", rateLimit("sync"), async (c) => {
 		const requestPath = new URL(c.req.url).pathname;
 		const filesPathIndex = requestPath.indexOf("/files/");
 		const encodedObjectName =
@@ -500,7 +506,7 @@ export const api = new Hono()
 	.delete("/content/:id", requireAuth, protectMutation, rateLimit("mutation"), async (c) =>
 		c.json(await new ContentService(c.get("apiContext")).delete(c.req.param("id")))
 	)
-	.patch("/content/tags/:id/color", requireAuth, protectMutation, rateLimit("mutation"), async (c) =>
+	.patch("/content/tags/:id/color", requireAuth, protectMutation, rateLimit("sync"), async (c) =>
 		c.json(
 			await new ContentService(c.get("apiContext")).updateTagColor(
 				c.req.param("id"),

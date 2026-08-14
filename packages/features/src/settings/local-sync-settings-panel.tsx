@@ -1,6 +1,9 @@
 import { useI18n } from "@synapse/i18n";
-import { Button, RadioGroup, RadioItem } from "@synapse/ui/components";
+import { Button, Switch } from "@synapse/ui/components";
 import { RefreshCw } from "lucide-react";
+import { useState } from "react";
+
+import { ConfirmDialog } from "../dialogs/confirm-dialog";
 
 export interface LocalSyncSettingsPanelProps {
 	isSyncing?: boolean;
@@ -28,26 +31,37 @@ export function LocalSyncSettingsPanel({
 	progress,
 }: LocalSyncSettingsPanelProps) {
 	const { t } = useI18n();
+	const [confirmAutomatic, setConfirmAutomatic] = useState(false);
+	const automatic = syncPolicy === "automatic";
 	return (
 		<section className="space-y-4">
 			<h2 className="text-xl font-semibold tracking-tight">Synapse Sync</h2>
-			<RadioGroup
-				className="flex w-full flex-wrap gap-2"
-				value={syncPolicy}
-				onValueChange={(value) => void onSyncPolicyChange(value as "automatic" | "manual")}>
-				<RadioItem index={0} label={t("sync.manual")} value="manual" />
-				<RadioItem index={1} label={t("sync.automatic")} value="automatic" />
-			</RadioGroup>
+			<div className="flex items-center justify-between gap-4 rounded-xl border p-4">
+				<div>
+					<p className="font-medium">Автоматическая синхронизация</p>
+					<p className="mt-1 text-sm text-muted-foreground">
+						Синхронизировать изменения на устройствах автоматически.
+					</p>
+				</div>
+				<Switch
+					aria-label="Автоматическая синхронизация"
+					checked={automatic}
+					disabled={isSyncing || !session?.eligible}
+					onToggle={() => (automatic ? void onSyncPolicyChange("manual") : setConfirmAutomatic(true))}
+				/>
+			</div>
 			<div className="space-y-3">
 				<p className="text-sm text-muted-foreground">
 					{session?.eligible ? t("sync.withPlan", { plan: session.plan }) : t("sync.unavailable")}
 				</p>
-				<Button
-					leadingIcon={RefreshCw}
-					disabled={!session?.eligible || isSyncing}
-					onClick={() => void onSync()}>
-					{isSyncing ? t("sync.syncing") : t("sync.sync")}
-				</Button>
+				{!automatic && (
+					<Button
+						leadingIcon={RefreshCw}
+						disabled={!session?.eligible || isSyncing}
+						onClick={() => void onSync()}>
+						{isSyncing ? t("sync.syncing") : t("sync.sync")}
+					</Button>
+				)}
 				{isSyncing && progress && (
 					<div aria-live="polite" className="space-y-1.5">
 						<div className="flex justify-between text-xs text-muted-foreground">
@@ -71,6 +85,18 @@ export function LocalSyncSettingsPanel({
 					</div>
 				)}
 			</div>
+			<ConfirmDialog
+				cancelText="Отмена"
+				confirmText="Включить и синхронизировать"
+				description="Будет выполнена начальная синхронизация материалов между этим устройством и Synapse."
+				onConfirm={async () => {
+					await onSyncPolicyChange("automatic");
+					await onSync();
+				}}
+				onOpenChange={setConfirmAutomatic}
+				open={confirmAutomatic}
+				title="Включить автоматическую синхронизацию?"
+			/>
 		</section>
 	);
 }
