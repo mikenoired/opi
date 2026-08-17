@@ -21,7 +21,7 @@
 		"test": "bun run test:server",
 		"test:server": "bun --filter @synapse/backend test:server",
 		"test:api": "bun --filter @synapse/backend test:api",
-		"test:all": "bun run test:server && bun run test:api",
+		"test:all": "bun test packages/sync/src tests/e2e/harness && bun run test:server && bun run test:api",
 		"test:coverage": "bun --filter @synapse/backend test:coverage",
 		"test:e2e:desktop": "bun scripts/run-desktop-e2e.ts",
 		"test:e2e:web": "bun scripts/run-web-e2e.ts",

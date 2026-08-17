@@ -6,7 +6,9 @@ export default defineConfig({
 	// extensionless source imports at runtime, which Node ESM rejects.
 	main: {
 		build: {
-			externalizeDeps: { exclude: ["@synapse/api", "@synapse/core", "@synapse/shared", "music-metadata"] },
+			externalizeDeps: {
+				exclude: ["@synapse/api", "@synapse/core", "@synapse/shared", "@synapse/sync", "music-metadata"],
+			},
 		},
 	},
 	preload: {

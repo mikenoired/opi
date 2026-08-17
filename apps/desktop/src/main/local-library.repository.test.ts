@@ -6,6 +6,17 @@ import { join } from "node:path";
 import { LocalLibraryRepository } from "./local-library.repository";
 
 describe("LocalLibraryRepository", () => {
+	test("creates a new mutation id when a queued local edit replaces its intent", async () => {
+		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const library = new LocalLibraryRepository(root);
+		await library.updateSettings({ syncPolicy: "automatic" });
+		const item = await library.save({ content: "first", tags: [], title: "first", type: "note" });
+		const [first] = await library.getPendingOperations();
+		await library.save({ content: "second", id: item.id, tags: [], title: "second", type: "note" });
+		const [second] = await library.getPendingOperations();
+
+		expect(second.mutation.clientMutationId).not.toBe(first.mutation.clientMutationId);
+	});
 	test("persists items, settings, search, and statistics across repository instances", async () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);
@@ -44,6 +55,20 @@ describe("LocalLibraryRepository", () => {
 
 		expect((await library.list())[0]).toMatchObject({ id: item.id, syncState: "queued" });
 		expect(await library.getSettings()).toMatchObject({ colorScheme: "system", syncPolicy: "manual" });
+	});
+
+	test("keeps the SyncEngine outbox durable across a repository restart", async () => {
+		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const library = new LocalLibraryRepository(root);
+		const item = await library.save({ content: "outbox", tags: [], title: "Outbox", type: "note" });
+		await library.queueSync(item.id);
+		const [entry] = await library.getPendingOperations();
+		if (!entry) throw new Error("Expected a durable operation");
+
+		await new LocalLibraryRepository(root).retainMutation(entry.mutation.clientMutationId);
+		expect((await new LocalLibraryRepository(root).getPendingOperations())[0]?.attempts).toBe(1);
+		await new LocalLibraryRepository(root).acknowledgeMutation(entry.mutation.clientMutationId);
+		expect(await new LocalLibraryRepository(root).getPendingOperations()).toEqual([]);
 	});
 
 	test("persists the shared user-preferences contract locally", async () => {

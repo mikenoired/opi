@@ -17,6 +17,8 @@ describe("DesktopSyncService", () => {
 				return Response.json({ token: "desktop-token", user: { email: "mike@example.com" } });
 			if (url.pathname === "/api/user/sync/entitlement")
 				return Response.json({ eligible: true, plan: "pro" });
+			if (url.pathname === "/api/sync/pull")
+				return Response.json({ changes: [], cursor: "j:0", hasMore: false, kind: "changes" });
 			if (url.pathname === "/api/ai/usage") return Response.json(usage());
 			return Response.json({
 				existing: [{ id: "tag-work", name: "work" }],

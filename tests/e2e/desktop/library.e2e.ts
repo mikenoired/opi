@@ -5,7 +5,7 @@ describe("desktop library", () => {
 		await $("[data-testid='content-type-note']").click();
 		await $("[data-testid='content-title']").setValue("E2E desktop note");
 		await $("[aria-label='Содержимое заметки']").setValue("Saved by the Electron UI");
-		await $("form button[type='submit']").click();
+		await $("button[aria-label='Сохранить']").click();
 		await expect($("body")).toHaveText(expect.stringContaining("E2E desktop note"));
 
 		if (process.platform === "darwin") {

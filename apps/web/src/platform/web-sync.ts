@@ -1,0 +1,268 @@
+import {
+	ContentEntityAdapter,
+	SyncEngine,
+	createEntityRegistry,
+	type JournalApi,
+	type MutationReceipt,
+	type Outbox,
+	type PullResult,
+	type RealtimeTransport,
+	type ReplicaStore,
+	type ReplicaTransaction,
+	type SyncChange,
+	type SyncCursor,
+	type SyncIntent,
+} from "@synapse/sync";
+
+import { apiUrl } from "@/shared/config/api";
+
+type ChangeListener = () => void;
+
+/**
+ * Browser sync module. Its public interface is intentionally limited to lifecycle
+ * and a projection notification: SyncEngine remains the owner of cursors/outbox.
+ */
+export class WebSyncRuntime {
+	private engine?: SyncEngine;
+	private generation = 0;
+	private replica?: IndexedDbReplicaStore;
+	private readonly listeners = new Set<ChangeListener>();
+
+	async start(userId: string): Promise<void> {
+		await this.stop();
+		const generation = ++this.generation;
+		this.replica = new IndexedDbReplicaStore(`synapse-sync-${userId}`, () => this.notifyProjection());
+		const engine = new SyncEngine({
+			journal: new BrowserJournalApi(),
+			outbox: new IndexedDbOutbox(`synapse-sync-${userId}`),
+			realtime: new CookieSseTransport(),
+			registry: createEntityRegistry(new ContentEntityAdapter()),
+			replica: this.replica,
+		});
+		this.engine = engine;
+		await engine.start();
+		if (generation !== this.generation) await engine.stop();
+	}
+
+	async stop(): Promise<void> {
+		this.generation++;
+		await this.engine?.stop();
+		this.engine = undefined;
+		this.replica = undefined;
+	}
+
+	syncNow(): Promise<void> {
+		return this.engine?.syncNow() ?? Promise.resolve();
+	}
+
+	subscribeProjection(listener: ChangeListener): () => void {
+		this.listeners.add(listener);
+		return () => this.listeners.delete(listener);
+	}
+
+	private notifyProjection(): void {
+		for (const listener of this.listeners) listener();
+	}
+}
+
+export const webSyncRuntime = new WebSyncRuntime();
+
+export class BrowserJournalApi implements JournalApi {
+	compareCursors(left: SyncCursor, right: SyncCursor): number {
+		return compareServerCursors(left, right);
+	}
+
+	async pull(afterCursor?: SyncCursor): Promise<PullResult> {
+		const query = afterCursor ? `?afterCursor=${encodeURIComponent(afterCursor)}` : "";
+		return jsonRequest<PullResult>(`/sync/pull${query}`);
+	}
+
+	/** Compatibility adapter until the server exposes generic POST /sync/mutations. */
+	async push(mutations: SyncIntent[]): Promise<MutationReceipt[]> {
+		const response = await jsonRequest<{ outcomes: Array<Record<string, unknown>> }>("/sync/push", {
+			body: JSON.stringify({
+				mutations: mutations.map((mutation) => ({
+					baseRevision: mutation.baseEntityVersion,
+					clientMutationId: mutation.mutationId,
+					content: mutation.operation === "upsert" ? mutation.payload : undefined,
+					kind: mutation.operation,
+					remoteId: mutation.entityId,
+				})),
+			}),
+			method: "POST",
+		});
+		return response.outcomes.map((outcome) => {
+			const mutationId = String(outcome.clientMutationId);
+			if (outcome.status === "conflict") {
+				return { kind: "conflict", mutationId };
+			}
+			return { kind: "applied", mutationId };
+		});
+	}
+}
+
+function compareServerCursors(left: SyncCursor, right: SyncCursor): number {
+	const leftValue = Number(/^j:(\d+)$/.exec(left)?.[1]);
+	const rightValue = Number(/^j:(\d+)$/.exec(right)?.[1]);
+	if (!Number.isSafeInteger(leftValue) || !Number.isSafeInteger(rightValue))
+		throw new Error("Synapse API returned an invalid sync cursor");
+	return leftValue - rightValue;
+}
+
+/** Same-site cookie authentication avoids putting any bearer credential in an URL. */
+export class CookieSseTransport implements RealtimeTransport {
+	async connect(onHint: (hint: { cursor?: SyncCursor }) => void): Promise<() => void> {
+		const events = new EventSource(apiUrl("/sync/events"), { withCredentials: true });
+		events.addEventListener("hint", (event) => {
+			try {
+				const hint = JSON.parse((event as MessageEvent<string>).data) as { cursor?: SyncCursor };
+				onHint(hint);
+			} catch {
+				// Malformed hints are disposable: a later reconnect/pull restores state.
+			}
+		});
+		return () => events.close();
+	}
+}
+
+type StoredChange = SyncChange & { key: string };
+type StoredIntent = SyncIntent & { key: string };
+
+class IndexedDbReplicaStore implements ReplicaStore {
+	constructor(
+		private readonly name: string,
+		private readonly onProjection: ChangeListener
+	) {}
+
+	async readCursor(): Promise<SyncCursor | undefined> {
+		return (await this.getMeta("cursor")) as SyncCursor | undefined;
+	}
+
+	async transact(action: (transaction: ReplicaTransaction) => Promise<void>): Promise<void> {
+		const db = await openDatabase(this.name);
+		const transaction = db.transaction(["replica", "meta", "conflicts"], "readwrite");
+		const adapter = new IndexedDbReplicaTransaction(transaction);
+		await action(adapter);
+		await complete(transaction);
+		db.close();
+		this.onProjection();
+	}
+
+	private async getMeta(key: string): Promise<unknown> {
+		const db = await openDatabase(this.name);
+		const transaction = db.transaction("meta", "readonly");
+		const result = await request(transaction.objectStore("meta").get(key));
+		await complete(transaction);
+		db.close();
+		return (result as { key: string; value: unknown } | undefined)?.value;
+	}
+}
+
+class IndexedDbReplicaTransaction implements ReplicaTransaction {
+	constructor(private readonly transaction: IDBTransaction) {}
+
+	async applyCanonical(change: SyncChange): Promise<void> {
+		const store = this.transaction.objectStore("replica");
+		const key = `${change.entityType}:${change.entityId}`;
+		if (change.operation === "delete") await request(store.delete(key));
+		else await request(store.put({ ...change, key } satisfies StoredChange));
+	}
+
+	async applyOptimistic(intent: SyncIntent): Promise<void> {
+		if (!intent.entityId) return;
+		await this.applyCanonical({
+			cursor: `local:${intent.mutationId}`,
+			entityId: intent.entityId,
+			entityType: intent.entityType,
+			entityVersion: intent.baseEntityVersion ?? 0,
+			mutationId: intent.mutationId,
+			operation: intent.operation,
+			payload: intent.payload,
+		});
+	}
+
+	async recordConflict(intent: SyncIntent, current?: SyncChange): Promise<void> {
+		await request(this.transaction.objectStore("conflicts").put({ current, intent, key: intent.mutationId }));
+	}
+
+	async replaceFromSnapshot(changes: SyncChange[]): Promise<void> {
+		const store = this.transaction.objectStore("replica");
+		await request(store.clear());
+		for (const change of changes) await this.applyCanonical(change);
+	}
+
+	async setCursor(cursor: SyncCursor): Promise<void> {
+		await request(this.transaction.objectStore("meta").put({ key: "cursor", value: cursor }));
+	}
+}
+
+class IndexedDbOutbox implements Outbox {
+	constructor(private readonly name: string) {}
+
+	async acknowledge(mutationId: string): Promise<void> {
+		await this.write((store) => request(store.delete(mutationId)));
+	}
+
+	async enqueue(intent: SyncIntent): Promise<void> {
+		await this.write((store) =>
+			request(store.put({ ...intent, key: intent.mutationId } satisfies StoredIntent))
+		);
+	}
+
+	async list(): Promise<SyncIntent[]> {
+		const db = await openDatabase(this.name);
+		const transaction = db.transaction("outbox", "readonly");
+		const entries = (await request(transaction.objectStore("outbox").getAll())) as StoredIntent[];
+		await complete(transaction);
+		db.close();
+		return entries.map(({ key: _key, ...intent }) => intent);
+	}
+
+	async retainForRetry(_mutationId: string): Promise<void> {}
+
+	private async write(action: (store: IDBObjectStore) => Promise<unknown>): Promise<void> {
+		const db = await openDatabase(this.name);
+		const transaction = db.transaction("outbox", "readwrite");
+		await action(transaction.objectStore("outbox"));
+		await complete(transaction);
+		db.close();
+	}
+}
+
+function openDatabase(name: string): Promise<IDBDatabase> {
+	return new Promise((resolve, reject) => {
+		const opening = indexedDB.open(name, 1);
+		opening.onupgradeneeded = () => {
+			const db = opening.result;
+			for (const store of ["replica", "outbox", "meta", "conflicts"])
+				if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: "key" });
+		};
+		opening.onerror = () => reject(opening.error ?? new Error("Unable to open sync storage"));
+		opening.onsuccess = () => resolve(opening.result);
+	});
+}
+
+function request(source: IDBRequest): Promise<unknown> {
+	return new Promise((resolve, reject) => {
+		source.onerror = () => reject(source.error);
+		source.onsuccess = () => resolve(source.result);
+	});
+}
+
+function complete(transaction: IDBTransaction): Promise<void> {
+	return new Promise((resolve, reject) => {
+		transaction.onabort = () => reject(transaction.error ?? new Error("Sync storage transaction aborted"));
+		transaction.onerror = () => reject(transaction.error ?? new Error("Sync storage transaction failed"));
+		transaction.oncomplete = () => resolve();
+	});
+}
+
+async function jsonRequest<T>(path: string, init?: RequestInit): Promise<T> {
+	const response = await fetch(apiUrl(path), {
+		...init,
+		credentials: "include",
+		headers: { "Content-Type": "application/json", ...init?.headers },
+	});
+	if (!response.ok) throw new Error(`Sync request failed with ${response.status}`);
+	return response.json() as Promise<T>;
+}

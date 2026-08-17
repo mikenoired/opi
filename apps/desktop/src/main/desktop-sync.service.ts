@@ -12,9 +12,16 @@ import type {
 } from "@synapse/api";
 import { parseAudioJson, parseMediaJson } from "@synapse/core";
 import type { Content } from "@synapse/shared/schemas";
-import { shell } from "electron";
+import { createEntityRegistry, SyncEngine } from "@synapse/sync";
 
 import type { DesktopStorageProvider } from "./desktop-storage.provider";
+import {
+	DesktopContentAdapter,
+	DesktopJournalApi,
+	DesktopOutbox,
+	DesktopReplicaStore,
+	DesktopSseTransport,
+} from "./desktop-sync.adapters";
 import type { LocalAsset, LocalLibraryRepository } from "./local-library.repository";
 
 export interface SyncProgress {
@@ -60,21 +67,32 @@ export class DesktopSyncService {
 	private apiUrl?: string;
 	private pendingAuthorization?: PendingDesktopAuthorization;
 	private session?: DesktopSyncSession;
+	private engine?: SyncEngine;
+	private onLibraryChanged?: () => void;
 
 	constructor(
 		private readonly library: LocalLibraryRepository,
 		private readonly storage?: DesktopStorageProvider,
-		private onProgress?: (progress: SyncProgress) => void
+		private onProgress?: (progress: SyncProgress) => void,
+		private readonly openExternal?: (url: string) => Promise<void>
 	) {}
 
 	setProgressListener(listener: ((progress: SyncProgress) => void) | undefined): void {
 		this.onProgress = listener;
 	}
 
+	/** Called after the durable replica commits a remote journal batch. */
+	setLibraryChangedListener(listener: (() => void) | undefined): void {
+		this.onLibraryChanged = listener;
+	}
+
 	/** Kept for main-process service tests and non-UI integrations. Desktop UI uses connectAccount(). */
 	async login(apiUrl: string, email: string, password: string): Promise<DesktopSyncSession> {
 		this.apiUrl = normalizeApiUrl(apiUrl);
-		const result = await this.request<LoginResponse>("/auth/login", { email, password });
+		const result = await this.request<LoginResponse>("/auth/login", {
+			email,
+			password,
+		});
 		this.token = result.token;
 		this.refreshToken = result.refreshToken;
 		const entitlement = await this.request<{ eligible: boolean; plan: string }>(
@@ -83,6 +101,7 @@ export class DesktopSyncService {
 			"GET"
 		);
 		this.session = { email: result.user.email, ...entitlement };
+		await this.startSyncLifecycle();
 		return this.session;
 	}
 
@@ -101,7 +120,8 @@ export class DesktopSyncService {
 			this.pendingAuthorization = { codeVerifier, reject, resolve, state };
 		});
 		try {
-			await shell.openExternal(url.toString());
+			if (!this.openExternal) throw new Error("Desktop external browser is unavailable");
+			await this.openExternal(url.toString());
 		} catch (cause) {
 			this.pendingAuthorization = undefined;
 			throw cause;
@@ -131,12 +151,12 @@ export class DesktopSyncService {
 			});
 			this.token = result.token;
 			this.refreshToken = result.refreshToken;
-			const entitlement = await this.request<{ eligible: boolean; plan: string }>(
-				"/user/sync/entitlement",
-				undefined,
-				"GET"
-			);
+			const entitlement = await this.request<{
+				eligible: boolean;
+				plan: string;
+			}>("/user/sync/entitlement", undefined, "GET");
 			this.session = { email: result.user.email, ...entitlement };
+			await this.startSyncLifecycle();
 			pending.resolve(this.session);
 		} catch (cause) {
 			pending.reject(cause instanceof Error ? cause : new Error("Не удалось подключить аккаунт"));
@@ -151,7 +171,12 @@ export class DesktopSyncService {
 
 	getStoredSession(): StoredDesktopSession | undefined {
 		return this.apiUrl && this.token && this.refreshToken && this.session
-			? { apiUrl: this.apiUrl, refreshToken: this.refreshToken, session: this.session, token: this.token }
+			? {
+					apiUrl: this.apiUrl,
+					refreshToken: this.refreshToken,
+					session: this.session,
+					token: this.token,
+				}
 			: undefined;
 	}
 
@@ -161,22 +186,20 @@ export class DesktopSyncService {
 		this.refreshToken = stored.refreshToken;
 		this.session = stored.session;
 		try {
-			const refreshed = await this.request<{ refreshToken: string; token: string }>(
-				"/auth/refresh",
-				undefined,
-				"POST",
-				{
-					"x-synapse-refresh-token": stored.refreshToken,
-				}
-			);
+			const refreshed = await this.request<{
+				refreshToken: string;
+				token: string;
+			}>("/auth/refresh", undefined, "POST", {
+				"x-synapse-refresh-token": stored.refreshToken,
+			});
 			this.token = refreshed.token;
 			this.refreshToken = refreshed.refreshToken;
-			const entitlement = await this.request<{ eligible: boolean; plan: string }>(
-				"/user/sync/entitlement",
-				undefined,
-				"GET"
-			);
+			const entitlement = await this.request<{
+				eligible: boolean;
+				plan: string;
+			}>("/user/sync/entitlement", undefined, "GET");
 			this.session = { ...stored.session, ...entitlement };
+			await this.startSyncLifecycle();
 			return this.session;
 		} catch {
 			this.logout();
@@ -185,10 +208,22 @@ export class DesktopSyncService {
 	}
 
 	logout(): void {
+		void this.engine?.stop();
+		this.engine = undefined;
 		this.apiUrl = undefined;
 		this.session = undefined;
 		this.token = undefined;
 		this.refreshToken = undefined;
+	}
+
+	async stop(): Promise<void> {
+		await this.engine?.stop();
+		this.engine = undefined;
+	}
+
+	/** Wakes the durable engine after a local IPC mutation; it never drops the outbox on network failure. */
+	wake(): void {
+		void this.engine?.syncNow();
 	}
 
 	async syncAll(): Promise<SyncRunResult> {
@@ -202,6 +237,7 @@ export class DesktopSyncService {
 		);
 		this.session = { ...this.session, ...entitlement };
 		if (!this.session.eligible) throw new Error("Synapse Sync доступен на платных планах");
+		await this.startSyncLifecycle();
 		if (await this.library.hasBulkDeleteRequest()) {
 			await this.request<{ success: true }>("/sync/delete-all");
 			await this.library.acknowledgeBulkDelete();
@@ -216,10 +252,18 @@ export class DesktopSyncService {
 		await this.library.queueLocalAttachmentsForSync();
 		const pending = await this.library.getPendingOperations();
 		let completed = 0;
-		this.reportProgress({ completed, phase: "download", total: pending.length + 2 });
+		this.reportProgress({
+			completed,
+			phase: "download",
+			total: pending.length + 2,
+		});
 		conflicts.push(...(await this.pullRemoteChanges()));
 		completed += 1;
-		this.reportProgress({ completed, phase: "upload", total: pending.length + 2 });
+		this.reportProgress({
+			completed,
+			phase: "upload",
+			total: pending.length + 2,
+		});
 
 		for (const batch of chunk(pending, 100)) {
 			let entries = [] as typeof batch;
@@ -279,14 +323,26 @@ export class DesktopSyncService {
 				failed += entries.length;
 			} finally {
 				completed += batch.length;
-				this.reportProgress({ completed, phase: "upload", total: pending.length + 2 });
+				this.reportProgress({
+					completed,
+					phase: "upload",
+					total: pending.length + 2,
+				});
 			}
 		}
 
-		this.reportProgress({ completed, phase: "finalizing", total: pending.length + 2 });
+		this.reportProgress({
+			completed,
+			phase: "finalizing",
+			total: pending.length + 2,
+		});
 		conflicts.push(...(await this.pullRemoteChanges()));
 		await this.repairMissingAssets();
-		this.reportProgress({ completed: pending.length + 2, phase: "finalizing", total: pending.length + 2 });
+		this.reportProgress({
+			completed: pending.length + 2,
+			phase: "finalizing",
+			total: pending.length + 2,
+		});
 		await this.syncTagMetadata();
 		return { conflicts, failed, synced };
 	}
@@ -300,11 +356,11 @@ export class DesktopSyncService {
 		);
 		await this.library.mergeRemoteTags(remoteTags);
 		for (const tag of await this.library.getPendingTagColors()) {
-			const remote = await this.request<{ color: number; id: string; title: string }>(
-				`/content/tags/${encodeURIComponent(tag.remoteId!)}/color`,
-				{ color: tag.color },
-				"PATCH"
-			);
+			const remote = await this.request<{
+				color: number;
+				id: string;
+				title: string;
+			}>(`/content/tags/${encodeURIComponent(tag.remoteId!)}/color`, { color: tag.color }, "PATCH");
 			await this.library.acknowledgeTagColor(tag.id, remote.color);
 		}
 	}
@@ -322,10 +378,20 @@ export class DesktopSyncService {
 		const bytes = await readFile(this.storage.getObjectPath(objectName));
 		const name = basename(objectName);
 		const result = await this.request<{
-			contents: Array<{ content: import("@synapse/shared/schemas").Content; revision: number }>;
+			contents: Array<{
+				content: import("@synapse/shared/schemas").Content;
+				revision: number;
+			}>;
 			errors: string[];
 		}>("/sync/upload", {
-			files: [{ content: bytes.toString("base64"), name, size: bytes.byteLength, type: mimeType(name) }],
+			files: [
+				{
+					content: bytes.toString("base64"),
+					name,
+					size: bytes.byteLength,
+					type: mimeType(name),
+				},
+			],
 			tags: item.tags,
 			title: item.title,
 		});
@@ -347,6 +413,10 @@ export class DesktopSyncService {
 	}
 
 	private async pullRemoteChanges(): Promise<SyncRunResult["conflicts"]> {
+		if (this.engine) {
+			await this.engine.syncNow();
+			return [];
+		}
 		const cursor = await this.library.getSyncCursor();
 		const result = await this.request<SyncPullResult>(
 			`/sync/pull${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
@@ -372,6 +442,32 @@ export class DesktopSyncService {
 		}
 		await this.library.setSyncCursor(result.cursor);
 		return conflicts;
+	}
+
+	/** The engine owns ordered V2 pull/outbox/reconnect. Asset bytes deliberately
+	 * remain below this layer in uploadLocalAsset()/hydrateAssets(). */
+	private async startSyncLifecycle(): Promise<void> {
+		if (!this.session || !this.apiUrl || !this.token) return;
+		if (!this.engine) {
+			this.engine = new SyncEngine({
+				journal: new DesktopJournalApi(
+					() => this.apiUrl,
+					() => this.token
+				),
+				outbox: new DesktopOutbox(this.library),
+				realtime: new DesktopSseTransport(
+					() => this.apiUrl,
+					() => this.token
+				),
+				registry: createEntityRegistry(new DesktopContentAdapter()),
+				replica: new DesktopReplicaStore(
+					this.library,
+					(content) => this.hydrateAssets(content),
+					() => this.onLibraryChanged?.()
+				),
+			});
+		}
+		await this.engine.start();
 	}
 
 	private async hydrateAssets(content: Content): Promise<{ assets: LocalAsset[]; content: Content }> {
@@ -408,7 +504,11 @@ export class DesktopSyncService {
 			const stored = await this.storage.putSyncedAsset(bytes, remote.storageKey);
 			if (stored.sha256 !== remote.sha256 || stored.size !== remote.size)
 				throw new Error(`Повреждённый файл при синхронизации: ${remote.storageKey}`);
-			assets.push({ ...remote, checksum: remote.sha256, localObjectName: stored.objectName });
+			assets.push({
+				...remote,
+				checksum: remote.sha256,
+				localObjectName: stored.objectName,
+			});
 		}
 		return { assets, content: replaceAssetUrls(content, assets, this.storage) };
 	}
@@ -417,7 +517,10 @@ export class DesktopSyncService {
 		for (const local of await this.library.list()) {
 			if (!local.remoteId || !getAssetStorageKeys(local).length) continue;
 			if (await this.hasAllLocalAssets(local.remoteId, getAssetStorageKeys(local))) continue;
-			const hydrated = await this.hydrateAssets({ ...local, id: local.remoteId });
+			const hydrated = await this.hydrateAssets({
+				...local,
+				id: local.remoteId,
+			});
 			await this.library.applyRemoteChange({
 				assets: hydrated.assets,
 				content: hydrated.content,
@@ -472,7 +575,9 @@ export class DesktopSyncService {
 		}
 		if (!response) throw new Error("Synapse API returned no response");
 		if (!response.ok) {
-			const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+			const payload = (await response.json().catch(() => null)) as {
+				error?: string;
+			} | null;
 			throw new Error(payload?.error || `Synapse API returned ${response.status}`);
 		}
 		return (await response.json()) as T;

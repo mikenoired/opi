@@ -2,6 +2,7 @@ import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@synapse/shared/
 import { relations, sql } from "drizzle-orm";
 import {
 	boolean,
+	bigint,
 	bigserial,
 	check,
 	customType,
@@ -199,6 +200,70 @@ export const syncMutationReceipts = pgTable(
 	},
 	(table) => [primaryKey({ columns: [table.userId, table.clientMutationId] })]
 );
+
+/** Generic protocol tables. Legacy content-shaped sync tables remain for staged migration. */
+export const syncJournalClock = pgTable("sync_journal_clock", {
+	id: boolean("id").primaryKey().default(true),
+	nextCursor: bigint("next_cursor", { mode: "number" }).notNull().default(0),
+});
+
+export const syncEntityVersions = pgTable(
+	"sync_entity_versions",
+	{
+		entityType: text("entity_type").notNull(),
+		entityId: text("entity_id").notNull(),
+		entityVersion: bigint("entity_version", { mode: "number" }).notNull(),
+		deleted: boolean("deleted").notNull().default(false),
+		updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+	},
+	(table) => [primaryKey({ columns: [table.userId, table.entityType, table.entityId] })]
+);
+
+export const syncJournalEntries = pgTable(
+	"sync_journal_entries",
+	{
+		cursor: bigint("cursor", { mode: "number" }).primaryKey(),
+		entityType: text("entity_type").notNull(),
+		entityId: text("entity_id").notNull(),
+		entityVersion: bigint("entity_version", { mode: "number" }).notNull(),
+		operation: text("operation").notNull(),
+		payload: jsonb("payload").$type<unknown>(),
+		mutationId: text("mutation_id"),
+		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+	},
+	(table) => [index("sync_journal_entries_user_cursor_idx").on(table.userId, table.cursor)]
+);
+
+export const syncMutationReceiptsV2 = pgTable(
+	"sync_mutation_receipts_v2",
+	{
+		mutationId: text("mutation_id").notNull(),
+		requestHash: text("request_hash").notNull(),
+		status: text("status").notNull().default("processing"),
+		outcome: jsonb("outcome").$type<unknown>(),
+		createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+		completedAt: timestamp("completed_at", { withTimezone: true }),
+		userId: uuid("user_id")
+			.notNull()
+			.references(() => users.id, { onDelete: "cascade" }),
+	},
+	(table) => [primaryKey({ columns: [table.userId, table.mutationId] })]
+);
+
+export const syncRetentionWatermarks = pgTable("sync_retention_watermarks", {
+	oldestRetainedCursor: bigint("oldest_retained_cursor", { mode: "number" }).notNull().default(0),
+	updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+	userId: uuid("user_id")
+		.primaryKey()
+		.notNull()
+		.references(() => users.id, { onDelete: "cascade" }),
+});
 
 export const usersRelations = relations(users, ({ many }) => ({
 	content: many(content),

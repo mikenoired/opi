@@ -1,12 +1,10 @@
 import { Buffer } from "node:buffer";
 
 import type { Context } from "../context";
-import { content } from "../db/schema";
-import ContentService from "./content.service";
+import { SyncMutationCoordinator } from "./sync-mutation-coordinator";
 import { processAudioUpload } from "./upload/audio-handler";
 import { processImageUpload } from "./upload/image-handler";
 import type { UploadHandlerDeps } from "./upload/upload-handler-types";
-import { UploadTagService } from "./upload/upload-tag-service";
 import type {
 	AudioUploadParams,
 	FilePayload,
@@ -19,12 +17,9 @@ import type {
 import { processVideoUpload } from "./upload/video-handler";
 
 export default class UploadService {
-	private readonly tagService: UploadTagService;
-
 	private readonly handlerDeps: UploadHandlerDeps;
 
 	constructor(private readonly ctx: Context) {
-		this.tagService = new UploadTagService(ctx);
 		this.handlerDeps = {
 			ctx,
 			persistContent: this.persistContent.bind(this),
@@ -91,44 +86,26 @@ export default class UploadService {
 
 	private async persistContent(input: {
 		content: string;
+		mediaType?: "image" | "video";
 		tags: string[];
 		title?: string;
 		type: "media" | "audio";
 		userId: string;
 	}) {
-		const contentId = await this.ctx.db.transaction(async (tx) => {
-			const [inserted] = await tx
-				.insert(content)
-				.values({
-					content: input.content,
-					title: input.title,
-					type: input.type,
-					userId: input.userId,
-				})
-				.returning({ id: content.id });
-
-			if (!inserted?.id) {
-				throw new Error("Content creation error");
-			}
-
-			await this.tagService
-				.withDb(tx as unknown as Context["db"])
-				.attachTags(inserted.id, input.tags, input.type, input.title);
-
-			return inserted.id;
+		if (input.userId !== this.requireUserId()) throw new Error("Upload user mismatch");
+		const outcome = await new SyncMutationCoordinator(this.ctx).apply({
+			clientMutationId: crypto.randomUUID(),
+			content: {
+				content: input.content,
+				media_type: input.mediaType ?? "image",
+				tags: input.tags,
+				title: input.title,
+				type: input.type,
+			},
+			kind: "upsert",
 		});
-
-		const contentService = new ContentService(this.ctx);
-		const createdContent = await contentService.getById(contentId);
-		await contentService.syncSearchText(createdContent);
-		await this.ctx.sync.publish({
-			entityId: createdContent.id,
-			entityType: "content",
-			operation: "create",
-			payload: createdContent,
-			userId: input.userId,
-		});
-		return createdContent;
+		if (!outcome.content) throw new Error("Upload metadata transaction produced no content");
+		return outcome.content;
 	}
 
 	private async trackStorage(userId: string, deltas: { size: number; updateFileCount?: boolean }[]) {

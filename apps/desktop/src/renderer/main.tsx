@@ -72,6 +72,7 @@ function DesktopApp() {
 	useEffect(() => {
 		void refresh();
 	}, [refresh]);
+	useEffect(() => bridge.library.onChanged(() => void refresh()), [refresh]);
 	useEffect(() => {
 		const dark =
 			settings.colorScheme === "dark" ||

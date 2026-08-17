@@ -61,6 +61,8 @@ export interface LocalOutboxEntry {
 	createdAt: string;
 	id: string;
 	itemId: string;
+	/** Binary media remains on the dedicated upload pipeline, never in SyncEngine payloads. */
+	localBinary?: boolean;
 	mutation: SyncMutation;
 }
 
@@ -254,7 +256,26 @@ export class LocalLibraryRepository {
 	}
 
 	async getPendingOperations(): Promise<LocalOutboxEntry[]> {
-		return (await this.read()).outbox;
+		const data = await this.read();
+		return data.outbox.map((entry) => ({
+			...entry,
+			localBinary: hasLocalObjectReference(data.items.find((item) => item.id === entry.itemId) ?? {}),
+		}));
+	}
+
+	/** Durable acknowledgement used by the generic SyncEngine adapter. Canonical
+	 * pull immediately follows it and links the local device id to server id. */
+	async acknowledgeMutation(mutationId: string): Promise<void> {
+		const data = await this.read();
+		data.outbox = data.outbox.filter((entry) => entry.mutation.clientMutationId !== mutationId);
+		await this.write(data);
+	}
+
+	async retainMutation(mutationId: string): Promise<void> {
+		const data = await this.read();
+		const entry = data.outbox.find((candidate) => candidate.mutation.clientMutationId === mutationId);
+		if (entry) entry.attempts += 1;
+		await this.write(data);
 	}
 
 	async getTags(): Promise<LocalTag[]> {
@@ -546,13 +567,15 @@ export class LocalLibraryRepository {
 			kind === "delete"
 				? {
 						baseRevision: item.serverRevision,
-						clientMutationId: previous?.mutation.clientMutationId ?? randomUUID(),
+						// An idempotency key identifies one immutable intent. Replacing a
+						// queued edit or turning it into a tombstone must get a new key.
+						clientMutationId: randomUUID(),
 						kind,
 						remoteId: item.remoteId,
 					}
 				: {
 						baseRevision: item.serverRevision,
-						clientMutationId: previous?.mutation.clientMutationId ?? randomUUID(),
+						clientMutationId: randomUUID(),
 						content: toCreateContent(item),
 						kind,
 						remoteId: item.remoteId,

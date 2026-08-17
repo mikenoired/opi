@@ -171,15 +171,17 @@ export default class ContentService {
 				: [mapContentRecord(result, this.ctx.user!.id)];
 		await this.invalidateUserTags();
 		const content = contentDetailSchema.parse(withTags);
-		await this.publishContentChange("create", content);
 		return content;
 	}
 
-	async importFile(input: {
-		title?: string;
-		tags?: string[];
-		file: { name: string; type: string; size: number; buffer: number[] };
-	}) {
+	async importFile(
+		input: {
+			title?: string;
+			tags?: string[];
+			file: { name: string; type: string; size: number; buffer: number[] };
+		},
+		createContent: (content: CreateContent) => Promise<Content> = this.create.bind(this)
+	) {
 		const { file, tags, title } = input;
 
 		if (!isSupportedFileType(file.name, file.type)) {
@@ -207,7 +209,7 @@ export default class ContentService {
 			documentImages = await uploadDocumentImagesToMinio(processed, this.ctx.user!.id, documentId);
 		}
 
-		const content = await this.create({
+		const content = await createContent({
 			type: contentTypeSchema.parse(parsed.type),
 			title: title?.trim() || parsed.title || file.name,
 			content: parsed.content,
@@ -301,7 +303,6 @@ export default class ContentService {
 		const [withTags] = await this.attachTagsToContent([result]);
 		await this.invalidateUserTags();
 		const content = contentDetailSchema.parse(withTags);
-		await this.publishContentChange("update", content);
 		return content;
 	}
 
@@ -370,12 +371,6 @@ export default class ContentService {
 		await this.trackRemovedNoteImages(removedFileSizes);
 
 		await this.invalidateUserTags();
-		await this.ctx.sync.publish({
-			entityId: id,
-			entityType: "content",
-			operation: "delete",
-			userId: this.ctx.user!.id,
-		});
 		return { success: true };
 	}
 
@@ -481,15 +476,5 @@ export default class ContentService {
 
 	private async trackRemovedNoteImages(sizes: number[]) {
 		await Promise.all(sizes.map((size) => this.ctx.cache.removeFile(this.ctx.user!.id, size)));
-	}
-
-	private async publishContentChange(operation: "create" | "update", content: Content) {
-		await this.ctx.sync.publish({
-			entityId: content.id,
-			entityType: "content",
-			operation,
-			payload: content,
-			userId: this.ctx.user!.id,
-		});
 	}
 }

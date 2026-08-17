@@ -25,6 +25,7 @@ export interface DesktopBridge {
 		suggestTags(input: AiTagsInput): Promise<AiTagsResult>;
 	};
 	library: {
+		onChanged(listener: () => void): () => void;
 		delete(id: string): Promise<void>;
 		deleteAll(): Promise<void>;
 		importFiles(input?: {
@@ -37,11 +38,20 @@ export interface DesktopBridge {
 		tags(): Promise<ContentTag[]>;
 		preferences(): Promise<UserPreferences>;
 		save(input: CreateContent & { id?: string }): Promise<Content>;
-		settings(): Promise<{ colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }>;
+		settings(): Promise<{
+			colorScheme: DesktopColorScheme;
+			syncPolicy: DesktopSyncPolicy;
+		}>;
 		statistics(): Promise<DesktopStatistics>;
 		updateSettings(
-			settings: Partial<{ colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }>
-		): Promise<{ colorScheme: DesktopColorScheme; syncPolicy: DesktopSyncPolicy }>;
+			settings: Partial<{
+				colorScheme: DesktopColorScheme;
+				syncPolicy: DesktopSyncPolicy;
+			}>
+		): Promise<{
+			colorScheme: DesktopColorScheme;
+			syncPolicy: DesktopSyncPolicy;
+		}>;
 		updatePreferences(preferences: UserPreferencesInput): Promise<UserPreferences>;
 		updateTagColor(id: string, color: number): Promise<ContentTag>;
 	};

@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 
 import { eq, like } from "drizzle-orm";
 
-import { content, users } from "../db/schema";
+import { content, syncJournalEntries, syncRetentionWatermarks, users } from "../db/schema";
+import { GenericSyncJournalService } from "../services/generic-sync-journal.service";
 
 const testPrefix = "bun-api-integration-";
 const password = "SecureTest123";
@@ -255,5 +256,192 @@ describe.serial("API integration", () => {
 		const paid = await request("GET", "/user/sync/entitlement", { token: account.token });
 		expect(paid.response.status).toBe(200);
 		expect(paid.body).toEqual({ eligible: true, plan: "plus" });
+	});
+
+	test("writes direct Content mutations to the canonical V2 journal", async () => {
+		const account = await register("v2-journal");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const created = await request("POST", "/content", { body: note("V2 journal"), token: account.token });
+		expect(created.response.status).toBe(200);
+		const item = created.body as Json & { id: string };
+
+		const pulled = await request("GET", "/sync/v2/pull", { token: account.token });
+		expect(pulled.response.status).toBe(200);
+		expect(pulled.body).toMatchObject({
+			cursor: expect.stringMatching(/^j:\d+$/),
+			kind: "reset",
+			resetReason: "initial",
+		});
+		expect(pulled.body.changes).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ entityId: item.id, entityType: "content", operation: "upsert" }),
+			])
+		);
+		expect(
+			await db.select().from(syncJournalEntries).where(eq(syncJournalEntries.userId, account.user.id))
+		).toHaveLength(1);
+	});
+
+	test("keeps the legacy pull URL as a V2 journal compatibility alias", async () => {
+		const account = await register("v2-pull-alias");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		await request("POST", "/content", { body: note("alias"), token: account.token });
+
+		const pulled = await request("GET", "/sync/pull", { token: account.token });
+		expect(pulled.response.status).toBe(200);
+		expect(pulled.body).toMatchObject({ kind: "reset", resetReason: "initial" });
+		expect(pulled.body.changes).toEqual(
+			expect.arrayContaining([expect.objectContaining({ entityType: "content", operation: "upsert" })])
+		);
+	});
+
+	test("accepts a persisted legacy numeric cursor on the V2 compatibility pull URL", async () => {
+		const account = await register("v2-numeric-cursor");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		await request("POST", "/content", { body: note("numeric cursor"), token: account.token });
+
+		const pulled = await request("GET", "/sync/pull?cursor=0", { token: account.token });
+		expect(pulled.response.status).toBe(200);
+		expect(pulled.body).toMatchObject({ kind: "changes" });
+		expect(pulled.body.cursor).toMatch(/^j:\d+$/);
+	});
+
+	test("returns a controlled reset when a V2 cursor is below the retention floor", async () => {
+		const account = await register("v2-retention");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		await request("POST", "/content", { body: note("retained"), token: account.token });
+		const [entry] = await db
+			.select({ cursor: syncJournalEntries.cursor })
+			.from(syncJournalEntries)
+			.where(eq(syncJournalEntries.userId, account.user.id));
+		await db
+			.insert(syncRetentionWatermarks)
+			.values({ oldestRetainedCursor: entry.cursor + 1, userId: account.user.id });
+
+		const pulled = await request("GET", "/sync/v2/pull?afterCursor=j:0", { token: account.token });
+		expect(pulled.response.status).toBe(200);
+		expect(pulled.body).toMatchObject({ kind: "reset", resetReason: "cursor-expired" });
+	});
+
+	test("returns a usable reset cursor after retention prunes every prior journal entry", async () => {
+		const account = await register("v2-retention-reset-cursor");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		await request("POST", "/content", { body: note("snapshot item"), token: account.token });
+		const [entry] = await db
+			.select({ cursor: syncJournalEntries.cursor })
+			.from(syncJournalEntries)
+			.where(eq(syncJournalEntries.userId, account.user.id));
+		if (!entry) throw new Error("Expected initial journal entry");
+		await new GenericSyncJournalService({ db, user: account.user } as any).prune(entry.cursor + 1);
+
+		const reset = await request("GET", "/sync/v2/pull?afterCursor=j:0", { token: account.token });
+		expect(reset.response.status).toBe(200);
+		expect(reset.body).toMatchObject({
+			kind: "reset",
+			resetReason: "cursor-expired",
+		});
+		expect(Number(String(reset.body.cursor).slice(2))).toBeGreaterThanOrEqual(entry.cursor + 1);
+
+		const created = await request("POST", "/content", { body: note("after reset"), token: account.token });
+		const [createdEntry] = await db
+			.select({ cursor: syncJournalEntries.cursor })
+			.from(syncJournalEntries)
+			.where(eq(syncJournalEntries.userId, account.user.id));
+		if (!createdEntry) throw new Error("Expected post-reset journal entry");
+		expect(createdEntry.cursor).toBeGreaterThan(Number(String(reset.body.cursor).slice(2)));
+		const catchUp = await request("GET", `/sync/v2/pull?afterCursor=${reset.body.cursor}`, {
+			token: account.token,
+		});
+		expect(catchUp.response.status).toBe(200);
+		expect(catchUp.body).toMatchObject({ hasMore: false, kind: "changes" });
+		expect(catchUp.body.changes).toEqual(
+			expect.arrayContaining([expect.objectContaining({ entityId: created.body.id })])
+		);
+	});
+
+	test("applies a concurrent duplicate desktop mutation exactly once", async () => {
+		const account = await register("v2-duplicate");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const mutationId = crypto.randomUUID();
+		const body = {
+			mutations: [{ clientMutationId: mutationId, content: note("one write"), kind: "upsert" }],
+		};
+		const [left, right] = await Promise.all([
+			request("POST", "/sync/push", { body, token: account.token }),
+			request("POST", "/sync/push", { body, token: account.token }),
+		]);
+		expect(left.response.status).toBe(200);
+		expect(right.response.status).toBe(200);
+		expect(left.body).toEqual(right.body);
+		expect(await db.select().from(content).where(eq(content.userId, account.user.id))).toHaveLength(1);
+		expect(
+			await db.select().from(syncJournalEntries).where(eq(syncJournalEntries.userId, account.user.id))
+		).toHaveLength(1);
+	});
+
+	test("rejects mutation-id reuse with a different intent as conflict instead of 500", async () => {
+		const account = await register("v2-mutation-reuse");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const mutationId = crypto.randomUUID();
+		await request("POST", "/sync/push", {
+			body: { mutations: [{ clientMutationId: mutationId, content: note("first"), kind: "upsert" }] },
+			token: account.token,
+		});
+		const reused = await request("POST", "/sync/push", {
+			body: { mutations: [{ clientMutationId: mutationId, content: note("second"), kind: "upsert" }] },
+			token: account.token,
+		});
+		expect(reused.response.status).toBe(409);
+		expect(reused.body).toMatchObject({ code: "CONFLICT" });
+	});
+
+	test("serializes concurrent updates with the same entity version into applied and conflict outcomes", async () => {
+		const account = await register("v2-conflict");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const created = await request("POST", "/sync/push", {
+			body: { mutations: [{ clientMutationId: crypto.randomUUID(), content: note("base"), kind: "upsert" }] },
+			token: account.token,
+		});
+		const first = (created.body.outcomes as Json[])[0] as Json & { content: Json; revision: number };
+		const id = first.content.id as string;
+		const revision = first.revision;
+		const [left, right] = await Promise.all(
+			["left", "right"].map((title) =>
+				request("POST", "/sync/push", {
+					body: {
+						mutations: [
+							{
+								baseRevision: revision,
+								clientMutationId: crypto.randomUUID(),
+								content: note(title),
+								kind: "upsert",
+								remoteId: id,
+							},
+						],
+					},
+					token: account.token,
+				})
+			)
+		);
+		const statuses = [left, right]
+			.map((result) => ((result.body.outcomes as Json[])[0] as Json).status)
+			.sort();
+		expect(statuses).toEqual(["applied", "conflict"]);
+	});
+
+	test("catches up journal entries after a stored cursor in strict order", async () => {
+		const account = await register("v2-catchup");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const initial = await request("GET", "/sync/v2/pull", { token: account.token });
+		const cursor = initial.body.cursor as string;
+		for (const title of ["101", "102", "103"])
+			await request("POST", "/content", { body: note(title), token: account.token });
+
+		const catchup = await request(`GET`, `/sync/v2/pull?afterCursor=${cursor}`, { token: account.token });
+		expect(catchup.response.status).toBe(200);
+		expect(catchup.body).toMatchObject({ kind: "changes" });
+		const changes = catchup.body.changes as Array<Json & { cursor: string; payload: Json }>;
+		expect(changes.map((change) => change.payload.title)).toEqual(["101", "102", "103"]);
+		expect(changes.map((change) => change.cursor)).toEqual(changes.map((change) => change.cursor).sort());
 	});
 });

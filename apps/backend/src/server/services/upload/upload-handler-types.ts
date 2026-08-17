@@ -5,6 +5,7 @@ import type { UploadContentType } from "./upload-types";
 
 export interface PersistUploadedContentInput {
 	content: string;
+	mediaType?: "image" | "video";
 	tags: string[];
 	title?: string;
 	type: UploadContentType;

@@ -12,6 +12,7 @@ import {
 	MAX_TAGS_PER_CONTENT,
 	updateContentSchema,
 } from "@synapse/shared/schemas";
+import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
@@ -21,6 +22,7 @@ import { z } from "zod";
 import { deleteUserFiles, getFileBuffer, getFileMetadata, getPresignedUrl } from "../../storage/minio";
 import { backendSyncProvider } from "../adapters/backend-sync.provider";
 import type { Context } from "../context";
+import { syncEntityVersions } from "../db/schema";
 import { ApiError, STATUS_CODES } from "../lib/api-error";
 import { getUserFromTokens } from "../lib/auth-session";
 import { signRefreshToken, signToken, verifyRefreshToken, verifyToken } from "../lib/jwt";
@@ -30,8 +32,9 @@ import AiTaggingService from "../services/ai-tagging.service";
 import AuthService from "../services/auth.service";
 import ContentService from "../services/content.service";
 import { DurableSyncService } from "../services/durable-sync.service";
+import { GenericSyncJournalService } from "../services/generic-sync-journal.service";
 import GraphService from "../services/graph.service";
-import { SyncJournalService } from "../services/sync-journal.service";
+import { SyncMutationCoordinator } from "../services/sync-mutation-coordinator";
 import UploadService from "../services/upload.service";
 import UserService from "../services/user.service";
 import { protectMutation, rateLimit, requestLogger, requireAuth, withContext } from "./middleware";
@@ -263,9 +266,33 @@ export const api = new Hono()
 		return streamSSE(c, async (stream) => {
 			await stream.writeSSE({ event: "ready", data: "{}" });
 			await new Promise<void>((resolve) => {
-				const unsubscribe = backendSyncProvider.subscribe(userId, async (event) => {
+				const unsubscribe = backendSyncProvider.subscribeCursor(userId, async (cursor) => {
 					try {
-						await stream.writeSSE({ data: JSON.stringify(event), event: "change", id: event.id });
+						await stream.writeSSE({ data: JSON.stringify({ cursor }), event: "hint", id: cursor });
+					} catch {
+						unsubscribe();
+						resolve();
+					}
+				});
+				c.req.raw.signal.addEventListener(
+					"abort",
+					() => {
+						unsubscribe();
+						resolve();
+					},
+					{ once: true }
+				);
+			});
+		});
+	})
+	.get("/sync/v2/events", requireAuth, (c) => {
+		const userId = c.get("apiContext").user!.id;
+		return streamSSE(c, async (stream) => {
+			await stream.writeSSE({ event: "ready", data: "{}" });
+			await new Promise<void>((resolve) => {
+				const unsubscribe = backendSyncProvider.subscribeCursor(userId, async (cursor) => {
+					try {
+						await stream.writeSSE({ data: JSON.stringify({ cursor }), event: "hint", id: cursor });
 					} catch {
 						unsubscribe();
 						resolve();
@@ -285,7 +312,14 @@ export const api = new Hono()
 	.get("/sync/pull", requireAuth, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
 		await requireSyncSubscription(context);
-		return c.json(await new DurableSyncService(context).pull(c.req.query("cursor")));
+		return c.json(
+			await new GenericSyncJournalService(context).pull(c.req.query("afterCursor") ?? c.req.query("cursor"))
+		);
+	})
+	.get("/sync/v2/pull", requireAuth, rateLimit("sync"), async (c) => {
+		const context = serviceContext(c.get("apiContext"));
+		await requireSyncSubscription(context);
+		return c.json(await new GenericSyncJournalService(context).pull(c.req.query("afterCursor")));
 	})
 	.post("/sync/push", requireAuth, protectMutation, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
@@ -304,13 +338,25 @@ export const api = new Hono()
 		const context = serviceContext(c.get("apiContext"));
 		await requireSyncSubscription(context);
 		const uploaded = await new UploadService(context).handleUpload(await uploadBody(c.req.raw));
-		const journal = new SyncJournalService(context);
 		return c.json({
 			...uploaded,
 			contents: await Promise.all(
 				uploaded.contents.map(async (content) => ({
 					content,
-					revision: await journal.ensureSnapshot(content),
+					revision:
+						(
+							await context.db
+								.select({ version: syncEntityVersions.entityVersion })
+								.from(syncEntityVersions)
+								.where(
+									and(
+										eq(syncEntityVersions.userId, context.user!.id),
+										eq(syncEntityVersions.entityType, "content"),
+										eq(syncEntityVersions.entityId, content.id)
+									)
+								)
+								.limit(1)
+						)[0]?.version ?? 0,
 				}))
 			),
 		});
@@ -493,18 +539,33 @@ export const api = new Hono()
 	.get("/content/:id", requireAuth, rateLimit("query"), async (c) =>
 		c.json(await new ContentService(c.get("apiContext")).getById(c.req.param("id")))
 	)
-	.post("/content", requireAuth, protectMutation, rateLimit("mutation"), async (c) =>
-		c.json(await new ContentService(c.get("apiContext")).create(await body(c.req.raw, createContentSchema)))
-	)
+	.post("/content", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
+		const outcome = await new SyncMutationCoordinator(c.get("apiContext")).apply({
+			clientMutationId: crypto.randomUUID(),
+			content: await body(c.req.raw, createContentSchema),
+			kind: "upsert",
+		});
+		if (!outcome.content) throw new Error("Content create produced no content");
+		return c.json(outcome.content);
+	})
 	.patch("/content/:id", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
 		const input = await body(c.req.raw, updateContentSchema);
 		if (input.id !== c.req.param("id")) {
 			throw new ApiError("BAD_REQUEST", "Content ID must match the request path");
 		}
-		return c.json(await new ContentService(c.get("apiContext")).update(input));
+		const outcome = await new SyncMutationCoordinator(c.get("apiContext")).apply({
+			clientMutationId: crypto.randomUUID(),
+			content: input as never,
+			kind: "upsert",
+			remoteId: input.id,
+		});
+		if (!outcome.content) throw new Error("Content update produced no content");
+		return c.json(outcome.content);
 	})
 	.delete("/content/:id", requireAuth, protectMutation, rateLimit("mutation"), async (c) =>
-		c.json(await new ContentService(c.get("apiContext")).delete(c.req.param("id")))
+		new SyncMutationCoordinator(c.get("apiContext"))
+			.apply({ clientMutationId: crypto.randomUUID(), kind: "delete", remoteId: c.req.param("id") })
+			.then(() => c.json({ success: true }))
 	)
 	.patch("/content/tags/:id/color", requireAuth, protectMutation, rateLimit("sync"), async (c) =>
 		c.json(
@@ -514,9 +575,10 @@ export const api = new Hono()
 			)
 		)
 	)
-	.post("/content/import", requireAuth, protectMutation, rateLimit("mutation"), async (c) =>
-		c.json(
-			await new ContentService(c.get("apiContext")).importFile(
+	.post("/content/import", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
+		const context = c.get("apiContext");
+		return c.json(
+			await new ContentService(context).importFile(
 				await body(
 					c.req.raw,
 					z.object({
@@ -529,10 +591,19 @@ export const api = new Hono()
 							buffer: z.array(z.number()),
 						}),
 					})
-				)
+				),
+				async (content) => {
+					const outcome = await new SyncMutationCoordinator(context).apply({
+						clientMutationId: crypto.randomUUID(),
+						content,
+						kind: "upsert",
+					});
+					if (!outcome.content) throw new Error("Import produced no content");
+					return outcome.content;
+				}
 			)
-		)
-	)
+		);
+	})
 	.post("/upload", requireAuth, protectMutation, rateLimit("mutation"), async (c) =>
 		c.json(await new UploadService(c.get("apiContext")).handleUpload(await uploadBody(c.req.raw)))
 	)

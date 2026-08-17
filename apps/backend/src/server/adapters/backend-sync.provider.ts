@@ -7,6 +7,24 @@ import type { SyncEvent, SyncEventHandler, SyncSubscriber } from "@synapse/sync"
  */
 export class BackendSyncProvider implements SyncProvider, SyncSubscriber {
 	private readonly subscribers = new Map<string, Set<SyncEventHandler>>();
+	private readonly cursorSubscribers = new Map<string, Set<(cursor: string) => void | Promise<void>>>();
+
+	async publishCursor(userId: string, cursor: string): Promise<void> {
+		const handlers = this.cursorSubscribers.get(userId);
+		if (!handlers) return;
+		await Promise.all([...handlers].map(async (handler) => await handler(cursor)));
+	}
+
+	subscribeCursor(userId: string, handler: (cursor: string) => void | Promise<void>): () => void {
+		const handlers =
+			this.cursorSubscribers.get(userId) ?? new Set<(cursor: string) => void | Promise<void>>();
+		handlers.add(handler);
+		this.cursorSubscribers.set(userId, handlers);
+		return () => {
+			handlers.delete(handler);
+			if (!handlers.size) this.cursorSubscribers.delete(userId);
+		};
+	}
 
 	async publish(change: SyncChange): Promise<void> {
 		const event: SyncEvent = {

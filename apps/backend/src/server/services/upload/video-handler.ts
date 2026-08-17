@@ -78,6 +78,7 @@ export async function processVideoUpload(
 		);
 		const createdContent = await deps.persistContent({
 			content: serializedContent,
+			mediaType: "video",
 			tags: params.tags,
 			title: params.title || undefined,
 			type: "media",

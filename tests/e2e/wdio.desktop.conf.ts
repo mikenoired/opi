@@ -8,12 +8,14 @@ import { fileURLToPath } from "node:url";
 const appEntryPoint =
 	process.env.E2E_DESKTOP_APP_DIR ?? fileURLToPath(new URL("../../apps/desktop/", import.meta.url));
 const userDataDir = process.env.E2E_ELECTRON_PROFILE_DIR ?? "/tmp/synapse-e2e-electron-profile";
+const cacheDir = fileURLToPath(new URL("../../.cache/wdio", import.meta.url));
+const specs = fileURLToPath(new URL("./desktop/**/*.e2e.ts", import.meta.url));
 const require = createRequire(import.meta.url);
 const electronBinary = require("electron") as string;
 
 export const config = {
 	autoXvfb: true,
-	cacheDir: ".cache/wdio",
+	cacheDir,
 	capabilities: [
 		{
 			"browserName": "electron",
@@ -36,6 +38,6 @@ export const config = {
 	reporters: ["spec"],
 	runner: "local",
 	services: ["electron"],
-	specs: ["./desktop/**/*.e2e.ts"],
+	specs: [specs],
 	waitforTimeout: 10_000,
 };

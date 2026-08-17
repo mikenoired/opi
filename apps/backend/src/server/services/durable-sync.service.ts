@@ -4,6 +4,7 @@ import type { CreateContent } from "@synapse/shared/schemas";
 import type { Context } from "../context";
 import ContentService from "./content.service";
 import { SyncJournalService } from "./sync-journal.service";
+import { SyncMutationCoordinator } from "./sync-mutation-coordinator";
 
 /** Server side of the local-first protocol. It owns conflict detection, not a renderer. */
 export class DurableSyncService {
@@ -38,28 +39,21 @@ export class DurableSyncService {
 	}
 
 	async push(mutations: SyncMutation[]): Promise<SyncPushResult> {
-		const outcomes: SyncMutationOutcome[] = [];
-		for (const mutation of mutations) {
-			const receipt = await this.journal.getReceipt<SyncMutationOutcome>(
-				this.ctx.user!.id,
-				mutation.clientMutationId
-			);
-			if (receipt) {
-				outcomes.push(receipt);
-				continue;
-			}
-			const outcome = await this.applyMutation(mutation);
-			await this.journal.saveReceipt(this.ctx.user!.id, mutation.clientMutationId, outcome);
-			outcomes.push(outcome);
-		}
-		return { outcomes };
+		return {
+			outcomes: await Promise.all(
+				mutations.map((mutation) => new SyncMutationCoordinator(this.ctx).apply(mutation))
+			),
+		};
 	}
 
 	async deleteAll(): Promise<void> {
 		const contents = await this.content.getAllForSync();
 		for (const content of contents) {
-			await this.content.delete(content.id);
-			await this.journal.recordDeletion(this.ctx.user!.id, content.id);
+			await new SyncMutationCoordinator(this.ctx).apply({
+				clientMutationId: crypto.randomUUID(),
+				kind: "delete",
+				remoteId: content.id,
+			});
 		}
 	}
 

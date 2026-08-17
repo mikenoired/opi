@@ -20,8 +20,10 @@ await Bun.$`mkdir -p ${stagedAppDir}`;
 await Bun.$`cp -R ${cwd}/apps/desktop/out ${stagedAppDir}/out`;
 await Bun.write(`${stagedAppDir}/package.json`, JSON.stringify({ main: "./out/main/index.js" }));
 
-const test = Bun.spawn(["bun", "x", "wdio", "tests/e2e/wdio.desktop.conf.ts"], {
-	cwd,
+const test = Bun.spawn(["node", `${cwd}/node_modules/.bin/wdio`, `${cwd}/tests/e2e/wdio.desktop.conf.ts`], {
+	// ChromeDriver launches Electron with its own cwd. Running the driver from
+	// /tmp avoids macOS denying the driver access to this workspace's Documents path.
+	cwd: "/tmp",
 	// The Codex harness sets ELECTRON_RUN_AS_NODE for its own Electron tooling.
 	// Pass an empty value to both WDIO and ChromeDriver so Electron starts as an
 	// application rather than treating Chromium flags as Node arguments.

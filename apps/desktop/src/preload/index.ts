@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld("synapseDesktop", {
 		suggestTags: (input: unknown) => ipcRenderer.invoke("ai:suggest-tags", input),
 	},
 	library: {
+		onChanged: (listener: () => void) => {
+			const callback = () => listener();
+			ipcRenderer.on("library:changed", callback);
+			return () => ipcRenderer.removeListener("library:changed", callback);
+		},
 		delete: (id: string) => ipcRenderer.invoke("library:delete", id),
 		deleteAll: () => ipcRenderer.invoke("library:delete-all"),
 		list: (search?: string) => ipcRenderer.invoke("library:list", search),
@@ -17,7 +22,12 @@ contextBridge.exposeInMainWorld("synapseDesktop", {
 		queueSync: (id: string) => ipcRenderer.invoke("library:queue-sync", id),
 		statistics: () => ipcRenderer.invoke("library:statistics"),
 		importFiles: (input?: {
-			files?: Array<{ bytes: Uint8Array; name: string; size: number; type: string }>;
+			files?: Array<{
+				bytes: Uint8Array;
+				name: string;
+				size: number;
+				type: string;
+			}>;
 			makeTrack?: boolean;
 			tags?: string[];
 			title?: string;
@@ -57,7 +67,11 @@ contextBridge.exposeInMainWorld("synapseDesktop", {
 		) => {
 			const callback = (
 				_event: IpcRendererEvent,
-				progress: { completed: number; phase: "download" | "upload" | "finalizing"; total: number }
+				progress: {
+					completed: number;
+					phase: "download" | "upload" | "finalizing";
+					total: number;
+				}
 			) => listener(progress);
 			ipcRenderer.on("sync:progress", callback);
 			return () => ipcRenderer.removeListener("sync:progress", callback);

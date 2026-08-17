@@ -40,6 +40,7 @@ export async function processImageUpload(
 
 		const createdContent = await deps.persistContent({
 			content: serializedContent,
+			mediaType: "image",
 			tags: params.tags,
 			title: params.title || undefined,
 			type: "media",

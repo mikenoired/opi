@@ -22,6 +22,7 @@
 		"@synapse/features": "workspace:*",
 		"@synapse/i18n": "workspace:*",
 		"@synapse/shared": "workspace:*",
+		"@synapse/sync": "workspace:*",
 		"@synapse/ui": "workspace:*",
 		"@tanstack/react-query": "^5.101.0",
 		"@tanstack/react-router": "^1.170.18",

@@ -18,6 +18,7 @@ import {
 	nativeImage,
 	protocol,
 	safeStorage,
+	shell,
 	type MenuItem,
 } from "electron";
 import { ipcMain } from "electron";
@@ -37,16 +38,25 @@ import { LocalLibraryRepository, type LocalItemInput, type LocalSettings } from 
 // protocol handler otherwise buffers media responses as regular resources.
 protocol.registerSchemesAsPrivileged([
 	{
-		privileges: { secure: true, standard: true, stream: true, supportFetchAPI: true },
+		privileges: {
+			secure: true,
+			standard: true,
+			stream: true,
+			supportFetchAPI: true,
+		},
 		scheme: "synapse-object",
 	},
 ]);
 
 const objectStorage = new DesktopStorageProvider(join(app.getPath("userData"), "objects"));
 const library = new LocalLibraryRepository(join(app.getPath("userData"), "library"));
-const sync = new DesktopSyncService(library, objectStorage);
+const sync = new DesktopSyncService(library, objectStorage, undefined, (url) => shell.openExternal(url));
 const sessionPath = join(app.getPath("userData"), "desktop-session.bin");
 const pendingDeepLinks: string[] = [];
+
+sync.setLibraryChangedListener(() => {
+	for (const window of BrowserWindow.getAllWindows()) window.webContents.send("library:changed");
+});
 
 if (!app.requestSingleInstanceLock()) app.quit();
 if (process.defaultApp) {
@@ -74,7 +84,10 @@ function createWindow(): void {
 		titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
 		titleBarOverlay:
 			process.platform === "darwin" ? undefined : { color: "#ffffff", symbolColor: "#111827", height: 36 },
-		webPreferences: { contextIsolation: true, preload: join(__dirname, "../preload/index.cjs") },
+		webPreferences: {
+			contextIsolation: true,
+			preload: join(__dirname, "../preload/index.cjs"),
+		},
 	});
 	window.webContents.on("preload-error", (_event, preloadPath, error) => {
 		process.stderr.write(`Desktop preload failed: ${preloadPath}\n${error.stack}\n`);
@@ -97,7 +110,11 @@ app.whenReady().then(async () => {
 			{
 				label: "Synapse",
 				submenu: [
-					{ label: "Настройки", accelerator: "CommandOrControl+,", click: sendCommand("settings.open") },
+					{
+						label: "Настройки",
+						accelerator: "CommandOrControl+,",
+						click: sendCommand("settings.open"),
+					},
 				],
 			},
 			{
@@ -108,7 +125,10 @@ app.whenReady().then(async () => {
 						accelerator: "CommandOrControl+N",
 						click: sendCommand("content.add"),
 					},
-					{ label: "Удалить все материалы", click: sendCommand("content.delete-all") },
+					{
+						label: "Удалить все материалы",
+						click: sendCommand("content.delete-all"),
+					},
 					{ type: "separator" },
 					{ role: "close" },
 				],
@@ -137,8 +157,15 @@ app.whenReady().then(async () => {
 		])
 	);
 	ipcMain.handle("library:list", (_event, search?: string) => library.list(search));
-	ipcMain.handle("library:save", (_event, input: LocalItemInput & { id?: string }) => library.save(input));
-	ipcMain.handle("library:delete", (_event, id: string) => library.delete(id));
+	ipcMain.handle("library:save", async (_event, input: LocalItemInput & { id?: string }) => {
+		const item = await library.save(input);
+		sync.wake();
+		return item;
+	});
+	ipcMain.handle("library:delete", async (_event, id: string) => {
+		await library.delete(id);
+		sync.wake();
+	});
 	ipcMain.handle("library:delete-all", () => library.deleteAll());
 	ipcMain.handle("library:settings", () => library.getSettings());
 	ipcMain.handle("library:update-settings", (_event, settings: Partial<LocalSettings>) =>
@@ -148,7 +175,11 @@ app.whenReady().then(async () => {
 	ipcMain.handle("library:update-preferences", (_event, preferences: UserPreferencesInput) =>
 		library.updatePreferences(preferences)
 	);
-	ipcMain.handle("library:queue-sync", (_event, id: string) => library.queueSync(id));
+	ipcMain.handle("library:queue-sync", async (_event, id: string) => {
+		const item = await library.queueSync(id);
+		sync.wake();
+		return item;
+	});
 	ipcMain.handle("library:statistics", () => library.getStatistics());
 	ipcMain.handle("library:tags", () => library.getTags());
 	ipcMain.handle("library:update-tag-color", (_event, id: string, color: number) =>
@@ -216,7 +247,10 @@ app.whenReady().then(async () => {
 		const color = dark ? "#171717" : "#ffffff";
 		window.setBackgroundColor(color);
 		if (process.platform !== "darwin")
-			window.setTitleBarOverlay({ color, symbolColor: dark ? "#f5f5f5" : "#111827" });
+			window.setTitleBarOverlay({
+				color,
+				symbolColor: dark ? "#f5f5f5" : "#111827",
+			});
 	});
 	// Retained only for the transitional preload surface. Deletion is journaled
 	// locally and reaches the server through the durable sync protocol.
@@ -256,6 +290,10 @@ app.on("window-all-closed", () => {
 	if (process.platform !== "darwin") app.quit();
 });
 
+app.on("before-quit", () => {
+	void sync.stop();
+});
+
 interface LocalImportInput {
 	files?: BinaryFile[];
 	makeTrack?: boolean;
@@ -284,7 +322,12 @@ async function importLocalBytes(file: BinaryFile, input?: LocalImportInput) {
 	const title = input?.title?.trim() || fallbackTitle;
 	const tags = input?.tags ?? [];
 	if (["txt", "md", "markdown"].includes(extension)) {
-		return library.save({ content: new TextDecoder().decode(file.bytes), tags, title, type: "note" });
+		return library.save({
+			content: new TextDecoder().decode(file.bytes),
+			tags,
+			title,
+			type: "note",
+		});
 	}
 
 	const isAudio =
@@ -299,7 +342,11 @@ async function importLocalBytes(file: BinaryFile, input?: LocalImportInput) {
 				fileName: `${fallbackTitle}.m4a`,
 				mimeType: "audio/mp4",
 			}
-		: { bytes: file.bytes, fileName, mimeType: file.type || contentTypeFor(extension) };
+		: {
+				bytes: file.bytes,
+				fileName,
+				mimeType: file.type || contentTypeFor(extension),
+			};
 	const stored = await objectStorage.putObject(storedFile.bytes, {
 		contentType: storedFile.mimeType,
 		fileName: storedFile.fileName,
@@ -349,7 +396,10 @@ async function importLocalBytes(file: BinaryFile, input?: LocalImportInput) {
 		// FFmpeg does not reliably retain M4A artwork. Keep the cover found in
 		// the original tag while using the playable file's technical metadata.
 		const audio = transcodeForPlayback
-			? { ...parsedStoredAudio, artwork: sourceAudio?.artwork ?? parsedStoredAudio.artwork }
+			? {
+					...parsedStoredAudio,
+					artwork: sourceAudio?.artwork ?? parsedStoredAudio.artwork,
+				}
 			: parsedStoredAudio;
 		let coverObjectName: string | undefined;
 		try {
@@ -530,7 +580,10 @@ async function storeLocalAudioArtwork(artwork: LocalAudioArtwork) {
 		folder: "audio-covers",
 		userId: "local",
 	});
-	return { objectName: stored.objectName, url: objectStorage.getObjectUrl(stored.objectName) };
+	return {
+		objectName: stored.objectName,
+		url: objectStorage.getObjectUrl(stored.objectName),
+	};
 }
 
 /** Match the server upload adapter: persist a Chromium-decodable JPEG, never the tag's raw image payload. */

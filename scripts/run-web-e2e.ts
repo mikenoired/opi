@@ -74,7 +74,9 @@ try {
 	});
 	process.exitCode = await test.exited;
 } finally {
-	backend.kill();
-	web.kill();
+	// Bun's HTTP server does not always exit on the wrapper's default signal.
+	// These are child processes owned exclusively by this runner.
+	backend.kill(9);
+	web.kill(9);
 	await Promise.all([backend.exited, web.exited]);
 }

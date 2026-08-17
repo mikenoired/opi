@@ -19,9 +19,9 @@ import { Toaster } from "react-hot-toast";
 import DesktopAuthPage from "@/app/desktop-auth/page";
 import HomePage from "@/app/page";
 import { webRuntime } from "@/platform/web-runtime";
+import { webSyncRuntime } from "@/platform/web-sync";
 import { apiClient, unwrap } from "@/shared/api/client";
 import type { ContentTags, Graph } from "@/shared/api/contracts";
-import { apiUrl } from "@/shared/config/api";
 import { AuthProvider, useAuth } from "@/shared/lib/auth-context";
 import { DashboardProvider } from "@/shared/lib/dashboard-context";
 import { UserPreferencesProvider } from "@/shared/lib/user-preferences-context";
@@ -78,17 +78,25 @@ function SyncListener() {
 	const queryClient = useQueryClient();
 
 	useEffect(() => {
-		if (!user) return;
+		if (!user) {
+			void webSyncRuntime.stop();
+			return;
+		}
 
-		const events = new EventSource(apiUrl("/sync/events"), { withCredentials: true });
-		const invalidateSyncedData = () => {
+		const invalidateProjection = () => {
 			void queryClient.invalidateQueries({
 				predicate: (query) => ["content", "graph", "user"].includes(String(query.queryKey[0])),
 			});
 		};
-		events.addEventListener("change", invalidateSyncedData);
+		const unsubscribe = webSyncRuntime.subscribeProjection(invalidateProjection);
+		void webSyncRuntime.start(user.id).catch(() => {
+			// IndexedDB/API failures remain visible in DevTools and retry on a future lifecycle start.
+		});
 
-		return () => events.close();
+		return () => {
+			unsubscribe();
+			void webSyncRuntime.stop();
+		};
 	}, [queryClient, user?.id]);
 
 	return null;
