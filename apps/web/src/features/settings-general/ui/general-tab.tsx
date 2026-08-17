@@ -1,10 +1,10 @@
 import { AccountSettingsPanel, ConfirmDialog } from "@synapse/features";
+import { useI18n } from "@synapse/i18n";
 import { Button } from "@synapse/ui/components";
 import { useState } from "react";
 
 import { api } from "@/shared/api/hooks";
 import { useAuth } from "@/shared/lib/auth-context";
-import { useI18n } from "@/shared/lib/i18n";
 
 export default function GeneralTab() {
 	const { data: user, isLoading } = api.user.getUser.useQuery();
@@ -25,16 +25,16 @@ export default function GeneralTab() {
 				user={user}
 			/>
 			<div className="mt-8 border-t pt-6">
-				<h2 className="text-sm font-medium text-destructive">{t("account.delete.title")}</h2>
-				<p className="mt-1 text-sm text-muted-foreground">{t("account.delete.description")}</p>
+				<h2 className="text-sm font-medium text-destructive">{t("accountDelete.title")}</h2>
+				<p className="mt-1 text-sm text-muted-foreground">{t("accountDelete.description")}</p>
 				<Button className="mt-4 bg-destructive hover:bg-destructive/90" onClick={() => setDeleteOpen(true)}>
-					{t("account.delete.action")}
+					{t("accountDelete.action")}
 				</Button>
 			</div>
 			<ConfirmDialog
-				cancelText={t("cancel")}
-				confirmText={t("account.delete.confirm")}
-				description={t("account.delete.confirmDescription")}
+				cancelText={t("library.cancel")}
+				confirmText={t("accountDelete.confirm")}
+				description={t("accountDelete.confirmDescription")}
 				loading={deleteAccount.isPending}
 				onConfirm={async () => {
 					await deleteAccount.mutateAsync(undefined);
@@ -42,7 +42,7 @@ export default function GeneralTab() {
 				}}
 				onOpenChange={setDeleteOpen}
 				open={deleteOpen}
-				title={t("account.delete.confirmTitle")}
+				title={t("accountDelete.confirmTitle")}
 			/>
 		</>
 	);

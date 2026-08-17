@@ -47,7 +47,7 @@ export function LibraryWorkspace({
 	onSelectPage,
 	sidebarFooter,
 }: LibraryWorkspaceProps) {
-	const { t } = useI18n();
+	const { searchPlaceholder, t } = useI18n();
 	const [search, setSearch] = useState("");
 	const [types, setTypes] = useState<Content["type"][]>([]);
 	const [creating, setCreating] = useState(false);
@@ -185,7 +185,7 @@ export function LibraryWorkspace({
 							labels={{
 								aria: t("library.searchAria"),
 								clear: t("library.cancel"),
-								placeholder: t("library.searchPlaceholder"),
+								placeholder: searchPlaceholder,
 								types: {
 									audio: t("library.types.audio"),
 									csv: t("library.types.csv"),

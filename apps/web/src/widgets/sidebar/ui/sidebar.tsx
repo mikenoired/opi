@@ -1,11 +1,11 @@
 import { ConfiguredAppSidebar } from "@synapse/features/app-shell";
+import { useI18n } from "@synapse/i18n";
 import { useCallback } from "react";
 
 import { getSettingsHref } from "@/features/settings/lib/settings-modal-url";
 import { DEFAULT_SETTINGS_TAB, SETTINGS_QUERY_PARAM } from "@/features/settings/model/settings-tabs";
 import { webRuntime } from "@/platform/web-runtime";
 import { useDashboard } from "@/shared/lib/dashboard-context";
-import { useI18n } from "@/shared/lib/i18n";
 import { usePathname, useRouter, useSearchParams } from "@/shared/router/navigation";
 
 export default function Sidebar() {
@@ -32,11 +32,11 @@ export default function Sidebar() {
 			capabilities={webRuntime.services.capabilities}
 			items={webRuntime.configuration.navigation}
 			labels={{
-				add: t("add"),
-				dashboard: t("home"),
-				graph: t("graph"),
-				settings: t("settings"),
-				tags: t("tags"),
+				add: t("library.add"),
+				dashboard: t("library.title"),
+				graph: t("library.graph"),
+				settings: t("library.settings"),
+				tags: t("library.tags"),
 			}}
 			onCommand={(command) => {
 				if (command === "content.add") openAddDialog();

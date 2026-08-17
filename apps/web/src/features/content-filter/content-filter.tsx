@@ -1,8 +1,8 @@
 import { ContentFilterBar } from "@synapse/features";
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 
 import { useDashboard } from "@/shared/lib/dashboard-context";
-import { useI18n } from "@/shared/lib/i18n";
 
 interface ContentFilterProps {
 	availableContentTypes: Content["type"][];
@@ -26,16 +26,16 @@ export function ContentFilter(props: ContentFilterProps) {
 			onToggleContentType={props.onToggleContentType}
 			onRegisterSearchFocus={setTriggerSearchFocus}
 			labels={{
-				aria: t("search.aria"),
-				clear: t("clearFilters"),
+				aria: t("library.searchAria"),
+				clear: t("library.clearFilters"),
 				placeholder: searchPlaceholder,
 				types: {
-					audio: t("audio"),
-					doc: t("documents"),
-					link: t("link"),
-					media: t("media"),
-					note: t("note"),
-					todo: t("todo"),
+					audio: t("library.types.audio"),
+					doc: t("library.types.doc"),
+					link: t("library.types.link"),
+					media: t("library.types.media"),
+					note: t("library.types.note"),
+					todo: t("library.types.todo"),
 				},
 			}}
 		/>

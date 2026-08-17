@@ -1,10 +1,10 @@
 import { ConfiguredSettingsNavigation } from "@synapse/features/app-shell";
 import type { SettingsTabConfig } from "@synapse/features/runtime";
+import { useI18n } from "@synapse/i18n";
 
 import { getSettingsHref } from "@/features/settings/lib/settings-modal-url";
 import { isSettingsTab, type SettingsTabKey } from "@/features/settings/model/settings-tabs";
 import { webRuntime } from "@/platform/web-runtime";
-import { useI18n } from "@/shared/lib/i18n";
 import { useRouter } from "@/shared/router/navigation";
 
 export function SettingsModalNav({
@@ -19,10 +19,10 @@ export function SettingsModalNav({
 	const router = useRouter();
 	const { t } = useI18n();
 	const labels: Record<SettingsTabKey, string> = {
-		ai: t("aiUsage"),
-		appearance: t("appearance"),
-		general: t("general"),
-		media: t("mediaStorage"),
+		ai: t("ai.title"),
+		appearance: t("appearance.title"),
+		general: t("account.title"),
+		media: t("media.title"),
 	};
 	const tabs: SettingsTabConfig[] = webRuntime.configuration.settings.map((tab) => ({
 		...tab,

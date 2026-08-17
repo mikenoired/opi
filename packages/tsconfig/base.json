@@ -23,7 +23,7 @@
 		"require": ["tsconfig-paths/register"],
 		"experimentalResolverFeatures": true,
 		"compilerOptions": {
-			"module": "CommonJS",
+			"module": "esnext",
 			"types": ["node"]
 		}
 	}

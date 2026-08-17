@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 import type { DragEvent } from "react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -10,7 +11,6 @@ import {
 	isContentTypeFilterAvailable,
 } from "@/shared/lib/content-type-options";
 import { useDashboard } from "@/shared/lib/dashboard-context";
-import { useI18n } from "@/shared/lib/i18n";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
 import { useRouter, useSearchParams } from "@/shared/router/navigation";
 import { useModal } from "@/widgets/modals/context/modal-context";
@@ -161,7 +161,6 @@ export default function DashboardClient({
 		[invalidateRelatedQueries, utils]
 	);
 
-	// URL → state: применяем фильтры из адресной строки (перезагрузка, шаринг, назад/вперёд).
 	useEffect(() => {
 		if (!searchParams) return;
 
@@ -285,9 +284,9 @@ export default function DashboardClient({
 							/>
 						</svg>
 						<div className="animate-in fade-in-0 rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-center text-2xl font-semibold shadow-xl">
-							{t("dashboard.drop.title")}
+							{t("library.drop.title")}
 							<div className="mt-2 text-base font-normal text-muted-foreground">
-								{t("dashboard.drop.subtitle")}
+								{t("library.drop.subtitle")}
 							</div>
 						</div>
 					</div>

@@ -12,7 +12,6 @@ export interface MediaSettingsPanelProps {
 	storageBytes: number;
 }
 
-/** Platform-neutral presentation of media preferences and storage usage. */
 export function MediaSettingsPanel({
 	autoplayEnabled,
 	disabled = false,
@@ -24,6 +23,10 @@ export function MediaSettingsPanel({
 	const { t, locale } = useI18n();
 	return (
 		<div className="space-y-4 py-1">
+			<div>
+				<h2 className="text-xl font-semibold tracking-tight">{t("media.title")}</h2>
+				<p className="mt-1 text-sm text-muted-foreground">{t("media.description")}</p>
+			</div>
 			<div className="rounded-2xl bg-muted p-4">
 				<div className="mb-5 inline-flex items-center gap-2 rounded-full bg-background px-3 py-1.5 text-sm text-foreground">
 					<HardDrive className="size-4 text-muted-foreground" />

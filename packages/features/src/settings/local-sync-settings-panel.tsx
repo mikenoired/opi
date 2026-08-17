@@ -21,7 +21,6 @@ export interface LocalSyncSettingsPanelProps {
 	progress?: { completed: number; phase: "download" | "upload" | "finalizing"; total: number };
 }
 
-/** Shared Desktop extension visual. It receives only declared settings and service callbacks. */
 export function LocalSyncSettingsPanel({
 	isSyncing,
 	onSync,
@@ -35,25 +34,19 @@ export function LocalSyncSettingsPanel({
 	const automatic = syncPolicy === "automatic";
 	return (
 		<section className="space-y-4">
-			<h2 className="text-xl font-semibold tracking-tight">Synapse Sync</h2>
-			<div className="flex items-center justify-between gap-4 rounded-xl border p-4">
+			<div className="flex items-center justify-between gap-4">
 				<div>
-					<p className="font-medium">Автоматическая синхронизация</p>
-					<p className="mt-1 text-sm text-muted-foreground">
-						Синхронизировать изменения на устройствах автоматически.
-					</p>
+					<p className="font-medium">{t("sync.title")}</p>
+					<p className="mt-1 text-sm text-muted-foreground">{t("sync.automatic")}</p>
 				</div>
 				<Switch
-					aria-label="Автоматическая синхронизация"
+					aria-label={t("sync.title")}
 					checked={automatic}
 					disabled={isSyncing || !session?.eligible}
 					onToggle={() => (automatic ? void onSyncPolicyChange("manual") : setConfirmAutomatic(true))}
 				/>
 			</div>
 			<div className="space-y-3">
-				<p className="text-sm text-muted-foreground">
-					{session?.eligible ? t("sync.withPlan", { plan: session.plan }) : t("sync.unavailable")}
-				</p>
 				{!automatic && (
 					<Button
 						leadingIcon={RefreshCw}
@@ -67,10 +60,10 @@ export function LocalSyncSettingsPanel({
 						<div className="flex justify-between text-xs text-muted-foreground">
 							<span>
 								{progress.phase === "download"
-									? "Получаем изменения"
+									? t("sync.downloadChanges")
 									: progress.phase === "upload"
-										? "Передаём материалы"
-										: "Завершаем синхронизацию"}
+										? t("sync.uploadingChanges")
+										: t("sync.endingSync")}
 							</span>
 							<span>
 								{progress.completed} / {progress.total}

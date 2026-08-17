@@ -12,7 +12,6 @@ export interface AiSettingsPanelProps {
 	isLoading?: boolean;
 }
 
-/** Shared AI usage visual. Querying and platform availability stay outside the component. */
 export function AiSettingsPanel({ data, isError = false, isLoading = false }: AiSettingsPanelProps) {
 	const { t, locale } = useI18n();
 	if (isLoading) return <AiSettingsSkeleton />;
@@ -26,6 +25,10 @@ export function AiSettingsPanel({ data, isError = false, isLoading = false }: Ai
 	const month = new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(data.period.start));
 	return (
 		<div className="space-y-4 py-1">
+			<div>
+				<h2 className="text-xl font-semibold tracking-tight">{t("ai.title")}</h2>
+				<p className="mt-1 text-sm text-muted-foreground">{t("ai.description")}</p>
+			</div>
 			<section className="relative overflow-hidden rounded-[1.75rem] bg-primary p-5 text-primary-foreground">
 				<PixelSparkles className="opacity-90" pixelSize={5} speed={0.4} fireSpeed={1.8} density={1.1} />
 				<div className="relative z-10 flex items-start justify-between gap-4">

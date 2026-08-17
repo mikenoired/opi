@@ -1,11 +1,11 @@
 import { SettingsModalShell } from "@synapse/features/app-shell";
+import { useI18n } from "@synapse/i18n";
 
 import AiTab from "@/features/settings-ai/ui/ai-tab";
 import AppearanceTab from "@/features/settings-appearance/ui/appearance-tab";
 import GeneralTab from "@/features/settings-general/ui/general-tab";
 import MediaTab from "@/features/settings-media/ui/media-tab";
 import type { SettingsTabKey } from "@/features/settings/model/settings-tabs";
-import { useI18n } from "@/shared/lib/i18n";
 import { usePathname, useSearchParams } from "@/shared/router/navigation";
 
 import { SettingsModalNav } from "./settings-modal-nav";

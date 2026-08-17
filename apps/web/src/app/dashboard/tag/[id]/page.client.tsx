@@ -1,4 +1,5 @@
 import { TagHeader } from "@synapse/features";
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -7,7 +8,6 @@ import { ContentGrid } from "@/features/content-grid/content-grid";
 import { api } from "@/shared/api/hooks";
 import type { ContentListQueryInput } from "@/shared/lib/content-query-sync";
 import { useDashboard } from "@/shared/lib/dashboard-context";
-import { useI18n } from "@/shared/lib/i18n";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
 import { useRouter } from "@/shared/router/navigation";
 import { useModal } from "@/widgets/modals/context/modal-context";
@@ -215,9 +215,9 @@ export default function TagClient({ tagId, tagTitle, initialColor, initial }: Pr
 					color={tagColor}
 					disabled={updateTagColorMutation.isPending}
 					labels={{
-						picker: t("tagColor.picker"),
-						none: t("tagColor.none"),
-						option: (number) => t("tagColor.option", { number }),
+						picker: t("library.tagColor.picker"),
+						none: t("library.tagColor.none"),
+						option: (number) => t("library.tagColor.option", { number }),
 					}}
 					onColorChange={(color) => updateTagColorMutation.mutate({ id: tagId, color })}
 					title={tagTitle}

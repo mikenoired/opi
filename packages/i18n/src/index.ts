@@ -2,8 +2,35 @@ import { createContext, createElement, useContext, useMemo, type ReactNode } fro
 
 export type InterfaceLanguage = "en" | "ru";
 
+export const searchPlaceholdersEn = [
+	"Search your notes, links, and ideas",
+	"What are we looking for today?",
+	"Find that thought hiding somewhere",
+	"Search the whole Synapse",
+	"Where did I put that brilliant idea?",
+	"Look for a note, link, or tiny revelation",
+	"Try a title, tag, or phrase",
+	"Search like you mean it",
+	"Hunt down a half-remembered thought",
+	"Find the thread worth pulling",
+	"What should we bring back to the surface?",
+	"Search your second brain",
+	"Type a clue. We’ll do the digging.",
+	"Find something you saved for later",
+	"Browse your memory palace",
+	"Looking for a spark?",
+	"Search by title, tag, or content",
+	"Let’s find that little gem",
+	"Which idea is calling?",
+	"Start with a word or two",
+] as const;
+
 const en = {
 	library: {
+		drop: {
+			title: "Drop files to add content",
+			subtitle: "Images, video, audio, and documents are supported",
+		},
 		add: "Add",
 		cancel: "Cancel",
 		clearFilters: "Clear filters",
@@ -24,10 +51,14 @@ const en = {
 		open: "Open",
 		save: "Save",
 		searchAria: "Search",
-		searchPlaceholder: "Find something you saved for later",
 		settings: "Settings",
 		tags: "Tags",
 		tagsEmpty: "No tags yet",
+		tagColor: {
+			none: "No color",
+			option: "Color {number}",
+			picker: "Tag color",
+		},
 		title: "Home",
 		type: "Type",
 		unsavedDescription: "You have unsaved changes. Close without saving?",
@@ -65,6 +96,8 @@ const en = {
 		},
 	},
 	account: {
+		title: "Profile",
+		description: "Profile details & sync",
 		createdWithUs: "Member since {date}",
 		noDate: "Registration date unavailable",
 		session: {
@@ -100,12 +133,16 @@ const en = {
 		title: "Appearance",
 	},
 	media: {
+		title: "Storage",
+		description: "Storage & import settings",
 		autoplay: { description: "Automatically play audio and video when opened.", title: "Autoplay" },
 		files: "Items",
 		import: "Import files",
 		storage: { label: "Local storage", used: "Used" },
 	},
 	ai: {
+		title: "AI",
+		description: "AI usage & account plan",
 		cost: "Cost",
 		error: "AI statistics will appear after connecting a compatible Synapse server.",
 		failures: "Failures",
@@ -120,8 +157,9 @@ const en = {
 		tokensShort: "tokens",
 	},
 	sync: {
+		title: "Automatic synchronization",
 		apiUrl: "API URL",
-		automatic: "Automatically queue new content",
+		automatic: "Automatically sync new content",
 		conflicts: "Local conflict copies",
 		email: "Email",
 		login: "Sign in to Synapse",
@@ -130,7 +168,10 @@ const en = {
 		sync: "Sync",
 		unavailable: "Sync is unavailable on your current plan",
 		withPlan: "Synapse Sync · {plan}",
-		syncing: "Syncing…",
+		syncing: "Syncing...",
+		downloadChanges: "Download changes",
+		uploadingChanges: "Uploading changes",
+		endingSync: "Ending sync",
 	},
 	navigation: { profile: "Profile" },
 	graph: { zoomIn: "Zoom in", zoomOut: "Zoom out" },
@@ -195,13 +236,57 @@ const en = {
 		editNote: "Edit note",
 		editTodo: "Edit list",
 	},
+	contentType: {
+		audio: { description: "Files, tracks, and voice materials" },
+		doc: { description: "PDF, DOCX, EPUB, XLSX, CSV, and other documents" },
+		link: { description: "Saved links with previews and metadata" },
+		media: { description: "Images and videos for quick browsing" },
+		note: { description: "Quick thoughts, notes, and long-form text" },
+		todo: { description: "Short todo lists and checkpoints" },
+	},
+	accountDelete: {
+		action: "Delete account",
+		confirm: "Delete permanently",
+		confirmDescription: "This action cannot be undone.",
+		confirmTitle: "Delete account?",
+		description: "Deleting your account removes your synced data.",
+		title: "Delete account",
+	},
+	settings: { title: "Settings" },
 	tags: { generate: "AI tags", generating: "Generating…", noSuggestions: "Could not suggest tags" },
 } as const;
 
 type TranslationSchema<T> = { [K in keyof T]: T[K] extends string ? string : TranslationSchema<T[K]> };
 
+export const searchPlaceholdersRu = [
+	"Ищите заметки, ссылки и идеи",
+	"Что сегодня будем искать?",
+	"Найдём мысль, которая где-то прячется",
+	"Поиск по всему Synapse",
+	"Куда я записал эту гениальную идею?",
+	"Ищите заметку, ссылку или маленькое озарение",
+	"Попробуйте заголовок, тег или фразу",
+	"Ищите смело",
+	"Охота за смутно знакомой мыслью начинается",
+	"Найдём ту самую ниточку",
+	"Что вернуть на поверхность?",
+	"Поищем во второй памяти",
+	"Дайте подсказку — остальное найдём",
+	"Найдём то, что вы отложили на потом",
+	"Прогуляемся по дворцу памяти",
+	"Ищете искру?",
+	"Поиск по заголовку, тегу или содержимому",
+	"Давайте найдём этот маленький бриллиант",
+	"Какая идея зовёт?",
+	"Начните с пары слов",
+] as const;
+
 const ru = {
 	library: {
+		drop: {
+			title: "Перетащите файлы, чтобы добавить контент",
+			subtitle: "Поддерживаются изображения, видео, аудио и документы",
+		},
 		add: "Добавить",
 		cancel: "Сбросить",
 		clearFilters: "Сбросить фильтры",
@@ -222,10 +307,14 @@ const ru = {
 		open: "Открыть",
 		save: "Сохранить",
 		searchAria: "Поиск",
-		searchPlaceholder: "Найдём то, что вы отложили на потом",
 		settings: "Настройки",
 		tags: "Теги",
 		tagsEmpty: "Тегов пока нет",
+		tagColor: {
+			none: "Без цвета",
+			option: "Цвет {number}",
+			picker: "Цвет тега",
+		},
 		title: "Главная",
 		type: "Тип",
 		unsavedDescription: "Есть несохранённые изменения. Закрыть без сохранения?",
@@ -263,6 +352,8 @@ const ru = {
 		},
 	},
 	account: {
+		title: "Профиль",
+		description: "Детали профиля и синхронизация",
 		createdWithUs: "С нами с {date}",
 		noDate: "Дата регистрации неизвестна",
 		session: {
@@ -298,6 +389,8 @@ const ru = {
 		title: "Оформление",
 	},
 	media: {
+		title: "Хранилище",
+		description: "Настройки хранения и импорта",
 		autoplay: {
 			description: "Автоматически запускать аудио и видео при открытии.",
 			title: "Автовоспроизведение",
@@ -307,6 +400,8 @@ const ru = {
 		storage: { label: "Локальное хранилище", used: "Занято" },
 	},
 	ai: {
+		title: "ИИ",
+		description: "Использование ИИ и план пользователя",
 		cost: "Стоимость",
 		error: "AI-статистика появится после подключения совместимого сервера Synapse.",
 		failures: "Ошибки",
@@ -321,8 +416,9 @@ const ru = {
 		tokensShort: "ток.",
 	},
 	sync: {
+		title: "Автоматическая синхронизация",
 		apiUrl: "Адрес API",
-		automatic: "Ставить новые материалы в очередь автоматически",
+		automatic: "Синхронизировать изменения на устройствах автоматически",
 		conflicts: "Локальные конфликтные копии",
 		email: "Email",
 		login: "Войти в Synapse",
@@ -331,7 +427,10 @@ const ru = {
 		sync: "Синхронизировать",
 		unavailable: "Синхронизация недоступна на текущем плане",
 		withPlan: "Synapse Sync · {plan}",
-		syncing: "Синхронизация…",
+		syncing: "Синхронизация...",
+		downloadChanges: "Получаем изменения",
+		uploadingChanges: "Передаём материалы",
+		endingSync: "Завершаем синхронизацию",
 	},
 	navigation: { profile: "Профиль" },
 	graph: { zoomIn: "Увеличить", zoomOut: "Уменьшить" },
@@ -396,6 +495,23 @@ const ru = {
 		editNote: "Редактировать заметку",
 		editTodo: "Редактировать список",
 	},
+	contentType: {
+		audio: { description: "Файлы, треки и голосовые материалы" },
+		doc: { description: "PDF, DOCX, EPUB, XLSX, CSV и другие документы" },
+		link: { description: "Сохранённые ссылки с превью и метаданными" },
+		media: { description: "Изображения и видео для быстрой навигации" },
+		note: { description: "Быстрые мысли, заметки и длинные тексты" },
+		todo: { description: "Короткие списки дел и контрольные пункты" },
+	},
+	accountDelete: {
+		action: "Удалить аккаунт",
+		confirm: "Удалить навсегда",
+		confirmDescription: "Это действие нельзя отменить.",
+		confirmTitle: "Удалить аккаунт?",
+		description: "Удаление аккаунта удалит синхронизированные данные.",
+		title: "Удаление аккаунта",
+	},
+	settings: { title: "Настройки" },
 	tags: { generate: "AI-теги", generating: "Генерация…", noSuggestions: "Не удалось подобрать теги" },
 } satisfies TranslationSchema<typeof en>;
 
@@ -419,13 +535,23 @@ type ValueAtPath<T, Path extends string> = Path extends `${infer Head}.${infer T
 type TranslationParams<Key extends TranslationKey> = ExtractParams<ValueAtPath<typeof en, Key> & string>;
 type Translator = <Key extends TranslationKey>(
 	key: Key,
-	...args: [TranslationParams<Key>] extends [never] ? [] : [Record<TranslationParams<Key>, string | number>]
+	params?: [TranslationParams<Key>] extends [never]
+		? Record<string, string | number>
+		: Record<TranslationParams<Key>, string | number>
 ) => string;
 
 const translations = { en, ru };
 
-export function getLocale(language: InterfaceLanguage) {
-	return language === "ru" ? "ru-RU" : "en-US";
+export const localizedSearchPlaceholders = {
+	ru: searchPlaceholdersRu,
+	en: searchPlaceholdersEn,
+};
+
+export type SearchPlaceholders = (typeof localizedSearchPlaceholders)[InterfaceLanguage];
+
+export function getRandomSearchPlaceholder(language: InterfaceLanguage): string {
+	const placeholders = localizedSearchPlaceholders[language];
+	return placeholders[Math.floor(Math.random() * placeholders.length)];
 }
 
 export function createTranslator(language: InterfaceLanguage): Translator {
@@ -443,13 +569,19 @@ interface I18nContextValue {
 	language: InterfaceLanguage;
 	locale: string;
 	t: Translator;
+	searchPlaceholder: string;
 }
 
 const I18nContext = createContext<I18nContextValue | undefined>(undefined);
 
 export function I18nProvider({ children, language }: { children: ReactNode; language: InterfaceLanguage }) {
 	const t = useMemo(() => createTranslator(language), [language]);
-	const value = useMemo(() => ({ language, locale: getLocale(language), t }), [language, t]);
+	const searchPlaceholder = useMemo(() => getRandomSearchPlaceholder(language), [language]);
+	const locale = language === "ru" ? "ru-RU" : "en-US";
+	const value = useMemo(
+		() => ({ language, locale, t, searchPlaceholder }),
+		[language, locale, t, searchPlaceholder]
+	);
 	return createElement(I18nContext.Provider, { value }, children);
 }
 

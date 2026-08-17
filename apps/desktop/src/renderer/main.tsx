@@ -275,7 +275,7 @@ function DesktopAppContent({
 				<div
 					aria-live="assertive"
 					aria-modal="true"
-					className="fixed inset-0 z-[100] flex items-center justify-center bg-background/70 backdrop-blur-sm"
+					className="fixed inset-0 z-100 flex items-center justify-center bg-background/70 backdrop-blur-sm"
 					role="alertdialog">
 					<div className="w-full max-w-sm space-y-3 rounded-xl border bg-background p-5 shadow-xl">
 						<p className="font-medium">Синхронизация библиотеки</p>

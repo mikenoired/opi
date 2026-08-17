@@ -28,7 +28,11 @@ export function AccountSettingsPanel({
 	const { t, locale } = useI18n();
 	if (isLoading) return <AccountSettingsSkeleton />;
 	return (
-		<div className="space-y-5">
+		<div className="space-y-6">
+			<div>
+				<h2 className="text-xl font-semibold tracking-tight">{t("account.title")}</h2>
+				<p className="mt-1 text-sm text-muted-foreground">{t("account.description")}</p>
+			</div>
 			{connectionNotice && (
 				<p role="status" className="text-sm text-primary">
 					{connectionNotice}
@@ -42,13 +46,18 @@ export function AccountSettingsPanel({
 					</div>
 					<div className="inline-flex items-center gap-2 rounded-full bg-muted px-3.5 py-2 text-sm text-foreground">
 						<CalendarDays className="size-4 text-muted-foreground" />
-						<span>
+						<span className="text-sm font-medium text-foreground">
 							{formatRegistrationDate(
 								user?.createdAt,
 								locale,
 								(date) => t("account.createdWithUs", { date }),
 								t("account.noDate")
 							)}
+						</span>
+					</div>
+					<div className="inline-flex items-center gap-2 rounded-full bg-muted px-3.5 py-2 text-sm text-foreground">
+						<span className="text-sm font-medium text-foreground">
+							{user?.plan ? t("sync.withPlan", { plan: user.plan }) : t("sync.unavailable")}
 						</span>
 					</div>
 				</div>

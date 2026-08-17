@@ -1,9 +1,9 @@
 import { ContentCreateDialog, type ContentTypePickerOption } from "@synapse/features";
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 import { useMemo } from "react";
 
 import { contentTypeOptions } from "@/shared/lib/content-type-options";
-import { useI18n } from "@/shared/lib/i18n";
 import { inferContentTypeFromFiles } from "@/shared/lib/upload-file-kind";
 import { showToast } from "@/widgets/modals/utils";
 
