@@ -1,10 +1,6 @@
-import { sql } from "drizzle-orm";
-
 import { backendSyncProvider } from "../adapters/backend-sync.provider";
 import type { Context } from "../context";
-import { createListenClient } from "../db";
-
-const CHANNEL = "synapse_sync_cursor";
+import SyncHintRepository from "../repositories/sync-hint.repository";
 
 export interface SyncHintTransport {
 	publish(hint: { cursor: string; userId: string }): Promise<void>;
@@ -14,26 +10,18 @@ export interface SyncHintTransport {
 /** PostgreSQL transport is shared by all backend instances; hints never carry domain payload. */
 export class PostgresSyncHintTransport implements SyncHintTransport {
 	async publish(hint: { cursor: string; userId: string }): Promise<void> {
-		await this.ctx.db.execute(sql`SELECT pg_notify(${CHANNEL}, ${JSON.stringify(hint)})`);
+		await this.repository.publish(hint);
 	}
 
 	async subscribe(handler: (hint: { cursor: string; userId: string }) => void): Promise<() => Promise<void>> {
-		const client = createListenClient();
-		await client.listen(CHANNEL, (payload) => {
-			try {
-				const hint = JSON.parse(payload) as { cursor?: string; userId?: string };
-				if (typeof hint.cursor === "string" && typeof hint.userId === "string")
-					handler(hint as { cursor: string; userId: string });
-			} catch {
-				// Ignore malformed foreign notification payloads.
-			}
-		});
-		return async () => {
-			await client.end({ timeout: 1 });
-		};
+		return this.repository.subscribe(handler);
 	}
 
-	constructor(private readonly ctx: Context) {}
+	private readonly repository: SyncHintRepository;
+
+	constructor(ctx: Context) {
+		this.repository = new SyncHintRepository(ctx.db);
+	}
 }
 
 /** One owner per backend process; reconnect turns listener failures into a later cursor hint. */

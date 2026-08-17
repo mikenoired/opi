@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import { Button, CheckboxGroup, CheckboxItem, InputField } from "@synapse/ui/components";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
@@ -24,6 +25,7 @@ export function TodoList({
 	onToggleTodo,
 	onUpdateTodoText,
 }: TodoListProps) {
+	const { t } = useI18n();
 	const [todoInput, setTodoInput] = useState("");
 
 	const handleAddTodo = () => {
@@ -37,9 +39,9 @@ export function TodoList({
 		<div className="flex flex-col gap-4">
 			<div className="flex gap-2">
 				<InputField
-					label="Add item"
+					label={t("content.addItem")}
 					labelHidden
-					placeholder="Add item..."
+					placeholder={t("content.todoPlaceholder")}
 					value={todoInput}
 					onChange={setTodoInput}
 					onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -50,24 +52,24 @@ export function TodoList({
 				/>
 				<Button type="button" onClick={handleAddTodo} disabled={!todoInput.trim() || isLoading} size="sm">
 					<Plus className="mr-1 h-4 w-4" />
-					Add
+					{t("content.addTodo")}
 				</Button>
 			</div>
 			<div className="flex flex-col gap-2">
-				{items.length === 0 && <div className="text-sm text-muted-foreground">There's no items</div>}
+				{items.length === 0 && <div className="text-sm text-muted-foreground">{t("content.emptyTodos")}</div>}
 				{items.map((item, idx) => (
 					<div key={idx} className="group flex items-center gap-2">
 						<CheckboxGroup checkedIndices={item.marked ? new Set([0]) : new Set()} className="w-auto">
 							<CheckboxItem
 								checked={item.marked}
 								index={0}
-								label={`Mark item ${idx + 1}`}
+								label={t("content.markTodo", { number: idx + 1 })}
 								onToggle={() => onToggleTodo(idx)}
 								className="size-5 px-0"
 							/>
 						</CheckboxGroup>
 						<InputField
-							label="Todo item"
+							label={t("content.todoPlaceholder")}
 							labelHidden
 							value={item.text}
 							onChange={(value) => onUpdateTodoText(idx, value)}

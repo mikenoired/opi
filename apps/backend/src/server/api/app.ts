@@ -12,7 +12,7 @@ import {
 	MAX_TAGS_PER_CONTENT,
 	updateContentSchema,
 } from "@synapse/shared/schemas";
-import { Hono } from "hono";
+import { Hono, type Context as HonoContext } from "hono";
 import { setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
@@ -227,6 +227,35 @@ async function requireSyncSubscription(context: Context): Promise<void> {
 	if (!canUseSynapseSync(user.plan)) throw new ApiError("FORBIDDEN", "Synapse Sync requires a paid plan");
 }
 
+function syncEventsHandler(c: HonoContext) {
+	const userId = c.get("apiContext").user!.id;
+	return streamSSE(c, async (stream) => {
+		await stream.writeSSE({ event: "ready", data: "{}" });
+		await new Promise<void>((resolve) => {
+			let closed = false;
+			let unsubscribe = () => {};
+			const finish = () => {
+				if (closed) return;
+				closed = true;
+				clearInterval(heartbeat);
+				unsubscribe();
+				resolve();
+			};
+			const heartbeat = setInterval(() => {
+				void stream.write(": heartbeat\n\n").catch(finish);
+			}, 5_000);
+			unsubscribe = backendSyncProvider.subscribeCursor(userId, async (cursor) => {
+				try {
+					await stream.writeSSE({ data: JSON.stringify({ cursor }), event: "hint", id: cursor });
+				} catch {
+					finish();
+				}
+			});
+			c.req.raw.signal.addEventListener("abort", finish, { once: true });
+		});
+	});
+}
+
 export const api = new Hono()
 	.use(
 		"*",
@@ -283,54 +312,8 @@ export const api = new Hono()
 		})
 	)
 	.get("/health", (c) => c.json({ ok: true as const }))
-	.get("/sync/events", requireAuth, (c) => {
-		const userId = c.get("apiContext").user!.id;
-		return streamSSE(c, async (stream) => {
-			await stream.writeSSE({ event: "ready", data: "{}" });
-			await new Promise<void>((resolve) => {
-				const unsubscribe = backendSyncProvider.subscribeCursor(userId, async (cursor) => {
-					try {
-						await stream.writeSSE({ data: JSON.stringify({ cursor }), event: "hint", id: cursor });
-					} catch {
-						unsubscribe();
-						resolve();
-					}
-				});
-				c.req.raw.signal.addEventListener(
-					"abort",
-					() => {
-						unsubscribe();
-						resolve();
-					},
-					{ once: true }
-				);
-			});
-		});
-	})
-	.get("/sync/v2/events", requireAuth, (c) => {
-		const userId = c.get("apiContext").user!.id;
-		return streamSSE(c, async (stream) => {
-			await stream.writeSSE({ event: "ready", data: "{}" });
-			await new Promise<void>((resolve) => {
-				const unsubscribe = backendSyncProvider.subscribeCursor(userId, async (cursor) => {
-					try {
-						await stream.writeSSE({ data: JSON.stringify({ cursor }), event: "hint", id: cursor });
-					} catch {
-						unsubscribe();
-						resolve();
-					}
-				});
-				c.req.raw.signal.addEventListener(
-					"abort",
-					() => {
-						unsubscribe();
-						resolve();
-					},
-					{ once: true }
-				);
-			});
-		});
-	})
+	.get("/sync/events", requireAuth, syncEventsHandler)
+	.get("/sync/v2/events", requireAuth, syncEventsHandler)
 	.get("/sync/pull", requireAuth, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
 		await requireSyncSubscription(context);
@@ -348,13 +331,13 @@ export const api = new Hono()
 		await requireSyncSubscription(context);
 		const { mutations } = await body(c.req.raw, syncPushInput);
 		const coordinator = new SyncMutationCoordinator(context);
-		return c.json({
-			outcomes: await Promise.all(
-				mutations.map((mutation) =>
-					"entityType" in mutation ? coordinator.applyIntent(mutation) : coordinator.apply(mutation)
-				)
-			),
-		});
+		const outcomes = [];
+		for (const mutation of mutations) {
+			outcomes.push(
+				await ("entityType" in mutation ? coordinator.applyIntent(mutation) : coordinator.apply(mutation))
+			);
+		}
+		return c.json({ outcomes });
 	})
 	.post("/sync/delete-all", requireAuth, protectMutation, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
@@ -385,11 +368,11 @@ export const api = new Hono()
 		return c.json({
 			assets: await Promise.all(
 				keys.map(async (storageKey) => {
+					const [, ownerId] = storageKey.split("/");
+					if (ownerId !== context.user!.id) throw new ApiError("FORBIDDEN", "Asset access denied");
 					const metadata = await getFileMetadata(storageKey);
 					const bytes = await getFileBuffer(storageKey);
-					const [, ownerId] = storageKey.split("/");
-					if (!metadata || !bytes || ownerId !== context.user!.id)
-						throw new ApiError("FORBIDDEN", "Asset access denied");
+					if (!metadata || !bytes) throw new ApiError("FORBIDDEN", "Asset access denied");
 					return {
 						assetId: storageKey,
 						mimeType: metadata.contentType || "application/octet-stream",

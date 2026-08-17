@@ -79,16 +79,16 @@ export function LocalSyncSettingsPanel({
 				)}
 			</div>
 			<ConfirmDialog
-				cancelText="Отмена"
-				confirmText="Включить и синхронизировать"
-				description="Будет выполнена начальная синхронизация материалов между этим устройством и Synapse."
+				cancelText={t("library.cancel")}
+				confirmText={t("sync.confirmAutomaticAction")}
+				description={t("sync.confirmAutomaticDescription")}
 				onConfirm={async () => {
 					await onSyncPolicyChange("automatic");
 					await onSync();
 				}}
 				onOpenChange={setConfirmAutomatic}
 				open={confirmAutomatic}
-				title="Включить автоматическую синхронизацию?"
+				title={t("sync.confirmAutomaticTitle")}
 			/>
 		</section>
 	);

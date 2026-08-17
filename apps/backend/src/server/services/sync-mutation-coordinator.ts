@@ -142,8 +142,15 @@ export default class SyncMutationCoordinator {
 		return result.tag;
 	}
 
-	/** Generic protocol seam for independently syncable Tag metadata. */
+	/** Generic protocol seam for client-assigned Content creates and independently syncable Tag metadata. */
 	async applyIntent(intent: SyncIntent): Promise<MutationReceipt> {
+		if (
+			intent.entityType === "content" &&
+			intent.operation === "upsert" &&
+			intent.entityId &&
+			intent.baseEntityVersion === undefined
+		)
+			return this.createContentIntent(intent);
 		if (intent.entityType !== "tag" || intent.operation !== "upsert" || !intent.entityId)
 			throw new ApiError({ code: "BAD_REQUEST", message: "Unsupported generic sync intent" });
 		const color = tagColor(intent.payload);
@@ -190,6 +197,61 @@ export default class SyncMutationCoordinator {
 				mutationId: intent.mutationId,
 				operation: "upsert",
 				payload: tag,
+			};
+			const applied: MutationReceipt = { change, kind: "applied", mutationId: intent.mutationId };
+			await this.journal.finalizeReceipt(tx, userId, intent.mutationId, applied);
+			return applied;
+		});
+		const cursor = await this.journal.findMutationCursor(userId, intent.mutationId);
+		if (cursor) await new SyncNotifierService(this.ctx).notify(userId, `j:${cursor}`);
+		await new GenericSyncJournalService(this.ctx).pruneRetained();
+		return receipt;
+	}
+
+	private async createContentIntent(intent: SyncIntent): Promise<MutationReceipt> {
+		const userId = this.ctx.user!.id;
+		const entityId = intent.entityId!;
+		const requestHash = JSON.stringify(intent);
+		const receipt = await this.ctx.db.transaction(async (tx) => {
+			const claimed = await this.journal.claimReceipt(tx, userId, intent.mutationId, requestHash);
+			if (!claimed.length) {
+				const stored = await this.journal.getReceipt(tx, userId, intent.mutationId);
+				if (!stored || stored.requestHash !== requestHash || !stored.outcome)
+					throw new ApiError({
+						code: "CONFLICT",
+						message: "Sync mutation id belongs to a different immutable intent",
+					});
+				return stored.outcome as MutationReceipt;
+			}
+
+			await this.lockEntity(tx, userId, entityId);
+			const current = await this.journal.findEntityVersion(tx, userId, "content", entityId);
+			if (current) {
+				const conflict: MutationReceipt = { kind: "conflict", mutationId: intent.mutationId };
+				await this.journal.finalizeReceipt(tx, userId, intent.mutationId, conflict);
+				return conflict;
+			}
+
+			const context = { ...this.ctx, db: tx } as unknown as Context;
+			const created = await new ContentService(context).create(intent.payload as CreateContent, entityId);
+			await this.appendTagSnapshots(tx, context, created);
+			const appended = await this.append(tx, {
+				entityId,
+				entityType: "content",
+				mutationId: intent.mutationId,
+				operation: "upsert",
+				payload: created,
+				previousVersion: 0,
+				userId,
+			});
+			const change: SyncChange = {
+				cursor: `j:${appended.cursor}`,
+				entityId,
+				entityType: "content",
+				entityVersion: appended.entityVersion,
+				mutationId: intent.mutationId,
+				operation: "upsert",
+				payload: created,
 			};
 			const applied: MutationReceipt = { change, kind: "applied", mutationId: intent.mutationId };
 			await this.journal.finalizeReceipt(tx, userId, intent.mutationId, applied);

@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import { SIDEBAR_ANIMATION } from "@synapse/shared/animations";
 import { cn } from "@synapse/ui/cn";
 import { TabItem, Tabs, TabsList, Tooltip, TooltipProvider, useProximityHover } from "@synapse/ui/components";
@@ -98,9 +99,9 @@ export function ConfiguredAppSidebar({
 
 /** Shared Synapse frame. Platforms supply behaviour, never a second navigation design. */
 export function AppSidebar({
-	collapseLabel = "Свернуть",
+	collapseLabel,
 	expanded: controlledExpanded,
-	expandLabel = "Развернуть",
+	expandLabel,
 	initiallyExpanded = true,
 	items,
 	footer,
@@ -114,6 +115,9 @@ export function AppSidebar({
 	footer?: ReactNode;
 	onExpandedChange?: (expanded: boolean) => void;
 }) {
+	const { t } = useI18n();
+	const resolvedCollapseLabel = collapseLabel ?? t("navigation.collapse");
+	const resolvedExpandLabel = expandLabel ?? t("navigation.expand");
 	const [uncontrolledExpanded, setUncontrolledExpanded] = useState(initiallyExpanded);
 	const expanded = controlledExpanded ?? uncontrolledExpanded;
 	const toggle = () => {
@@ -132,9 +136,9 @@ export function AppSidebar({
 					<nav className="flex-1 overflow-y-auto px-3 py-4">
 						<SidebarButtonGroup selectedIndex={getSelectedIndex(items)}>
 							<SidebarToggle
-								ariaLabel={expanded ? collapseLabel : expandLabel}
+								ariaLabel={expanded ? resolvedCollapseLabel : resolvedExpandLabel}
 								isExpanded={expanded}
-								label={expanded ? collapseLabel : expandLabel}
+								label={expanded ? resolvedCollapseLabel : resolvedExpandLabel}
 								onClick={toggle}
 							/>
 							{items.map((item, index) => (
@@ -393,6 +397,7 @@ export function SettingsModalShell({
 	open: boolean;
 	title: string;
 }) {
+	const { t } = useI18n();
 	const modalRef = useRef<HTMLDivElement>(null);
 	useEffect(() => {
 		if (!open) return;
@@ -445,7 +450,7 @@ export function SettingsModalShell({
 							type="button"
 							onClick={onClose}
 							className="absolute top-3 right-3 z-20 flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-							aria-label="Закрыть">
+							aria-label={t("settings.close")}>
 							<X className="size-4.5" />
 						</button>
 						<div className="flex flex-col p-3 pt-12 md:border-r md:border-border md:p-3 md:pt-3">
@@ -489,10 +494,11 @@ export function ConfiguredSettingsNavigation({
 	onSelect(id: string): void;
 	tabs: SettingsTabConfig[];
 }) {
+	const { t } = useI18n();
 	const visible = tabs.filter((tab) => isVisible(tab.when, capabilities));
 	return (
 		<Tabs value={activeId} onValueChange={onSelect} orientation="vertical">
-			<TabsList orientation="vertical" aria-label="Settings">
+			<TabsList orientation="vertical" aria-label={t("settings.title")}>
 				{visible.map((tab) => (
 					<TabItem
 						key={tab.id}

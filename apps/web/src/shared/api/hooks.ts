@@ -343,9 +343,12 @@ const runtimeApi = {
 			return {
 				content: {
 					...Object.fromEntries(
-						Object.entries(keys.content).map(([name, makeKey]) => [name, operation((makeKey as any)())])
+						Object.entries(keys.content).map(([name, makeKey]) => [
+							name,
+							operation((makeKey as any)().slice(0, 2)),
+						])
 					),
-					getById: operation(keys.content.getById(), (input) => request(`/content/${input.id}`)),
+					getById: operation(["content", "getById"], (input) => request(`/content/${input.id}`)),
 					getTagById: operation(["content", "getTagById"]),
 				},
 				graph: { getGraph: operation(keys.graph.getGraph()) },

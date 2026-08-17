@@ -106,11 +106,21 @@ export class DesktopSseTransport implements RealtimeTransport {
 
 	async connect(onHint: (hint: { cursor?: SyncCursor }) => void): Promise<() => void> {
 		const controller = new AbortController();
-		void this.listen(controller.signal, onHint);
+		let markReady!: () => void;
+		const ready = new Promise<void>((resolve) => {
+			markReady = resolve;
+		});
+		void this.listen(controller.signal, onHint, markReady);
+		await ready;
 		return () => controller.abort();
 	}
 
-	private async listen(signal: AbortSignal, onHint: (hint: { cursor?: SyncCursor }) => void): Promise<void> {
+	private async listen(
+		signal: AbortSignal,
+		onHint: (hint: { cursor?: SyncCursor }) => void,
+		onReady: () => void
+	): Promise<void> {
+		let connected = false;
 		while (!signal.aborted) {
 			try {
 				const apiUrl = this.apiUrl();
@@ -120,6 +130,10 @@ export class DesktopSseTransport implements RealtimeTransport {
 					signal,
 				});
 				if (!response.ok || !response.body) throw new Error("Sync event stream unavailable");
+				if (!connected) {
+					connected = true;
+					onReady();
+				}
 				const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
 				let buffered = "";
 				while (!signal.aborted) {
@@ -232,16 +246,18 @@ class DesktopReplicaTransaction implements ReplicaTransaction {
 
 	async commit(): Promise<() => Promise<void>> {
 		const changes = this.snapshot ?? this.canonical;
-		for (const change of changes) {
-			if (change.entityType !== "content") continue;
-			await this.library.applyRemoteChange({
-				content: change.payload as Content | undefined,
-				entityId: change.entityId,
-				operation: change.operation,
-				revision: change.entityVersion,
-			});
-		}
-		if (this.cursor) await this.library.setSyncCursor(this.cursor);
+		await this.library.applyRemoteBatch(
+			changes
+				.filter((change) => change.entityType === "content")
+				.map((change) => ({
+					content: change.payload as Content | undefined,
+					entityId: change.entityId,
+					operation: change.operation,
+					revision: change.entityVersion,
+				})),
+			this.cursor,
+			this.snapshot !== undefined
+		);
 
 		return async () => {
 			for (const change of changes) {

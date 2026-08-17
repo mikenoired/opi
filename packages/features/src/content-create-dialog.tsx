@@ -95,7 +95,7 @@ export function ContentCreateDialog({
 	const fail = (message: string) => onError?.(message);
 	const addFiles = (next: File[]) => {
 		const accepted = next.filter((file) => acceptsFile(type, file));
-		if (accepted.length !== next.length) fail("Некоторые файлы не подходят для выбранного типа");
+		if (accepted.length !== next.length) fail(t("content.unsupportedFiles"));
 		setFiles((current) => [...current, ...accepted]);
 	};
 	const isDirty = Boolean(
@@ -200,7 +200,7 @@ export function ContentCreateDialog({
 			}
 			onOpenChange(false);
 		} catch (error) {
-			fail(error instanceof Error ? error.message : "Не удалось сохранить материал");
+			fail(error instanceof Error ? error.message : t("content.saveFailed"));
 		} finally {
 			setSaving(false);
 		}

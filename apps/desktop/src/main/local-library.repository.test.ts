@@ -6,13 +6,60 @@ import { join } from "node:path";
 import { LocalLibraryRepository } from "./local-library.repository";
 
 describe("LocalLibraryRepository", () => {
+	test("serializes outbox, cursor, and replica mutations across repository instances", async () => {
+		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const library = new LocalLibraryRepository(root);
+		await library.updateSettings({ syncPolicy: "automatic" });
+		await library.save({
+			content: "first",
+			tags: ["sync"],
+			title: "First",
+			type: "note",
+		});
+		const [entry] = await library.getPendingOperations();
+		if (!entry) throw new Error("Expected a durable operation");
+		const [tag] = await library.getTags();
+		if (!tag) throw new Error("Expected a local tag");
+
+		await Promise.all([
+			new LocalLibraryRepository(root).retainMutation(entry.mutation.clientMutationId),
+			new LocalLibraryRepository(root).setSyncCursor("j:7"),
+			new LocalLibraryRepository(root).updateSettings({ colorScheme: "dark" }),
+			new LocalLibraryRepository(root).updateTagColor(tag.id, 7),
+			new LocalLibraryRepository(root).save({
+				content: "second",
+				tags: [],
+				title: "Second",
+				type: "note",
+			}),
+		]);
+
+		const reopened = new LocalLibraryRepository(root);
+		expect((await reopened.getPendingOperations()).find((item) => item.id === entry.id)?.attempts).toBe(1);
+		expect(await reopened.getSyncCursor()).toBe("j:7");
+		expect((await reopened.list()).map((item) => item.title).sort()).toEqual(["First", "Second"]);
+		expect(await reopened.getSettings()).toMatchObject({ colorScheme: "dark" });
+		expect(await reopened.getTags()).toContainEqual(expect.objectContaining({ color: 7, id: tag.id }));
+	});
+
 	test("creates a new mutation id when a queued local edit replaces its intent", async () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);
 		await library.updateSettings({ syncPolicy: "automatic" });
-		const item = await library.save({ content: "first", tags: [], title: "first", type: "note" });
+		const item = await library.save({
+			content: "first",
+			tags: [],
+			title: "first",
+			type: "note",
+		});
 		const [first] = await library.getPendingOperations();
-		await library.save({ content: "second", id: item.id, tags: [], title: "second", type: "note" });
+		await library.save({
+			content: "second",
+			id: item.id,
+			tags: [],
+			title: "second",
+			type: "note",
+		});
 		const [second] = await library.getPendingOperations();
 
 		expect(second.mutation.clientMutationId).not.toBe(first.mutation.clientMutationId);
@@ -39,7 +86,11 @@ describe("LocalLibraryRepository", () => {
 			title: "Второй",
 			type: "note",
 		});
-		expect(await library.getStatistics()).toMatchObject({ itemCount: 2, pendingSyncCount: 1, tagCount: 1 });
+		expect(await library.getStatistics()).toMatchObject({
+			itemCount: 2,
+			pendingSyncCount: 1,
+			tagCount: 1,
+		});
 
 		await library.delete(item.id);
 		await library.delete(queued.id);
@@ -49,18 +100,34 @@ describe("LocalLibraryRepository", () => {
 	test("queues a manually selected item without changing the default policy", async () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);
-		const item = await library.save({ content: "", tags: [], title: "Черновик", type: "note" });
+		const item = await library.save({
+			content: "",
+			tags: [],
+			title: "Черновик",
+			type: "note",
+		});
 
 		await library.queueSync(item.id);
 
-		expect((await library.list())[0]).toMatchObject({ id: item.id, syncState: "queued" });
-		expect(await library.getSettings()).toMatchObject({ colorScheme: "system", syncPolicy: "manual" });
+		expect((await library.list())[0]).toMatchObject({
+			id: item.id,
+			syncState: "queued",
+		});
+		expect(await library.getSettings()).toMatchObject({
+			colorScheme: "system",
+			syncPolicy: "manual",
+		});
 	});
 
 	test("keeps the SyncEngine outbox durable across a repository restart", async () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);
-		const item = await library.save({ content: "outbox", tags: [], title: "Outbox", type: "note" });
+		const item = await library.save({
+			content: "outbox",
+			tags: [],
+			title: "Outbox",
+			type: "note",
+		});
 		await library.queueSync(item.id);
 		const [entry] = await library.getPendingOperations();
 		if (!entry) throw new Error("Expected a durable operation");
@@ -75,7 +142,10 @@ describe("LocalLibraryRepository", () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);
 
-		await library.updatePreferences({ colorPalette: "forest", mediaAutoplayEnabled: false });
+		await library.updatePreferences({
+			colorPalette: "forest",
+			mediaAutoplayEnabled: false,
+		});
 
 		expect(await new LocalLibraryRepository(root).getPreferences()).toMatchObject({
 			colorPalette: "forest",
@@ -86,7 +156,12 @@ describe("LocalLibraryRepository", () => {
 	test("merges remote tag metadata into the local tag without creating a duplicate", async () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);
-		await library.save({ content: "", tags: ["Работа"], title: "План", type: "note" });
+		await library.save({
+			content: "",
+			tags: ["Работа"],
+			title: "План",
+			type: "note",
+		});
 		const [localTag] = await library.getTags();
 		if (!localTag) throw new Error("Expected local tag");
 		await library.updateTagColor(localTag.id, 7);
@@ -109,7 +184,12 @@ describe("LocalLibraryRepository", () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);
 		await library.updateSettings({ syncPolicy: "automatic" });
-		const local = await library.save({ content: "Same note", tags: ["work"], title: "Plan", type: "note" });
+		const local = await library.save({
+			content: "Same note",
+			tags: ["work"],
+			title: "Plan",
+			type: "note",
+		});
 		const remote = {
 			...local,
 			id: "remote-note",
@@ -127,7 +207,11 @@ describe("LocalLibraryRepository", () => {
 
 		expect(await library.getPendingOperations()).toEqual([]);
 		expect(await library.list()).toEqual([
-			expect.objectContaining({ id: local.id, remoteId: remote.id, syncState: "synced" }),
+			expect.objectContaining({
+				id: local.id,
+				remoteId: remote.id,
+				syncState: "synced",
+			}),
 		]);
 	});
 
@@ -137,7 +221,10 @@ describe("LocalLibraryRepository", () => {
 		await library.updateSettings({ syncPolicy: "automatic" });
 		const item = await library.save({
 			content: JSON.stringify({
-				media: { type: "image", url: "synapse-object://local/local/imports/a.png" },
+				media: {
+					type: "image",
+					url: "synapse-object://local/local/imports/a.png",
+				},
 			}),
 			media_type: "image",
 			media_url: "synapse-object://local/local/imports/a.png",
@@ -155,12 +242,24 @@ describe("LocalLibraryRepository", () => {
 	test("turns a remotely deleted item into a new local-only item after an edit", async () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
 		const library = new LocalLibraryRepository(root);
-		const item = await library.save({ content: "Первая версия", tags: [], title: "Черновик", type: "note" });
-		await library.updateSync(item.id, { remoteId: "remote-1", syncState: "remote-deleted" });
+		const item = await library.save({
+			content: "Первая версия",
+			tags: [],
+			title: "Черновик",
+			type: "note",
+		});
+		await library.updateSync(item.id, {
+			remoteId: "remote-1",
+			syncState: "remote-deleted",
+		});
 
 		const edited = await library.save({ ...item, content: "Новая версия" });
 
-		expect(edited).toMatchObject({ id: item.id, content: "Новая версия", syncState: "local-only" });
+		expect(edited).toMatchObject({
+			id: item.id,
+			content: "Новая версия",
+			syncState: "local-only",
+		});
 		expect(edited.remoteId).toBeUndefined();
 	});
 

@@ -15,12 +15,13 @@ async function chooseType(type: "note" | "todo" | "link" | "media" | "audio" | "
 }
 
 async function submit() {
-	await $("form button[type='submit']").click();
+	const submitButton = $("form button[type='submit']");
+	if (await submitButton.isExisting()) await submitButton.click();
+	else await $("button[aria-label='Сохранить']").click();
 	await expect($("h2=Что вы хотите добавить?")).not.toBeDisplayed();
 }
 
-async function reloadAndExpect(text: string) {
-	await browser.refresh();
+async function waitForText(text: string) {
 	await browser.waitUntil(async () => (await $("body").getText()).includes(text));
 }
 
@@ -29,14 +30,14 @@ async function createNote(title: string, body: string) {
 	await $("[data-testid='content-title']").setValue(title);
 	await $("[aria-label='Содержимое заметки']").setValue(body);
 	await submit();
-	await reloadAndExpect(title);
+	await waitForText(title);
 }
 
 async function openNoteEditor(title: string) {
 	const card = $("h3=" + title);
 	await card.waitForDisplayed();
 	await card.click({ button: "right" });
-	await $("button[role='menuitem']=Редактировать").click();
+	await $("button[role='menuitem']=Изменить").click();
 	await $("[data-testid='content-title']").waitForDisplayed();
 }
 
@@ -66,7 +67,7 @@ describe("complete web user journey", () => {
 		await $("#email").setValue(email);
 		await $("#password").setValue(password);
 		await $("form button[type='submit']").click();
-		await expect($("button=Добавить материал")).toBeDisplayed();
+		await expect($("[data-testid='sidebar-add']")).toBeDisplayed();
 
 		await createNote("E2E note searchable", "E2E note body");
 		await openNoteEditor("E2E note searchable");
@@ -74,8 +75,7 @@ describe("complete web user journey", () => {
 		await editor.setValue("E2E formatted note body");
 		await browser.keys(["Meta", "b"]);
 		await editor.addValue(" bold");
-		await $("form button[type='submit']").click();
-		await browser.refresh();
+		await $("button[aria-label='Сохранить']").click();
 		await expect($("body")).toHaveText(expect.stringContaining("E2E formatted note body bold"));
 
 		await chooseType("note");
@@ -84,7 +84,7 @@ describe("complete web user journey", () => {
 		await $("[data-testid='content-back']").click();
 		const changeTypeDialog = await changeTypeConfirmation();
 		await expect(changeTypeDialog).toBeDisplayed();
-		await changeTypeDialog.$("button=Отмена").click();
+		await changeTypeDialog.$("button=Сбросить").click();
 		await $("h2=Сменить тип материала?").waitForDisplayed({ reverse: true });
 		await expect($("[data-testid='content-title']")).toHaveValue("E2E unsaved draft");
 		await $("[data-testid='content-back']").click();
@@ -105,20 +105,20 @@ describe("complete web user journey", () => {
 		await $("[data-testid='content-title']").setValue("E2E tagged note");
 		await $("[aria-label='Содержимое заметки']").setValue("E2E tags are persisted");
 		await submit();
-		await reloadAndExpect("E2E tagged note");
+		await waitForText("E2E tagged note");
 
 		await chooseType("todo");
 		await $("[data-testid='content-title']").setValue("E2E todo searchable");
 		await $("[data-testid='todo-item']").setValue("E2E task");
 		await browser.keys("Enter");
 		await submit();
-		await reloadAndExpect("E2E task");
+		await waitForText("E2E task");
 
 		await chooseType("link");
 		await $("[data-testid='content-url']").setValue("https://example.com/e2e");
 		await $("[data-testid='content-title']").setValue("E2E link searchable");
 		await submit();
-		await reloadAndExpect("E2E link searchable");
+		await waitForText("E2E link searchable");
 
 		await chooseType("media");
 		await $("input[type='file']").addValue(
@@ -126,17 +126,17 @@ describe("complete web user journey", () => {
 		);
 		await $("[data-testid='content-title']").setValue("E2E media searchable");
 		await submit();
-		await reloadAndExpect("E2E media searchable");
+		await $("img[alt='E2E media searchable']").waitForDisplayed();
 
 		await chooseType("audio");
 		await $("input[type='file']").addValue(await browser.uploadFile(join(fixtures, "sample.wav")));
 		await submit();
-		await reloadAndExpect("sample");
+		await waitForText("sample");
 
 		await chooseType("doc");
 		await $("input[type='file']").addValue(await browser.uploadFile(join(fixtures, "sample.csv")));
 		await submit();
-		await reloadAndExpect("E2E CSV");
+		await waitForText("E2E CSV");
 
 		const search = $("[data-testid='content-search']");
 		await search.setValue("E2E note searchable");

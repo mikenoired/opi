@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import { Button } from "@synapse/ui/components";
 import { FileText, Upload, X } from "lucide-react";
 import type { DragEvent } from "react";
@@ -22,6 +23,7 @@ export function DocumentDropZone({
 	onDrop,
 	onRemoveFile,
 }: DocumentDropZoneProps) {
+	const { t } = useI18n();
 	const [dragCounter, setDragCounter] = useState(0);
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -91,9 +93,9 @@ export function DocumentDropZone({
 						<FileText className="mx-auto h-12 w-12 text-muted-foreground" />
 					</div>
 					<div className="space-y-2">
-						<p className="text-sm font-medium text-foreground">Перетащите документы сюда</p>
-						<p className="text-xs text-muted-foreground">или нажмите для выбора</p>
-						<p className="text-xs text-muted-foreground/70">Макс. 50MB • PDF, DOCX, EPUB, XLSX, CSV</p>
+						<p className="text-sm font-medium text-foreground">{t("content.documentsDrop")}</p>
+						<p className="text-xs text-muted-foreground">{t("content.documentsHint")}</p>
+						<p className="text-xs text-muted-foreground/70">{t("content.documentsLimits")}</p>
 					</div>
 					<input
 						ref={inputRef}
@@ -115,14 +117,16 @@ export function DocumentDropZone({
 						onClick={() => inputRef.current?.click()}
 						className="mt-3 transition-colors hover:bg-primary hover:text-primary-foreground">
 						<Upload className="mr-2 h-4 w-4" />
-						Выбрать документы
+						{t("content.documentsChoose")}
 					</Button>
 				</div>
 			</div>
 
 			{selectedFiles.length > 0 && (
 				<div className="space-y-2">
-					<p className="text-sm font-medium text-foreground">Выбранные документы ({selectedFiles.length})</p>
+					<p className="text-sm font-medium text-foreground">
+						{t("content.documentsSelected", { count: selectedFiles.length })}
+					</p>
 					<div className="space-y-2">
 						{selectedFiles.map((file, index) => (
 							<div

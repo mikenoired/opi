@@ -9,11 +9,11 @@ import {
 } from "@synapse/features";
 import { ConfiguredSettingsNavigation, SettingsModalShell } from "@synapse/features/app-shell";
 import { AppRuntimeProvider, useAppServices } from "@synapse/features/runtime";
-import { I18nProvider, useI18n } from "@synapse/i18n";
+import { createTranslator, I18nProvider, useI18n } from "@synapse/i18n";
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@synapse/shared/preferences";
 import type { Content } from "@synapse/shared/schemas";
 import { AlertCircle, CheckCircle2, LoaderCircle, RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import "./style.css";
@@ -53,6 +53,7 @@ function DesktopApp() {
 	const [syncing, setSyncing] = useState(false);
 	const [syncProgress, setSyncProgress] = useState<SyncProgress>();
 	const [syncError, setSyncError] = useState<string>();
+	const t = useMemo(() => createTranslator(preferences.interfaceLanguage), [preferences.interfaceLanguage]);
 	useEffect(() => bridge.sync.onProgress(setSyncProgress), []);
 	const refresh = useCallback(async () => {
 		const [nextItems, nextSettings, nextStatistics, nextSession, nextPreferences] = await Promise.all([
@@ -91,10 +92,7 @@ function DesktopApp() {
 				window.setTimeout(() => setCommand("content.add"), 0);
 			}
 			if (command === "settings.open") setSettingsOpen(true);
-			if (
-				command === "content.delete-all" &&
-				window.confirm("Удалить все материалы на этом устройстве и в Synapse?")
-			) {
+			if (command === "content.delete-all" && window.confirm(t("library.deleteAllConfirm"))) {
 				void (async () => {
 					await bridge.library.deleteAll();
 					await refresh();
@@ -105,14 +103,14 @@ function DesktopApp() {
 						await bridge.sync.syncAll();
 						await refresh();
 					} catch (cause) {
-						setSyncError(cause instanceof Error ? cause.message : "Не удалось синхронизировать");
+						setSyncError(cause instanceof Error ? cause.message : t("sync.failed"));
 					} finally {
 						setSyncing(false);
 					}
 				})();
 			}
 		});
-	}, [refresh, session, settings.syncPolicy]);
+	}, [refresh, session, settings.syncPolicy, t]);
 	useEffect(() => {
 		document.documentElement.dataset.palette = preferences.colorPalette;
 		document.documentElement.lang = preferences.interfaceLanguage;
@@ -222,13 +220,13 @@ function DesktopAppContent({
 		try {
 			const result = await bridge.sync.syncAll();
 			await refresh();
-			if (result.failed) throw new Error(`Не удалось синхронизировать ${result.failed} материал(а)`);
+			if (result.failed) throw new Error(t("sync.failedCount", { count: result.failed }));
 		} catch (cause) {
-			setSyncError(cause instanceof Error ? cause.message : "Не удалось синхронизировать");
+			setSyncError(cause instanceof Error ? cause.message : t("sync.failed"));
 		} finally {
 			setSyncing(false);
 		}
-	}, [bridge.sync, refresh, setSyncError, setSyncing, syncing]);
+	}, [bridge.sync, refresh, setSyncError, setSyncing, syncing, t]);
 	useEffect(() => {
 		if (settings.syncPolicy !== "automatic" || !session?.eligible || syncing || syncError) return;
 		if (lastQueued.current === statistics?.pendingSyncCount) return;
@@ -279,10 +277,8 @@ function DesktopAppContent({
 					className="fixed inset-0 z-100 flex items-center justify-center bg-background/70 backdrop-blur-sm"
 					role="alertdialog">
 					<div className="w-full max-w-sm space-y-3 rounded-xl border bg-background p-5 shadow-xl">
-						<p className="font-medium">Синхронизация библиотеки</p>
-						<p className="text-sm text-muted-foreground">
-							Не закрывайте и не изменяйте материалы до завершения.
-						</p>
+						<p className="font-medium">{t("sync.blockingTitle")}</p>
+						<p className="text-sm text-muted-foreground">{t("sync.blockingDescription")}</p>
 						<div className="h-1.5 overflow-hidden rounded-full bg-muted">
 							<div
 								className="h-full rounded-full bg-primary transition-[width] duration-300"
@@ -325,14 +321,12 @@ function DesktopAppContent({
 							setConnectingAccount(true);
 							try {
 								if (!hasAccountConnection(bridge)) {
-									throw new Error("Перезапустите Synapse Desktop, чтобы подключить аккаунт");
+									throw new Error(t("sync.restartToConnect"));
 								}
 								setSession(await bridge.sync.connectAccount());
-								setConnectionNotice("Аккаунт Synapse подключён");
+								setConnectionNotice(t("sync.connected"));
 							} catch (cause) {
-								setConnectionNotice(
-									cause instanceof Error ? cause.message : "Не удалось подключить аккаунт Synapse"
-								);
+								setConnectionNotice(cause instanceof Error ? cause.message : t("sync.connectFailed"));
 							} finally {
 								setConnectingAccount(false);
 							}
@@ -367,6 +361,7 @@ function DesktopSidebarStatus({
 	progress?: SyncProgress;
 	syncing: boolean;
 }) {
+	const { t } = useI18n();
 	if (error)
 		return (
 			<div className="space-y-2 rounded-lg bg-destructive/10 p-2 text-xs text-destructive">
@@ -379,7 +374,7 @@ function DesktopSidebarStatus({
 					onClick={() => void onRetry()}
 					type="button">
 					<RefreshCw className="size-3.5" />
-					Повторить
+					{t("sync.retry")}
 				</button>
 			</div>
 		);
@@ -388,7 +383,7 @@ function DesktopSidebarStatus({
 			<div className="rounded-lg bg-muted p-2 text-xs">
 				<div className="mb-2 flex items-center gap-2">
 					<LoaderCircle className="size-4 animate-spin" />
-					Синхронизация
+					{t("sync.syncing")}
 				</div>
 				<div className="h-1.5 overflow-hidden rounded-full bg-background">
 					<div
@@ -403,7 +398,7 @@ function DesktopSidebarStatus({
 	return (
 		<div className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
 			<CheckCircle2 className="size-4 text-emerald-500" />
-			Синхронизировано
+			{t("sync.synced")}
 		</div>
 	);
 }

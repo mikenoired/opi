@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import type { Content } from "@synapse/shared/schemas";
 import { cn } from "@synapse/ui/cn";
 import {
@@ -23,16 +24,16 @@ export interface ContentTypeSelectorProps {
 export interface ContentTypeTab {
 	icon: typeof FileText;
 	key: Content["type"];
-	label: string;
+	label?: string;
 }
 
 export const defaultContentTypeTabs: ContentTypeTab[] = [
-	{ key: "note", icon: FileText, label: "Заметка" },
-	{ key: "media", icon: ImageIcon, label: "Медиа" },
-	{ key: "audio", icon: Music2, label: "Аудио" },
-	{ key: "link", icon: Link, label: "Ссылка" },
-	{ key: "todo", icon: ListChecks, label: "Задачи" },
-	{ key: "doc", icon: FileUp, label: "Документы" },
+	{ key: "note", icon: FileText },
+	{ key: "media", icon: ImageIcon },
+	{ key: "audio", icon: Music2 },
+	{ key: "link", icon: Link },
+	{ key: "todo", icon: ListChecks },
+	{ key: "doc", icon: FileUp },
 ] as const;
 
 export function ContentTypeSelector({
@@ -42,6 +43,20 @@ export function ContentTypeSelector({
 	onToggleFullScreen,
 	tabs = defaultContentTypeTabs,
 }: ContentTypeSelectorProps) {
+	const { t } = useI18n();
+	const defaultLabels: Record<ContentTypeTab["key"], string> = {
+		audio: t("library.types.audio"),
+		csv: t("library.types.csv"),
+		doc: t("library.types.doc"),
+		docx: t("library.types.docx"),
+		epub: t("library.types.epub"),
+		link: t("library.types.link"),
+		media: t("library.types.media"),
+		note: t("library.types.note"),
+		pdf: t("library.types.pdf"),
+		todo: t("library.types.todo"),
+		xlsx: t("library.types.xlsx"),
+	};
 	const containerRef = useRef<HTMLDivElement>(null);
 	const activeTabElementRef = useRef<HTMLButtonElement>(null);
 
@@ -76,7 +91,7 @@ export function ContentTypeSelector({
 								type === key && "text-primary"
 							)}>
 							<Icon className="h-4 w-4" />
-							<span className="hidden text-sm font-medium sm:inline">{label}</span>
+							<span className="hidden text-sm font-medium sm:inline">{label ?? defaultLabels[key]}</span>
 						</button>
 					))}
 				</div>
@@ -100,7 +115,7 @@ export function ContentTypeSelector({
 								)}
 								tabIndex={-1}>
 								<Icon className="h-4 w-4" />
-								<span className="hidden text-sm font-medium sm:inline">{label}</span>
+								<span className="hidden text-sm font-medium sm:inline">{label ?? defaultLabels[key]}</span>
 							</button>
 						</div>
 					))}

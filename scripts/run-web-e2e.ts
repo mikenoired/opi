@@ -68,7 +68,12 @@ try {
 	await waitFor(`${baseUrl}/api/health`);
 	const test = Bun.spawn(["bun", "x", "wdio", "tests/e2e/wdio.web.conf.ts"], {
 		cwd: process.cwd(),
-		env: { ...process.env, E2E_FIXTURES_DIR: fixturesDir, E2E_WEB_URL: baseUrl },
+		env: {
+			...process.env,
+			E2E_API_URL: `http://127.0.0.1:${backendPort}/api`,
+			E2E_FIXTURES_DIR: fixturesDir,
+			E2E_WEB_URL: baseUrl,
+		},
 		stderr: "inherit",
 		stdout: "inherit",
 	});

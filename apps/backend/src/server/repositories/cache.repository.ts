@@ -6,7 +6,7 @@ const redis = new Redis({
 	password: process.env.REDIS_PASSWORD || undefined,
 });
 
-export class CacheRepository {
+export default class CacheRepository {
 	constructor() {}
 
 	async set(key: string, value: string, ttlSeconds?: number) {

@@ -5,7 +5,7 @@ import { backendSyncProvider } from "../adapters/backend-sync.provider";
 import type { Context } from "../context";
 import { db } from "../db";
 import { getUserFromTokens } from "../lib/auth-session";
-import { CacheRepository } from "../repositories/cache.repository";
+import CacheRepository from "../repositories/cache.repository";
 
 export async function createContext(c: HonoContext) {
 	const authHeader = c.req.header("authorization");

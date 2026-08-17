@@ -1,4 +1,5 @@
 import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
+import { useI18n } from "@synapse/i18n";
 import { MAX_TAGS_PER_CONTENT } from "@synapse/shared/schemas";
 import { InputField } from "@synapse/ui/components";
 import type { ReactNode } from "react";
@@ -34,13 +35,16 @@ export function TagInput({
 	action,
 	disabled = false,
 	inputClassName,
-	limitMessage = `Можно добавить не более ${MAX_TAGS_PER_CONTENT} тегов`,
+	limitMessage,
 	maxTags = MAX_TAGS_PER_CONTENT,
 	onTagsChange,
-	placeholder = "+ Добавить тег",
+	placeholder,
 	suggestions = [],
 	tags,
 }: TagInputProps) {
+	const { t } = useI18n();
+	const resolvedLimitMessage = limitMessage ?? t("tags.limit", { count: maxTags });
+	const resolvedPlaceholder = placeholder ?? t("content.addTag");
 	const [currentTag, setCurrentTag] = useState("");
 	const [limitError, setLimitError] = useState("");
 	const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -80,7 +84,7 @@ export function TagInput({
 	const addTag = () => {
 		if (!currentTag.trim()) return;
 		if (tags.length >= maxTags) {
-			setLimitError(limitMessage);
+			setLimitError(resolvedLimitMessage);
 			return;
 		}
 		const normalized = normalizeTagTitle(currentTag);
@@ -98,7 +102,7 @@ export function TagInput({
 		const tag = availableSuggestions.find((candidate) => candidate.id === id);
 		if (!tag) return;
 		if (tags.length >= maxTags) {
-			setLimitError(limitMessage);
+			setLimitError(resolvedLimitMessage);
 			return;
 		}
 		onTagsChange(mergeTags(tags, [tag.title]));
@@ -128,7 +132,7 @@ export function TagInput({
 					aria-autocomplete="list"
 					aria-controls={suggestionsId}
 					aria-expanded={suggestionsOpen && availableSuggestions.length > 0}
-					label="Добавить тег"
+					label={t("tags.add")}
 					labelHidden
 					className={inputClassName ?? "min-w-0 flex-1"}
 					disabled={disabled}
@@ -141,7 +145,7 @@ export function TagInput({
 							addTag();
 						}
 					}}
-					placeholder={placeholder}
+					placeholder={resolvedPlaceholder}
 					value={currentTag}
 				/>
 			</div>

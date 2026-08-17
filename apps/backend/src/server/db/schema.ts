@@ -201,7 +201,7 @@ export const syncMutationReceipts = pgTable(
 	(table) => [primaryKey({ columns: [table.userId, table.clientMutationId] })]
 );
 
-/** Generic protocol tables. Legacy content-shaped sync tables remain for staged migration. */
+/** Generic protocol tables. Legacy content-shaped tables above remain only for migration compatibility. */
 export const syncJournalClock = pgTable("sync_journal_clock", {
 	id: boolean("id").primaryKey().default(true),
 	nextCursor: bigint("next_cursor", { mode: "number" }).notNull().default(0),

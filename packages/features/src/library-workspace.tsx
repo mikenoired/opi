@@ -385,7 +385,11 @@ function TagDirectory({ items }: { items: Content[] }) {
 					</Button>
 					<TagHeader
 						color={colors[selectedTag.key] ?? 0}
-						labels={tagColorLabels()}
+						labels={{
+							none: t("library.tagColor.none"),
+							option: (number) => t("library.tagColor.option", { number }),
+							picker: t("library.tagColor.picker"),
+						}}
 						onColorChange={(color) => {
 							const id = ids[selectedTag.key];
 							if (!id) return;
@@ -430,14 +434,6 @@ function TagDirectory({ items }: { items: Content[] }) {
 			)}
 		</section>
 	);
-}
-
-function tagColorLabels() {
-	return {
-		none: "Без цвета",
-		option: (number: number) => `Цвет ${number}`,
-		picker: "Цвет тега",
-	};
 }
 
 function DesktopTagPreview(item: Content) {
@@ -579,7 +575,7 @@ function ContentEditorDialog({
 				open
 				onSuggestTags={async (input) => {
 					const result = await client.ai.suggestTags({ ...input, mode: "draft" });
-					if (!result.success) throw new Error(result.error ?? "Не удалось подобрать теги");
+					if (!result.success) throw new Error(result.error ?? t("tags.noSuggestions"));
 					return [...result.existing.map((tag) => tag.name), ...result.newTags];
 				}}
 			/>

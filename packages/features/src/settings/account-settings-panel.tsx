@@ -77,7 +77,7 @@ export function AccountSettingsPanel({
 						leadingIcon={LogInIcon}
 						disabled={isConnectingAccount}
 						onClick={onConnectAccount}>
-						{isConnectingAccount ? "Ожидаем входа…" : "Подключить аккаунт Synapse"}
+						{isConnectingAccount ? t("account.session.connecting") : t("account.session.connect")}
 					</Button>
 				) : null}
 			</div>

@@ -18,31 +18,38 @@ import {
 import { apiUrl } from "@/shared/config/api";
 
 type ChangeListener = () => void;
+type RuntimeEngine = Pick<SyncEngine, "mutate" | "start" | "stop" | "syncNow">;
+type ProjectionReplica = Pick<IndexedDbReplicaStore, "get" | "list">;
+type RuntimeFactory = (
+	userId: string,
+	onProjection: ChangeListener
+) => { engine: RuntimeEngine; replica: ProjectionReplica };
 
 /**
  * Browser sync module. Its public interface is intentionally limited to lifecycle
  * and a projection notification: SyncEngine remains the owner of cursors/outbox.
  */
 export class WebSyncRuntime {
-	private engine?: SyncEngine;
+	private engine?: RuntimeEngine;
 	private generation = 0;
-	private replica?: IndexedDbReplicaStore;
+	private replica?: ProjectionReplica;
 	private readonly listeners = new Set<ChangeListener>();
+
+	constructor(private readonly createRuntime: RuntimeFactory = createBrowserRuntime) {}
 
 	async start(userId: string): Promise<void> {
 		await this.stop();
 		const generation = ++this.generation;
-		this.replica = new IndexedDbReplicaStore(`synapse-sync-${userId}`, () => this.notifyProjection());
-		const engine = new SyncEngine({
-			journal: new BrowserJournalApi(),
-			outbox: new IndexedDbOutbox(`synapse-sync-${userId}`),
-			realtime: new CookieSseTransport(),
-			registry: createEntityRegistry(new ContentEntityAdapter(), new TagEntityAdapter()),
-			replica: this.replica,
-		});
-		this.engine = engine;
+		const entitlement = await jsonRequest<{ eligible: boolean }>("/user/sync/entitlement");
+		if (!entitlement.eligible || generation !== this.generation) return;
+		const { engine, replica } = this.createRuntime(userId, () => this.notifyProjection());
 		await engine.start();
-		if (generation !== this.generation) await engine.stop();
+		if (generation !== this.generation) {
+			await engine.stop();
+			return;
+		}
+		this.engine = engine;
+		this.replica = replica;
 	}
 
 	async stop(): Promise<void> {
@@ -79,9 +86,31 @@ export class WebSyncRuntime {
 		return (await this.replica?.get(entityType, entityId))?.entityVersion;
 	}
 
+	async readEntity(entityType: string, entityId: string): Promise<SyncChange | undefined> {
+		return this.replica?.get(entityType, entityId);
+	}
+
 	private notifyProjection(): void {
 		for (const listener of this.listeners) listener();
 	}
+}
+
+function createBrowserRuntime(
+	userId: string,
+	onProjection: ChangeListener
+): { engine: RuntimeEngine; replica: ProjectionReplica } {
+	const name = `synapse-sync-${userId}`;
+	const replica = new IndexedDbReplicaStore(name, onProjection);
+	return {
+		engine: new SyncEngine({
+			journal: new BrowserJournalApi(),
+			outbox: new IndexedDbOutbox(name),
+			realtime: new CookieSseTransport(),
+			registry: createEntityRegistry(new ContentEntityAdapter(), new TagEntityAdapter()),
+			replica,
+		}),
+		replica,
+	};
 }
 
 export const webSyncRuntime = new WebSyncRuntime();
@@ -101,7 +130,10 @@ export class BrowserJournalApi implements JournalApi {
 		const response = await jsonRequest<{ outcomes: Array<Record<string, unknown>> }>("/sync/push", {
 			body: JSON.stringify({
 				mutations: mutations.map((mutation) =>
-					mutation.entityType === "tag"
+					mutation.entityType === "tag" ||
+					(mutation.entityType === "content" &&
+						mutation.operation === "upsert" &&
+						mutation.baseEntityVersion === undefined)
 						? mutation
 						: {
 								baseRevision: mutation.baseEntityVersion,
@@ -134,7 +166,7 @@ function compareServerCursors(left: SyncCursor, right: SyncCursor): number {
 
 /** Same-site cookie authentication avoids putting any bearer credential in an URL. */
 export class CookieSseTransport implements RealtimeTransport {
-	async connect(onHint: (hint: { cursor?: SyncCursor }) => void): Promise<() => void> {
+	connect(onHint: (hint: { cursor?: SyncCursor }) => void): Promise<() => void> {
 		const events = new EventSource(apiUrl("/sync/events"), { withCredentials: true });
 		events.addEventListener("hint", (event) => {
 			try {
@@ -144,7 +176,18 @@ export class CookieSseTransport implements RealtimeTransport {
 				// Malformed hints are disposable: a later reconnect/pull restores state.
 			}
 		});
-		return () => events.close();
+		return new Promise((resolve, reject) => {
+			let opened = false;
+			events.addEventListener("open", () => {
+				opened = true;
+				resolve(() => events.close());
+			});
+			events.addEventListener("error", () => {
+				if (opened) return;
+				events.close();
+				reject(new Error("Synapse realtime connection failed before opening"));
+			});
+		});
 	}
 }
 

@@ -1,8 +1,9 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { createHash } from "node:crypto";
 
 import { eq, like } from "drizzle-orm";
 
+import * as objectStorage from "../../storage/minio";
 import { content, syncJournalEntries, syncRetentionWatermarks, tags, users } from "../db/schema";
 import GenericSyncJournalService from "../services/generic-sync-journal.service";
 
@@ -408,6 +409,41 @@ describe.serial("API integration", () => {
 		).toHaveLength(1);
 	});
 
+	test("creates a client-assigned content ID idempotently through the generic sync intent", async () => {
+		const account = await register("v2-web-create");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const entityId = crypto.randomUUID();
+		const mutationId = crypto.randomUUID();
+		const body = {
+			mutations: [
+				{
+					entityId,
+					entityType: "content",
+					mutationId,
+					operation: "upsert",
+					payload: note("web offline create"),
+				},
+			],
+		};
+
+		const first = await request("POST", "/sync/push", { body, token: account.token });
+		const duplicate = await request("POST", "/sync/push", { body, token: account.token });
+		expect(first.response.status).toBe(200);
+		expect(duplicate.response.status).toBe(200);
+		expect(duplicate.body).toEqual(first.body);
+		expect(first.body.outcomes).toEqual([
+			expect.objectContaining({
+				change: expect.objectContaining({ entityId, entityType: "content", operation: "upsert" }),
+				kind: "applied",
+				mutationId,
+			}),
+		]);
+		expect(await db.select().from(content).where(eq(content.id, entityId))).toHaveLength(1);
+		expect(
+			await db.select().from(syncJournalEntries).where(eq(syncJournalEntries.userId, account.user.id))
+		).toHaveLength(1);
+	});
+
 	test("rejects mutation-id reuse with a different intent as conflict instead of 500", async () => {
 		const account = await register("v2-mutation-reuse");
 		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
@@ -532,5 +568,83 @@ describe.serial("API integration", () => {
 		const changes = catchup.body.changes as Array<Json & { cursor: string; payload: Json }>;
 		expect(changes.map((change) => change.payload.title)).toEqual(["101", "102", "103"]);
 		expect(changes.map((change) => change.cursor)).toEqual(changes.map((change) => change.cursor).sort());
+	});
+
+	test("commits a push batch in request order", async () => {
+		const account = await register("v2-ordered-push");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const initial = await request("GET", "/sync/v2/pull", { token: account.token });
+		const first = note(
+			"first slow mutation",
+			Array.from({ length: 10 }, (_, index) => `ordered-${index}`)
+		);
+		const second = note("second fast mutation");
+
+		const pushed = await request("POST", "/sync/push", {
+			body: {
+				mutations: [
+					{ clientMutationId: crypto.randomUUID(), content: first, kind: "upsert" },
+					{ clientMutationId: crypto.randomUUID(), content: second, kind: "upsert" },
+				],
+			},
+			token: account.token,
+		});
+		expect(pushed.response.status).toBe(200);
+
+		const pulled = await request("GET", `/sync/v2/pull?afterCursor=${initial.body.cursor}`, {
+			token: account.token,
+		});
+		const contentTitles = (pulled.body.changes as Array<Json & { entityType: string; payload: Json }>)
+			.filter((change) => change.entityType === "content")
+			.map((change) => change.payload.title);
+		expect(contentTitles).toEqual(["first slow mutation", "second fast mutation"]);
+	});
+
+	test("keeps an idle sync event stream alive with heartbeat comments", async () => {
+		const account = await register("sync-heartbeat");
+		const controller = new AbortController();
+		const response = await api.fetch(
+			new Request("http://api.integration/sync/events", {
+				headers: { "x-synapse-access-token": account.token },
+				signal: controller.signal,
+			})
+		);
+		const reader = response.body?.getReader();
+		if (!reader) throw new Error("Expected an SSE response body");
+
+		try {
+			const ready = await reader.read();
+			expect(new TextDecoder().decode(ready.value)).toContain("event: ready");
+			const heartbeat = await Promise.race([
+				reader.read(),
+				Bun.sleep(6_500).then(() => {
+					throw new Error("Idle sync event stream emitted no heartbeat");
+				}),
+			]);
+			expect(new TextDecoder().decode(heartbeat.value)).toContain(": heartbeat");
+		} finally {
+			controller.abort();
+			await reader.cancel().catch(() => undefined);
+		}
+	}, 8_000);
+
+	test("rejects a foreign sync asset namespace before reading object storage", async () => {
+		const account = await register("v2-foreign-asset");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const metadataSpy = spyOn(objectStorage, "getFileMetadata");
+		const bufferSpy = spyOn(objectStorage, "getFileBuffer");
+		const metadataCalls = metadataSpy.mock.calls.length;
+		const bufferCalls = bufferSpy.mock.calls.length;
+
+		const result = await request(
+			"GET",
+			`/sync/assets?key=uploads/${crypto.randomUUID()}/does-not-exist.png`,
+			{ token: account.token }
+		);
+
+		expect(result.response.status).toBe(403);
+		expect(result.body).toMatchObject({ code: "FORBIDDEN", error: "Asset access denied" });
+		expect(metadataSpy).toHaveBeenCalledTimes(metadataCalls);
+		expect(bufferSpy).toHaveBeenCalledTimes(bufferCalls);
 	});
 });

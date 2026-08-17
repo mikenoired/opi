@@ -29,10 +29,12 @@ import type { Content, CreateContent, UpdateContent } from "@synapse/shared/sche
 
 import { apiUrl } from "@/shared/config/api";
 
-import { webSyncRuntime } from "./web-sync";
+import { webSyncRuntime, type WebSyncRuntime } from "./web-sync";
+
+type WebMutationRuntime = Pick<WebSyncRuntime, "mutate" | "readEntity" | "readEntityVersion">;
 
 /** Browser implementation of the shared UI client contract. */
-export function createWebSynapseClient(): SynapseClient {
+export function createWebSynapseClient(syncRuntime: WebMutationRuntime = webSyncRuntime): SynapseClient {
 	return {
 		account: {
 			getCurrentUser: () => request<CurrentUser | null>("/user", { allowUnauthorized: true }),
@@ -50,7 +52,7 @@ export function createWebSynapseClient(): SynapseClient {
 			getUsageOverview: () => request<AiUsage>("/ai/usage"),
 			suggestTags: (input) => request<AiTagsResult>("/ai/tags", { body: input }),
 		},
-		content: createContentClient(),
+		content: createContentClient(syncRuntime),
 		graph: { get: () => request<Graph>("/graph") },
 		sync: {
 			getEntitlement: () => request<SyncEntitlement>("/user/sync/entitlement"),
@@ -60,11 +62,30 @@ export function createWebSynapseClient(): SynapseClient {
 	};
 }
 
-function createContentClient(): ContentClient {
+function createContentClient(syncRuntime: WebMutationRuntime): ContentClient {
 	return {
-		create: (input) => request<Content>("/content", { body: input }),
+		create: async (input) => {
+			const entityId = crypto.randomUUID();
+			try {
+				await syncRuntime.mutate({
+					entityId,
+					entityType: "content",
+					mutationId: crypto.randomUUID(),
+					operation: "upsert",
+					payload: input,
+				});
+				const canonical = await syncRuntime.readEntity("content", entityId);
+				if (!canonical?.payload || typeof canonical.payload !== "object")
+					throw new Error("Synapse Sync did not return the created content");
+				return canonical.payload as Content;
+			} catch (error) {
+				if (error instanceof Error && error.message === "Web sync is not running")
+					return request<Content>("/content", { body: input });
+				throw error;
+			}
+		},
 		delete: (id) =>
-			mutateContent({ entityId: id, operation: "delete" }, () =>
+			mutateContent(syncRuntime, { entityId: id, operation: "delete" }, () =>
 				request<{ success: true }>("/content/" + encodeURIComponent(id), { method: "DELETE" })
 			).then((result) => result ?? { success: true }),
 		get: (id) => request<Content>("/content/" + encodeURIComponent(id)),
@@ -87,6 +108,7 @@ function createContentClient(): ContentClient {
 			const current = await request<Content>("/content/" + encodeURIComponent(input.id));
 			const updated = { ...current, ...input };
 			await mutateContent(
+				syncRuntime,
 				{ entityId: input.id, operation: "upsert", payload: toCreateContent(updated) },
 				() => request<Content>("/content/" + encodeURIComponent(input.id), { body: input, method: "PATCH" })
 			);
@@ -95,8 +117,8 @@ function createContentClient(): ContentClient {
 		updateTagColor: async (input: UpdateTagColorInput) => {
 			const current = await request<ContentTag>("/content/tags/" + encodeURIComponent(input.id));
 			try {
-				await webSyncRuntime.mutate({
-					baseEntityVersion: await webSyncRuntime.readEntityVersion("tag", input.id),
+				await syncRuntime.mutate({
+					baseEntityVersion: await syncRuntime.readEntityVersion("tag", input.id),
 					entityId: input.id,
 					entityType: "tag",
 					mutationId: crypto.randomUUID(),
@@ -119,11 +141,13 @@ function createContentClient(): ContentClient {
 }
 
 async function mutateContent<T>(
+	syncRuntime: WebMutationRuntime,
 	intent: { entityId: string; operation: "delete" | "upsert"; payload?: CreateContent },
 	compatibilityMutation: () => Promise<T>
 ): Promise<T | void> {
 	try {
-		await webSyncRuntime.mutate({
+		await syncRuntime.mutate({
+			baseEntityVersion: await syncRuntime.readEntityVersion("content", intent.entityId),
 			entityId: intent.entityId,
 			entityType: "content",
 			mutationId: crypto.randomUUID(),

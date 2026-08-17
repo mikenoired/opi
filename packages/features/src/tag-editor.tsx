@@ -61,14 +61,14 @@ export function TagEditor({
 			})
 			.catch((error: unknown) => {
 				if (!active) return;
-				const message = messageFor(error, "Не удалось загрузить теги");
+				const message = messageFor(error, t("tags.loadFailed"));
 				setErrorMessage(message);
 				onErrorRef.current?.(message);
 			});
 		return () => {
 			active = false;
 		};
-	}, [client.content, suggestions]);
+	}, [client.content, suggestions, t]);
 
 	const generate = async () => {
 		if (!aiGenerate || disabled || aiGenerate.disabled || suggesting) return;

@@ -43,7 +43,7 @@ export function GraphSurface({ edges, nodes, onNodeClick, onNodeHover, tagColors
 	return (
 		<div className="relative h-full min-h-100 overflow-hidden rounded-2xl border bg-card shadow-sm">
 			<svg
-				aria-label="Граф связей"
+				aria-label={t("graph.label")}
 				className="h-full w-full touch-none select-none"
 				viewBox={viewBox}
 				onPointerDown={(event) => {

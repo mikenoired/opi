@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import { type ReactNode, useState } from "react";
 
 import { ContentTag } from "./content-tag";
@@ -24,12 +25,13 @@ export function TagManager({
 	onRemoveTag,
 	editable = true,
 	className,
-	inputPlaceholder = "Добавить тег...",
+	inputPlaceholder,
 	additionalAction,
 	onTagNavigate,
 	tagColors,
 	suggestions,
 }: TagManagerProps) {
+	const { t } = useI18n();
 	const [isAdding, setIsAdding] = useState(false);
 	const updateTags = async (next: string[]) => {
 		if (isAdding) return;
@@ -69,7 +71,7 @@ export function TagManager({
 					action={additionalAction}
 					disabled={isAdding}
 					onTagsChange={(next) => void updateTags(next)}
-					placeholder={inputPlaceholder}
+					placeholder={inputPlaceholder ?? t("tags.addPlaceholder")}
 					suggestions={suggestions}
 					tags={tags}
 				/>

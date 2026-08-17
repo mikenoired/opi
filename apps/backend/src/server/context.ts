@@ -1,7 +1,7 @@
 import { backendSyncProvider } from "./adapters/backend-sync.provider";
 import { db } from "./db";
 import { getUserFromTokens } from "./lib/auth-session";
-import { CacheRepository } from "./repositories/cache.repository";
+import CacheRepository from "./repositories/cache.repository";
 
 export async function createContext({ req }: { req?: Request }) {
 	const authHeader = req?.headers.get("authorization");
