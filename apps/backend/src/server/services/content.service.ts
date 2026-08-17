@@ -33,6 +33,7 @@ import { ApiError } from "../lib/api-error";
 import { deleteStoredNoteImages, deleteUploadedNoteImages, prepareNoteImages } from "../lib/note-images";
 import { parseFile } from "../parsers";
 import ContentRepository from "../repositories/content.repository";
+import SyncMutationCoordinator from "./sync-mutation-coordinator";
 
 type ContentSelect = typeof contentTable.$inferSelect;
 type ContentRow = Omit<ContentSelect, "searchText" | "searchVector"> &
@@ -82,6 +83,11 @@ export default class ContentService {
 		return this.attachTagsToContent(rows);
 	}
 
+	/** Canonical Tag metadata is a first-class sync entity, not a UI event. */
+	async getAllTagsForSync(): Promise<Array<{ color: number; id: string; title: string }>> {
+		return this.repo.getAllOwnedTagsForSync();
+	}
+
 	async getById(id: string) {
 		const data = await this.repo.getById(id);
 		const [withTags] = await this.attachTagsToContent([data as ContentRow]);
@@ -113,7 +119,7 @@ export default class ContentService {
 		};
 	}
 
-	async create(createContentData: z.infer<typeof createContentSchema>) {
+	async create(createContentData: z.infer<typeof createContentSchema>, id?: string) {
 		const prepared =
 			createContentData.type === "note"
 				? await prepareNoteImages(createContentData.content, this.ctx.user!.id)
@@ -126,7 +132,7 @@ export default class ContentService {
 			result = (await this.ctx.db.transaction(async (tx) => {
 				const repo = this.repo.withDb(tx as unknown as Context["db"]);
 				const core = new BackendCoreContentProvider(repo);
-				const data = await repo.create(input);
+				const data = await repo.create(input, id);
 				const contentId = (data as ContentRow).id;
 
 				const contentNodeId = await repo.createContentNode({
@@ -395,15 +401,8 @@ export default class ContentService {
 	}
 
 	async updateTagColor(id: string, color: number) {
-		const tag = await this.repo.updateTagColor(id, color);
+		const tag = await new SyncMutationCoordinator(this.ctx).updateTagColor(id, color);
 		await this.invalidateUserTags();
-		await this.ctx.sync.publish({
-			entityId: tag.id,
-			entityType: "tag",
-			operation: "update",
-			payload: tag,
-			userId: this.ctx.user!.id,
-		});
 		return tag;
 	}
 

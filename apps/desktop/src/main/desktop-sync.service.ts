@@ -12,7 +12,7 @@ import type {
 } from "@synapse/api";
 import { parseAudioJson, parseMediaJson } from "@synapse/core";
 import type { Content } from "@synapse/shared/schemas";
-import { createEntityRegistry, SyncEngine } from "@synapse/sync";
+import { createEntityRegistry, SyncEngine, TagEntityAdapter } from "@synapse/sync";
 
 import type { DesktopStorageProvider } from "./desktop-storage.provider";
 import {
@@ -425,10 +425,8 @@ export class DesktopSyncService {
 		);
 		const conflicts: SyncRunResult["conflicts"] = [];
 		for (const change of result.changes) {
-			const hydrated = change.content ? await this.hydrateAssets(change.content) : undefined;
-			const conflictCopyId = await this.library.applyRemoteChange(
-				hydrated ? { ...change, assets: hydrated.assets, content: hydrated.content } : change
-			);
+			const conflictCopyId = await this.library.applyRemoteChange(change);
+			if (change.content) void this.hydrateRemoteAssets(change.entityId, change.revision, change.content);
 			if (conflictCopyId && change.content) {
 				conflicts.push({
 					conflictCopyId,
@@ -459,7 +457,7 @@ export class DesktopSyncService {
 					() => this.apiUrl,
 					() => this.token
 				),
-				registry: createEntityRegistry(new DesktopContentAdapter()),
+				registry: createEntityRegistry(new DesktopContentAdapter(), new TagEntityAdapter()),
 				replica: new DesktopReplicaStore(
 					this.library,
 					(content) => this.hydrateAssets(content),
@@ -511,6 +509,17 @@ export class DesktopSyncService {
 			});
 		}
 		return { assets, content: replaceAssetUrls(content, assets, this.storage) };
+	}
+
+	/** Runs outside metadata synchronization so an interrupted file transfer cannot
+	 * prevent the journal cursor from advancing. repairMissingAssets() retries it. */
+	private async hydrateRemoteAssets(remoteId: string, revision: number, content: Content): Promise<void> {
+		try {
+			const hydrated = await this.hydrateAssets(content);
+			await this.library.applyHydratedAssets(remoteId, revision, hydrated.assets, hydrated.content);
+		} catch {
+			// Binary hydration is retried independently by the media repair pipeline.
+		}
 	}
 
 	private async repairMissingAssets(): Promise<void> {

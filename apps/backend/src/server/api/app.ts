@@ -12,7 +12,6 @@ import {
 	MAX_TAGS_PER_CONTENT,
 	updateContentSchema,
 } from "@synapse/shared/schemas";
-import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
@@ -22,7 +21,6 @@ import { z } from "zod";
 import { deleteUserFiles, getFileBuffer, getFileMetadata, getPresignedUrl } from "../../storage/minio";
 import { backendSyncProvider } from "../adapters/backend-sync.provider";
 import type { Context } from "../context";
-import { syncEntityVersions } from "../db/schema";
 import { ApiError, STATUS_CODES } from "../lib/api-error";
 import { getUserFromTokens } from "../lib/auth-session";
 import { signRefreshToken, signToken, verifyRefreshToken, verifyToken } from "../lib/jwt";
@@ -31,10 +29,10 @@ import AiUsageRepository from "../repositories/ai-usage.repository";
 import AiTaggingService from "../services/ai-tagging.service";
 import AuthService from "../services/auth.service";
 import ContentService from "../services/content.service";
-import { DurableSyncService } from "../services/durable-sync.service";
-import { GenericSyncJournalService } from "../services/generic-sync-journal.service";
+import DurableSyncService from "../services/durable-sync.service";
+import GenericSyncJournalService from "../services/generic-sync-journal.service";
 import GraphService from "../services/graph.service";
-import { SyncMutationCoordinator } from "../services/sync-mutation-coordinator";
+import SyncMutationCoordinator from "../services/sync-mutation-coordinator";
 import UploadService from "../services/upload.service";
 import UserService from "../services/user.service";
 import { protectMutation, rateLimit, requestLogger, requireAuth, withContext } from "./middleware";
@@ -126,7 +124,31 @@ const syncMutationInput = z
 			context.addIssue({ code: "custom", message: "A remote ID is required for a delete" });
 		}
 	});
-const syncPushInput = z.object({ mutations: z.array(syncMutationInput).min(1).max(100) });
+const genericSyncIntentInput = z
+	.object({
+		baseEntityVersion: z.number().int().positive().optional(),
+		entityId: z.string().uuid(),
+		entityType: z.literal("tag"),
+		mutationId: z.string().uuid(),
+		operation: z.literal("upsert"),
+		payload: z.object({ color: z.number().int().min(0).max(255) }),
+	})
+	.strict();
+const genericContentCreateIntentInput = z
+	.object({
+		entityId: z.string().uuid(),
+		entityType: z.literal("content"),
+		mutationId: z.string().uuid(),
+		operation: z.literal("upsert"),
+		payload: createContentSchema,
+	})
+	.strict();
+const syncPushInput = z.object({
+	mutations: z
+		.array(z.union([syncMutationInput, genericSyncIntentInput, genericContentCreateIntentInput]))
+		.min(1)
+		.max(100),
+});
 const corsOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
 	.split(",")
 	.map((origin) => origin.trim())
@@ -324,9 +346,15 @@ export const api = new Hono()
 	.post("/sync/push", requireAuth, protectMutation, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
 		await requireSyncSubscription(context);
-		return c.json(
-			await new DurableSyncService(context).push((await body(c.req.raw, syncPushInput)).mutations)
-		);
+		const { mutations } = await body(c.req.raw, syncPushInput);
+		const coordinator = new SyncMutationCoordinator(context);
+		return c.json({
+			outcomes: await Promise.all(
+				mutations.map((mutation) =>
+					"entityType" in mutation ? coordinator.applyIntent(mutation) : coordinator.apply(mutation)
+				)
+			),
+		});
 	})
 	.post("/sync/delete-all", requireAuth, protectMutation, rateLimit("sync"), async (c) => {
 		const context = serviceContext(c.get("apiContext"));
@@ -338,27 +366,16 @@ export const api = new Hono()
 		const context = serviceContext(c.get("apiContext"));
 		await requireSyncSubscription(context);
 		const uploaded = await new UploadService(context).handleUpload(await uploadBody(c.req.raw));
+		const versions = await new GenericSyncJournalService(context).getContentVersions(
+			uploaded.contents.map((content) => content.id)
+		);
+		const revisionByContentId = new Map(versions.map((entry) => [entry.entityId, entry.entityVersion]));
 		return c.json({
 			...uploaded,
-			contents: await Promise.all(
-				uploaded.contents.map(async (content) => ({
-					content,
-					revision:
-						(
-							await context.db
-								.select({ version: syncEntityVersions.entityVersion })
-								.from(syncEntityVersions)
-								.where(
-									and(
-										eq(syncEntityVersions.userId, context.user!.id),
-										eq(syncEntityVersions.entityType, "content"),
-										eq(syncEntityVersions.entityId, content.id)
-									)
-								)
-								.limit(1)
-						)[0]?.version ?? 0,
-				}))
-			),
+			contents: uploaded.contents.map((content) => ({
+				content,
+				revision: revisionByContentId.get(content.id) ?? 0,
+			})),
 		});
 	})
 	.get("/sync/assets", requireAuth, rateLimit("sync"), async (c) => {

@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import { authSchema } from "@synapse/shared/schemas";
 import { Button, InputField } from "@synapse/ui/components";
 import { useCallback, useEffect, useState } from "react";
@@ -9,6 +10,7 @@ import { useSearchParams } from "@/shared/router/navigation";
 type Mode = "login" | "register";
 
 export default function DesktopAuthPage() {
+	const { t } = useI18n();
 	const { signIn, signUp, user, loading: isSessionLoading } = useAuth();
 	const search = useSearchParams();
 	const [mode, setMode] = useState<Mode>("login");
@@ -30,18 +32,18 @@ export default function DesktopAuthPage() {
 			method: "POST",
 		});
 		const payload = (await response.json()) as { code?: string; error?: string };
-		if (!response.ok || !payload.code) throw new Error(payload.error || "Не удалось завершить подключение");
+		if (!response.ok || !payload.code) throw new Error(payload.error || t("desktopAuth.completeFailed"));
 		setCallbackUrl(
 			`synapse://auth/callback?code=${encodeURIComponent(payload.code)}&state=${encodeURIComponent(state!)}`
 		);
-	}, [codeChallenge, state]);
+	}, [codeChallenge, state, t]);
 
 	useEffect(() => {
 		if (!validRequest || !user || isSessionLoading || callbackUrl || isLoading) return;
 		void complete().catch((cause) =>
-			setError(cause instanceof Error ? cause.message : "Не удалось подключить аккаунт")
+			setError(cause instanceof Error ? cause.message : t("desktopAuth.completeFailed"))
 		);
-	}, [callbackUrl, complete, isLoading, isSessionLoading, user, validRequest]);
+	}, [callbackUrl, complete, isLoading, isSessionLoading, t, user, validRequest]);
 
 	useEffect(() => {
 		if (!callbackUrl) return;
@@ -52,7 +54,8 @@ export default function DesktopAuthPage() {
 	const submit = async (event: React.FormEvent) => {
 		event.preventDefault();
 		const validation = authSchema.safeParse({ email, password });
-		if (!validation.success) return setError(validation.error.issues[0]?.message || "Проверьте данные формы");
+		if (!validation.success)
+			return setError(validation.error.issues[0]?.message || t("desktopAuth.validationFailed"));
 		setError("");
 		setIsLoading(true);
 		try {
@@ -62,7 +65,7 @@ export default function DesktopAuthPage() {
 			if (result.error) return setError(result.error.message);
 			await complete();
 		} catch (cause) {
-			setError(cause instanceof Error ? cause.message : "Не удалось подключить аккаунт");
+			setError(cause instanceof Error ? cause.message : t("desktopAuth.completeFailed"));
 		} finally {
 			setIsLoading(false);
 		}
@@ -74,39 +77,40 @@ export default function DesktopAuthPage() {
 				<div className="space-y-2">
 					<p className="text-sm font-medium text-primary">Synapse Desktop</p>
 					<h1 className="text-2xl font-semibold">
-						{mode === "login" ? "Войдите в аккаунт" : "Создайте аккаунт"}
+						{mode === "login" ? t("desktopAuth.loginTitle") : t("desktopAuth.registerTitle")}
 					</h1>
-					<p className="text-sm text-muted-foreground">После входа вы вернётесь в приложение Synapse.</p>
+					<p className="text-sm text-muted-foreground">{t("desktopAuth.description")}</p>
 				</div>
 				{callbackUrl ? (
 					<div className="space-y-5">
 						<div className="space-y-2">
-							<h2 className="text-lg font-medium">Аккаунт подключён</h2>
+							<h2 className="text-lg font-medium">{t("desktopAuth.connectedTitle")}</h2>
 							<p className="text-sm leading-6 text-muted-foreground">
-								Сейчас откроется Synapse Desktop. Если приложение не открылось автоматически, вернитесь в него
-								кнопкой ниже.
+								{t("desktopAuth.connectedDescription")}
 							</p>
 						</div>
 						<Button className="w-full" onClick={() => window.location.assign(callbackUrl)}>
-							Вернуться в Synapse Desktop
+							{t("desktopAuth.backToDesktop")}
 						</Button>
 					</div>
 				) : !validRequest ? (
 					<p role="alert" className="text-sm text-destructive">
-						Ссылка подключения недействительна. Вернитесь в приложение и начните заново.
+						{t("desktopAuth.invalidLink")}
 					</p>
 				) : user && !isSessionLoading ? (
 					<div className="space-y-4">
-						<p className="text-sm text-muted-foreground">Подключаем аккаунт {user.email}…</p>
+						<p className="text-sm text-muted-foreground">
+							{t("desktopAuth.connecting", { email: user.email })}
+						</p>
 						<Button className="w-full" variant="ghost" onClick={() => setMode("login")}>
-							Войти в другой аккаунт
+							{t("desktopAuth.otherAccount")}
 						</Button>
 					</div>
 				) : (
 					<form className="space-y-4" onSubmit={submit}>
 						<InputField
 							id="email"
-							label="Электронная почта"
+							label={t("auth.email")}
 							type="email"
 							value={email}
 							onChange={setEmail}
@@ -114,7 +118,7 @@ export default function DesktopAuthPage() {
 						/>
 						<InputField
 							id="password"
-							label="Пароль"
+							label={t("auth.password")}
 							type="password"
 							value={password}
 							onChange={setPassword}
@@ -127,7 +131,11 @@ export default function DesktopAuthPage() {
 							</p>
 						)}
 						<Button className="w-full" type="submit" disabled={isLoading}>
-							{isLoading ? "Подключаем…" : mode === "login" ? "Войти и подключить" : "Создать и подключить"}
+							{isLoading
+								? t("desktopAuth.connectingAction")
+								: mode === "login"
+									? t("desktopAuth.loginAction")
+									: t("desktopAuth.registerAction")}
 						</Button>
 						<Button
 							className="w-full"
@@ -137,7 +145,7 @@ export default function DesktopAuthPage() {
 								setError("");
 								setMode(mode === "login" ? "register" : "login");
 							}}>
-							{mode === "login" ? "Нет аккаунта? Создать" : "Уже есть аккаунт? Войти"}
+							{mode === "login" ? t("auth.noAccount") : t("auth.hasAccount")}
 						</Button>
 					</form>
 				)}

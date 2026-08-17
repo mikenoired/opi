@@ -25,9 +25,11 @@ import type {
 	UploadResult,
 } from "@synapse/api";
 import type { UserPreferences } from "@synapse/shared/preferences";
-import type { Content, UpdateContent } from "@synapse/shared/schemas";
+import type { Content, CreateContent, UpdateContent } from "@synapse/shared/schemas";
 
 import { apiUrl } from "@/shared/config/api";
+
+import { webSyncRuntime } from "./web-sync";
 
 /** Browser implementation of the shared UI client contract. */
 export function createWebSynapseClient(): SynapseClient {
@@ -61,7 +63,10 @@ export function createWebSynapseClient(): SynapseClient {
 function createContentClient(): ContentClient {
 	return {
 		create: (input) => request<Content>("/content", { body: input }),
-		delete: (id) => request("/content/" + encodeURIComponent(id), { method: "DELETE" }),
+		delete: (id) =>
+			mutateContent({ entityId: id, operation: "delete" }, () =>
+				request<{ success: true }>("/content/" + encodeURIComponent(id), { method: "DELETE" })
+			).then((result) => result ?? { success: true }),
 		get: (id) => request<Content>("/content/" + encodeURIComponent(id)),
 		getAvailableTypes: () => request<Content["type"][]>("/content/types"),
 		getSuggestions: (input) =>
@@ -78,15 +83,74 @@ function createContentClient(): ContentClient {
 			}),
 		list: (input: ContentListInput) => request<ContentList>("/content" + queryString(input)),
 		parseLink: ({ url }: ParseLinkInput) => Promise.resolve(createParsedLinkFallback(url)),
-		update: (input: UpdateContent) =>
-			request<Content>("/content/" + encodeURIComponent(input.id), { body: input, method: "PATCH" }),
-		updateTagColor: (input: UpdateTagColorInput) =>
-			request<ContentTag>("/content/tags/" + encodeURIComponent(input.id) + "/color", {
-				body: { color: input.color },
-				method: "PATCH",
-			}),
+		update: async (input: UpdateContent) => {
+			const current = await request<Content>("/content/" + encodeURIComponent(input.id));
+			const updated = { ...current, ...input };
+			await mutateContent(
+				{ entityId: input.id, operation: "upsert", payload: toCreateContent(updated) },
+				() => request<Content>("/content/" + encodeURIComponent(input.id), { body: input, method: "PATCH" })
+			);
+			return updated;
+		},
+		updateTagColor: async (input: UpdateTagColorInput) => {
+			const current = await request<ContentTag>("/content/tags/" + encodeURIComponent(input.id));
+			try {
+				await webSyncRuntime.mutate({
+					baseEntityVersion: await webSyncRuntime.readEntityVersion("tag", input.id),
+					entityId: input.id,
+					entityType: "tag",
+					mutationId: crypto.randomUUID(),
+					operation: "upsert",
+					payload: { color: input.color, id: input.id, title: current.title },
+				});
+				return { ...current, color: input.color };
+			} catch (error) {
+				if (error instanceof Error && error.message === "Web sync is not running")
+					return request<ContentTag>("/content/tags/" + encodeURIComponent(input.id) + "/color", {
+						body: { color: input.color },
+						method: "PATCH",
+					});
+				throw error;
+			}
+		},
 		upload: async ({ files, makeTrack, tags, title }: UploadInput) =>
 			uploadMultipart(files, { makeTrack, tags, title }),
+	};
+}
+
+async function mutateContent<T>(
+	intent: { entityId: string; operation: "delete" | "upsert"; payload?: CreateContent },
+	compatibilityMutation: () => Promise<T>
+): Promise<T | void> {
+	try {
+		await webSyncRuntime.mutate({
+			entityId: intent.entityId,
+			entityType: "content",
+			mutationId: crypto.randomUUID(),
+			operation: intent.operation,
+			payload: intent.payload,
+		});
+	} catch (error) {
+		if (error instanceof Error && error.message === "Web sync is not running") return compatibilityMutation();
+		throw error;
+	}
+}
+
+function toCreateContent(content: Content): CreateContent {
+	return {
+		content: content.content,
+		document_images: content.document_images,
+		media_height: content.media_height,
+		media_type: content.media_type ?? "image",
+		media_url: content.media_url,
+		media_width: content.media_width,
+		tag_ids: content.tag_ids,
+		tags: content.tags,
+		thumbnail_base64: content.thumbnail_base64,
+		thumbnail_url: content.thumbnail_url,
+		title: content.title,
+		type: content.type,
+		url: content.url,
 	};
 }
 

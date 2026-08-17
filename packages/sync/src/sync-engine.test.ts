@@ -7,6 +7,7 @@ import {
 	InMemoryRealtimeTransport,
 	InMemoryReplicaStore,
 	SyncEngine,
+	TagEntityAdapter,
 	TestEntityAdapter,
 	createEntityRegistry,
 } from "./index";
@@ -107,8 +108,12 @@ describe("SyncEngine", () => {
 		expect(journal.pullCount).toBe(4);
 	});
 
-	test("registers Content and TestEntity without SyncEngine entity branches", async () => {
-		const registry = createEntityRegistry(new TestEntityAdapter(), new ContentEntityAdapter());
+	test("registers Content, Tag, and TestEntity without SyncEngine entity branches", async () => {
+		const registry = createEntityRegistry(
+			new TestEntityAdapter(),
+			new ContentEntityAdapter(),
+			new TagEntityAdapter()
+		);
 		const replica = new InMemoryReplicaStore();
 		const engine = new SyncEngine({
 			journal: new InMemoryJournalApi(),
@@ -124,6 +129,13 @@ describe("SyncEngine", () => {
 			mutationId: "content-mutation",
 			operation: "upsert",
 			payload: { title: "metadata only" },
+		});
+		await engine.mutate({
+			entityId: "tag-1",
+			entityType: "tag",
+			mutationId: "tag-mutation",
+			operation: "upsert",
+			payload: { color: 1, title: "inbox" },
 		});
 
 		expect(replica.changes.size).toBe(0);

@@ -29,6 +29,25 @@ describe("DesktopSseTransport", () => {
 });
 
 describe("DesktopReplicaStore", () => {
+	test("commits remote metadata and cursor when binary hydration is interrupted", async () => {
+		const root = await mkdtemp(join(tmpdir(), "synapse-replica-"));
+		const library = new LocalLibraryRepository(root);
+		const replica = new DesktopReplicaStore(library, async () => {
+			throw new Error("download interrupted");
+		});
+
+		await replica.transact(async (transaction) => {
+			await transaction.applyCanonical(remoteNoteChange());
+			await transaction.setCursor("j:101");
+		});
+
+		expect((await library.list())[0]).toMatchObject({
+			id: "remote-note",
+			title: "Remote note",
+		});
+		expect(await library.getSyncCursor()).toBe("j:101");
+	});
+
 	test("notifies the main process immediately after committing a remote V2 change", async () => {
 		const root = await mkdtemp(join(tmpdir(), "synapse-replica-"));
 		const library = new LocalLibraryRepository(root);
@@ -40,24 +59,7 @@ describe("DesktopReplicaStore", () => {
 		);
 
 		await replica.transact(async (transaction) => {
-			await transaction.applyCanonical({
-				cursor: "j:101",
-				entityId: "remote-note",
-				entityType: "content",
-				entityVersion: 1,
-				mutationId: "remote-mutation",
-				operation: "upsert",
-				payload: {
-					content: "From web",
-					created_at: "2026-01-01T00:00:00.000Z",
-					id: "remote-note",
-					tags: [],
-					title: "Remote note",
-					type: "note",
-					updated_at: "2026-01-01T00:00:00.000Z",
-					user_id: "user-1",
-				},
-			});
+			await transaction.applyCanonical(remoteNoteChange());
 			await transaction.setCursor("j:101");
 		});
 
@@ -69,3 +71,24 @@ describe("DesktopReplicaStore", () => {
 		expect(await library.getSyncCursor()).toBe("j:101");
 	});
 });
+
+function remoteNoteChange() {
+	return {
+		cursor: "j:101",
+		entityId: "remote-note",
+		entityType: "content" as const,
+		entityVersion: 1,
+		mutationId: "remote-mutation",
+		operation: "upsert" as const,
+		payload: {
+			content: "From web",
+			created_at: "2026-01-01T00:00:00.000Z",
+			id: "remote-note",
+			tags: [],
+			title: "Remote note",
+			type: "note" as const,
+			updated_at: "2026-01-01T00:00:00.000Z",
+			user_id: "user-1",
+		},
+	};
+}

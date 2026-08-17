@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 
 import type { Context } from "../context";
-import { SyncMutationCoordinator } from "./sync-mutation-coordinator";
+import SyncMutationCoordinator from "./sync-mutation-coordinator";
 import { processAudioUpload } from "./upload/audio-handler";
 import { processImageUpload } from "./upload/image-handler";
 import type { UploadHandlerDeps } from "./upload/upload-handler-types";

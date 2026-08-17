@@ -275,6 +275,28 @@ export class ContentEntityAdapter implements EntityAdapter {
 	}
 }
 
+/** Tag metadata is a first-class sync entity; associations remain part of content payloads. */
+export class TagEntityAdapter implements EntityAdapter {
+	readonly entityType = "tag";
+
+	validateIntent(intent: SyncIntent): void {
+		if (intent.operation === "upsert" && (!intent.payload || typeof intent.payload !== "object"))
+			throw new Error("Tag upsert requires metadata payload");
+	}
+
+	applyCanonical(transaction: ReplicaTransaction, change: SyncChange): Promise<void> {
+		return transaction.applyCanonical(change);
+	}
+
+	applyOptimistic(transaction: ReplicaTransaction, intent: SyncIntent): Promise<void> {
+		return transaction.applyOptimistic(intent);
+	}
+
+	preserveConflict(transaction: ReplicaTransaction, intent: SyncIntent, current?: SyncChange): Promise<void> {
+		return transaction.recordConflict(intent, current);
+	}
+}
+
 export class InMemoryJournalApi implements JournalApi {
 	readonly pushed: SyncIntent[] = [];
 

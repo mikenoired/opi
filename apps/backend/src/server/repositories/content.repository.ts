@@ -375,13 +375,14 @@ export default class ContentRepository {
 		return data;
 	}
 
-	async create(contentData: z.infer<typeof createContentSchema>) {
+	async create(contentData: z.infer<typeof createContentSchema>, id?: string) {
 		requireAuth(this.ctx);
 
 		const [data] = await this.database
 			.insert(content)
 			.values({
 				...contentData,
+				id,
 				userId: this.ctx.user.id,
 				thumbnailBase64: contentData.thumbnail_base64,
 				documentImages: contentData.document_images,
@@ -625,10 +626,19 @@ export default class ContentRepository {
 				color: true,
 				id: true,
 				title: true,
+				userId: true,
 			},
 		});
 
 		return data;
+	}
+
+	async getAllOwnedTagsForSync(): Promise<Array<{ color: number; id: string; title: string }>> {
+		requireAuth(this.ctx);
+		return this.database
+			.select({ color: tags.color, id: tags.id, title: tags.title })
+			.from(tags)
+			.where(eq(tags.userId, this.ctx.user.id));
 	}
 
 	async getTagsForAi(limit = 60): Promise<Array<{ id: string; title: string }>> {

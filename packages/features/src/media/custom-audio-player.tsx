@@ -1,3 +1,4 @@
+import { useI18n } from "@synapse/i18n";
 import { Pause, Play, RotateCcw, RotateCw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
@@ -65,6 +66,7 @@ function RecordingPlayer({ autoPlay = false, metadata, src, title }: CustomAudio
 }
 
 function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: CustomAudioPlayerProps) {
+	const { t } = useI18n();
 	const audioRef = useRef<HTMLAudioElement>(null);
 	const volumeId = useId();
 	const [initialVolume] = useState(readStoredAudioVolume);
@@ -121,8 +123,8 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 			const code = audio.error?.code;
 			setError(
 				code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED
-					? "Формат аудио не поддерживается браузером"
-					: "Не удалось воспроизвести этот аудиофайл"
+					? t("audio.playbackUnsupported")
+					: t("audio.playbackUnavailable")
 			);
 		};
 		const onPlay = () => setIsPlaying(true);
@@ -142,7 +144,7 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 			audio.removeEventListener("play", onPlay);
 			audio.removeEventListener("pause", onPause);
 		};
-	}, [src]);
+	}, [src, t]);
 
 	useEffect(() => {
 		setIsPlaying(false);
@@ -179,7 +181,7 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 		if (audio.paused)
 			void audio.play().catch(() => {
 				if (audio.error) return;
-				setError("Не удалось начать воспроизведение");
+				setError(t("audio.playbackFailed"));
 			});
 		else audio.pause();
 	};
@@ -225,7 +227,11 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 				<div className="mx-auto w-full max-w-[34rem]">
 					<div className="aspect-square overflow-hidden rounded-md bg-linear-to-br from-white/30 to-white/5 shadow-2xl">
 						{coverUrl ? (
-							<img alt={`Обложка: ${displayTitle}`} className="h-full w-full object-cover" src={coverUrl} />
+							<img
+								alt={t("audio.cover", { title: displayTitle })}
+								className="h-full w-full object-cover"
+								src={coverUrl}
+							/>
 						) : (
 							<div aria-hidden className="flex h-full items-center justify-center text-8xl text-white/60">
 								♪
@@ -247,7 +253,7 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 					<audio preload="metadata" ref={audioRef} src={src} />
 					<div className="mt-8">
 						<PlayerSlider
-							label="Позиция воспроизведения"
+							label={t("audio.playbackPosition")}
 							max={safeDuration}
 							min={0}
 							onChange={updateSeekTime}
@@ -256,6 +262,9 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 							onPointerUp={() => finishSeek(seekTimeRef.current)}
 							step={0.1}
 							value={Math.min(displayTime, safeDuration)}
+							valueTextFallback={(value, max) =>
+								t("audio.valueOf", { max: formatTime(max), value: formatTime(value) })
+							}
 						/>
 						<div className="mt-1.5 flex justify-between font-mono text-[11px] text-white/50">
 							<span>{formatTime(displayTime)}</span>
@@ -265,14 +274,14 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 					<div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-4">
 						<div className="flex items-center gap-5">
 							<button
-								aria-label="Назад на 15 секунд"
+								aria-label={t("audio.rewind")}
 								className="rounded-full p-2.5 text-white/75 transition hover:bg-white/10 hover:text-white"
 								onClick={() => seekBy(-15)}
 								type="button">
 								<RotateCcw className="size-5" />
 							</button>
 							<button
-								aria-label={isPlaying ? "Пауза" : "Воспроизвести"}
+								aria-label={isPlaying ? t("audio.pause") : t("audio.play")}
 								className="inline-flex size-14 items-center justify-center rounded-full bg-white text-slate-900 shadow-xl transition hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
 								onClick={togglePlayback}
 								type="button">
@@ -283,7 +292,7 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 								)}
 							</button>
 							<button
-								aria-label="Вперёд на 15 секунд"
+								aria-label={t("audio.forward")}
 								className="rounded-full p-2.5 text-white/75 transition hover:bg-white/10 hover:text-white"
 								onClick={() => seekBy(15)}
 								type="button">
@@ -292,7 +301,7 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 						</div>
 						<div className="flex w-40 items-center gap-2">
 							<button
-								aria-label={muted ? "Включить звук" : "Выключить звук"}
+								aria-label={muted ? t("audio.muted") : t("audio.mute")}
 								className="rounded-md p-2 text-white/75 transition hover:bg-white/10"
 								onClick={() => {
 									const audio = audioRef.current;
@@ -305,11 +314,14 @@ function MusicPlayer({ autoPlay = false, coverUrl, metadata, src, title }: Custo
 							</button>
 							<PlayerSlider
 								id={volumeId}
-								label="Громкость"
+								label={t("audio.volume")}
 								max={100}
 								min={0}
 								value={muted ? 0 : volume}
 								valueText={(value) => `${Math.round(value)}%`}
+								valueTextFallback={(value, max) =>
+									t("audio.valueOf", { max: Math.round(max), value: Math.round(value) })
+								}
 								onChange={updateVolume}
 								className="min-w-0 flex-1"
 							/>
@@ -339,6 +351,7 @@ function PlayerSlider({
 	step = 1,
 	value,
 	valueText,
+	valueTextFallback,
 }: {
 	className?: string;
 	id?: string;
@@ -352,6 +365,7 @@ function PlayerSlider({
 	step?: number;
 	value: number;
 	valueText?(value: number): string;
+	valueTextFallback(value: number, max: number): string;
 }) {
 	const boundedValue = Math.min(Math.max(value, min), max);
 	return (
@@ -364,7 +378,7 @@ function PlayerSlider({
 			</div>
 			<input
 				aria-label={label}
-				aria-valuetext={valueText?.(boundedValue) ?? `${formatTime(boundedValue)} из ${formatTime(max)}`}
+				aria-valuetext={valueText?.(boundedValue) ?? valueTextFallback(boundedValue, max)}
 				className="player-slider__input"
 				id={id}
 				max={max}

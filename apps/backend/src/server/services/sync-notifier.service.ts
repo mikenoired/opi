@@ -68,7 +68,7 @@ export class SyncNotifierLifecycle {
 }
 
 /** Publish happens after the coordinator transaction commits. Delivery is never part of commit success. */
-export class SyncNotifierService {
+export default class SyncNotifierService {
 	constructor(private readonly ctx: Context) {}
 
 	async notify(userId: string, cursor: string): Promise<void> {

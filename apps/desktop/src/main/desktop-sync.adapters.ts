@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import type {
 	EntityAdapter,
 	JournalApi,
@@ -192,8 +193,11 @@ export class DesktopReplicaStore implements ReplicaStore {
 	async transact(action: (transaction: ReplicaTransaction) => Promise<void>): Promise<void> {
 		const transaction = new DesktopReplicaTransaction(this.library, this.hydrate);
 		await action(transaction);
-		await transaction.commit();
+		const hydrate = await transaction.commit();
 		this.onCommitted();
+		// Asset transfer is deliberately not part of the replica transaction. A
+		// network interruption must never roll back metadata or its journal cursor.
+		void hydrate();
 	}
 }
 
@@ -226,20 +230,36 @@ class DesktopReplicaTransaction implements ReplicaTransaction {
 		return Promise.resolve();
 	}
 
-	async commit(): Promise<void> {
+	async commit(): Promise<() => Promise<void>> {
 		const changes = this.snapshot ?? this.canonical;
 		for (const change of changes) {
 			if (change.entityType !== "content") continue;
-			const hydrated = change.payload ? await this.hydrate(change.payload) : undefined;
 			await this.library.applyRemoteChange({
-				...(hydrated?.assets ? { assets: hydrated.assets } : {}),
-				...(hydrated?.content ? { content: hydrated.content } : {}),
+				content: change.payload as Content | undefined,
 				entityId: change.entityId,
 				operation: change.operation,
 				revision: change.entityVersion,
 			});
 		}
 		if (this.cursor) await this.library.setSyncCursor(this.cursor);
+
+		return async () => {
+			for (const change of changes) {
+				if (change.entityType !== "content" || !change.payload) continue;
+				try {
+					const hydrated = await this.hydrate(change.payload);
+					if (hydrated.assets && hydrated.content)
+						await this.library.applyHydratedAssets(
+							change.entityId,
+							change.entityVersion,
+							hydrated.assets,
+							hydrated.content
+						);
+				} catch {
+					// The next media repair pass retries binary hydration. Metadata is already durable.
+				}
+			}
+		};
 	}
 }
 

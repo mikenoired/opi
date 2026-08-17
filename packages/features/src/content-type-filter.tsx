@@ -1,17 +1,27 @@
+import { useI18n } from "@synapse/i18n";
 import { getQueryTypesForFilter } from "@synapse/shared/content-types";
 import type { Content } from "@synapse/shared/schemas";
 import { FileText, FileUp, Image, Link, ListChecks, Music2, X } from "lucide-react";
 import type { ComponentType } from "react";
 
-const options: Array<{ icon: ComponentType<{ className?: string }>; label: string; type: Content["type"] }> =
-	[
-		{ icon: FileText, label: "Заметки", type: "note" },
-		{ icon: Image, label: "Медиа", type: "media" },
-		{ icon: Music2, label: "Аудио", type: "audio" },
-		{ icon: Link, label: "Ссылки", type: "link" },
-		{ icon: ListChecks, label: "Задачи", type: "todo" },
-		{ icon: FileUp, label: "Документы", type: "doc" },
-	];
+const options: Array<{
+	icon: ComponentType<{ className?: string }>;
+	labelKey:
+		| "library.types.note"
+		| "library.types.media"
+		| "library.types.audio"
+		| "library.types.link"
+		| "library.types.todo"
+		| "library.types.doc";
+	type: Content["type"];
+}> = [
+	{ icon: FileText, labelKey: "library.types.note", type: "note" },
+	{ icon: Image, labelKey: "library.types.media", type: "media" },
+	{ icon: Music2, labelKey: "library.types.audio", type: "audio" },
+	{ icon: Link, labelKey: "library.types.link", type: "link" },
+	{ icon: ListChecks, labelKey: "library.types.todo", type: "todo" },
+	{ icon: FileUp, labelKey: "library.types.doc", type: "doc" },
+];
 
 export interface ContentTypeFilterProps {
 	availableTypes: Content["type"][];
@@ -29,6 +39,7 @@ export function ContentTypeFilter({
 	onToggle,
 	selectedTypes,
 }: ContentTypeFilterProps) {
+	const { t } = useI18n();
 	const available = options.filter((option) =>
 		getQueryTypesForFilter(option.type).some((type) => availableTypes.includes(type))
 	);
@@ -36,7 +47,7 @@ export function ContentTypeFilter({
 
 	return (
 		<div className={`flex items-center gap-2 overflow-x-auto ${className ?? ""}`}>
-			{available.map(({ icon: Icon, label, type }) => {
+			{available.map(({ icon: Icon, labelKey, type }) => {
 				const selected = selectedTypes.includes(type);
 				return (
 					<button
@@ -50,7 +61,7 @@ export function ContentTypeFilter({
 								: "border-border bg-background text-muted-foreground hover:border-foreground/20 hover:bg-muted hover:text-foreground"
 						}`}>
 						<Icon className="size-4" />
-						{label}
+						{t(labelKey)}
 					</button>
 				);
 			})}
@@ -60,7 +71,7 @@ export function ContentTypeFilter({
 					onClick={onClear}
 					className="flex h-9 shrink-0 items-center gap-2 rounded-full border border-destructive/20 bg-destructive/10 px-3 text-sm font-medium text-destructive hover:bg-destructive/15">
 					<X className="size-4" />
-					Сбросить
+					{t("library.clearFilters")}
 				</button>
 			)}
 		</div>

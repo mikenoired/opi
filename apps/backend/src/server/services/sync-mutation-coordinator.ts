@@ -1,48 +1,37 @@
 import type { SyncMutation, SyncMutationOutcome } from "@synapse/api";
 import type { Content, CreateContent } from "@synapse/shared/schemas";
-import { and, eq, sql } from "drizzle-orm";
+import type { MutationReceipt, SyncChange, SyncIntent } from "@synapse/sync";
+import { sql } from "drizzle-orm";
 
 import type { Context } from "../context";
-import {
-	syncEntityVersions,
-	syncJournalClock,
-	syncJournalEntries,
-	syncMutationReceiptsV2,
-} from "../db/schema";
 import { ApiError } from "../lib/api-error";
+import ContentRepository from "../repositories/content.repository";
+import SyncJournalRepository, {
+	type JournalAppendCommand,
+	type SyncJournalTransaction,
+} from "../repositories/sync-journal.repository";
 import ContentService from "./content.service";
-import { SyncNotifierService } from "./sync-notifier.service";
+import GenericSyncJournalService from "./generic-sync-journal.service";
+import SyncNotifierService from "./sync-notifier.service";
 
 /**
  * The one write seam for legacy content sync mutations. The old HTTP shape is
  * intentionally adapted here while clients migrate to the generic protocol.
  */
-export class SyncMutationCoordinator {
-	constructor(private readonly ctx: Context) {}
+export default class SyncMutationCoordinator {
+	private readonly journal: SyncJournalRepository;
+
+	constructor(private readonly ctx: Context) {
+		this.journal = new SyncJournalRepository(ctx.db);
+	}
 
 	async apply(mutation: SyncMutation): Promise<SyncMutationOutcome> {
 		const userId = this.ctx.user!.id;
 		const requestHash = JSON.stringify(mutation);
 		const outcome = await this.ctx.db.transaction(async (tx) => {
-			const claimed = await tx
-				.insert(syncMutationReceiptsV2)
-				.values({ mutationId: mutation.clientMutationId, requestHash, userId })
-				.onConflictDoNothing()
-				.returning({ mutationId: syncMutationReceiptsV2.mutationId });
+			const claimed = await this.journal.claimReceipt(tx, userId, mutation.clientMutationId, requestHash);
 			if (!claimed.length) {
-				const [receipt] = await tx
-					.select({
-						outcome: syncMutationReceiptsV2.outcome,
-						requestHash: syncMutationReceiptsV2.requestHash,
-					})
-					.from(syncMutationReceiptsV2)
-					.where(
-						and(
-							eq(syncMutationReceiptsV2.userId, userId),
-							eq(syncMutationReceiptsV2.mutationId, mutation.clientMutationId)
-						)
-					)
-					.limit(1);
+				const receipt = await this.journal.getReceipt(tx, userId, mutation.clientMutationId);
 				if (!receipt || receipt.requestHash !== requestHash || !receipt.outcome)
 					throw new ApiError({
 						code: "CONFLICT",
@@ -53,19 +42,9 @@ export class SyncMutationCoordinator {
 
 			const entityId = mutation.remoteId;
 			if (entityId) await this.lockEntity(tx, userId, entityId);
-			const [entity] = entityId
-				? await tx
-						.select()
-						.from(syncEntityVersions)
-						.where(
-							and(
-								eq(syncEntityVersions.userId, userId),
-								eq(syncEntityVersions.entityType, "content"),
-								eq(syncEntityVersions.entityId, entityId)
-							)
-						)
-						.limit(1)
-				: [];
+			const entity = entityId
+				? await this.journal.findEntityVersion(tx, userId, "content", entityId)
+				: undefined;
 			if (
 				entityId &&
 				(!entity ||
@@ -73,7 +52,7 @@ export class SyncMutationCoordinator {
 					(mutation.baseRevision !== undefined && mutation.baseRevision !== entity.entityVersion))
 			) {
 				const outcome = await this.conflict(mutation, entity?.entityVersion, entity?.deleted);
-				await this.finalize(tx, userId, mutation.clientMutationId, outcome);
+				await this.journal.finalizeReceipt(tx, userId, mutation.clientMutationId, outcome);
 				return outcome;
 			}
 
@@ -84,15 +63,16 @@ export class SyncMutationCoordinator {
 				if (mutation.kind === "delete") outcome = appliedDeleted(mutation.clientMutationId, 0);
 				else {
 					const created = await content.create(requireContent(mutation));
-					const revision = await this.append(
-						tx,
+					await this.appendTagSnapshots(tx, context, created);
+					const { entityVersion: revision } = await this.append(tx, {
+						entityId: created.id,
+						entityType: "content",
+						mutationId: mutation.clientMutationId,
+						operation: "upsert",
+						payload: created,
+						previousVersion: 0,
 						userId,
-						created.id,
-						created,
-						"upsert",
-						mutation.clientMutationId,
-						0
-					);
+					});
 					outcome = {
 						clientMutationId: mutation.clientMutationId,
 						content: created,
@@ -102,27 +82,27 @@ export class SyncMutationCoordinator {
 				}
 			} else if (mutation.kind === "delete") {
 				await content.delete(entityId);
-				const revision = await this.append(
-					tx,
-					userId,
+				const { entityVersion: revision } = await this.append(tx, {
 					entityId,
-					undefined,
-					"delete",
-					mutation.clientMutationId,
-					entity!.entityVersion
-				);
+					entityType: "content",
+					mutationId: mutation.clientMutationId,
+					operation: "delete",
+					previousVersion: entity!.entityVersion,
+					userId,
+				});
 				outcome = appliedDeleted(mutation.clientMutationId, revision);
 			} else {
 				const updated = await content.update({ ...requireContent(mutation), id: entityId });
-				const revision = await this.append(
-					tx,
+				await this.appendTagSnapshots(tx, context, updated);
+				const { entityVersion: revision } = await this.append(tx, {
+					entityId: updated.id,
+					entityType: "content",
+					mutationId: mutation.clientMutationId,
+					operation: "upsert",
+					payload: updated,
+					previousVersion: entity!.entityVersion,
 					userId,
-					updated.id,
-					updated,
-					"upsert",
-					mutation.clientMutationId,
-					entity!.entityVersion
-				);
+				});
 				outcome = {
 					clientMutationId: mutation.clientMutationId,
 					content: updated,
@@ -130,64 +110,122 @@ export class SyncMutationCoordinator {
 					status: "applied",
 				};
 			}
-			await this.finalize(tx, userId, mutation.clientMutationId, outcome);
+			await this.journal.finalizeReceipt(tx, userId, mutation.clientMutationId, outcome);
 			return outcome;
 		});
-		const [entry] = await this.ctx.db
-			.select({ cursor: syncJournalEntries.cursor })
-			.from(syncJournalEntries)
-			.where(
-				and(
-					eq(syncJournalEntries.userId, userId),
-					eq(syncJournalEntries.mutationId, mutation.clientMutationId)
-				)
-			)
-			.limit(1);
-		if (entry) await new SyncNotifierService(this.ctx).notify(userId, `j:${entry.cursor}`);
+		const cursor = await this.journal.findMutationCursor(userId, mutation.clientMutationId);
+		if (cursor) await new SyncNotifierService(this.ctx).notify(userId, `j:${cursor}`);
+		// Retention is deliberately post-commit: pruning can never roll back a
+		// canonical mutation and the watermark makes a concurrent pull reset safely.
+		await new GenericSyncJournalService(this.ctx).pruneRetained();
 		return outcome;
 	}
 
-	private async append(
-		tx: any,
-		userId: string,
-		entityId: string,
-		content: Content | undefined,
-		operation: "delete" | "upsert",
-		mutationId: string,
-		previousVersion: number
-	): Promise<number> {
-		const entityVersion = previousVersion + 1;
-		await tx.insert(syncJournalClock).values({ id: true, nextCursor: 0 }).onConflictDoNothing();
-		const [clock] = await tx
-			.update(syncJournalClock)
-			.set({ nextCursor: sql`${syncJournalClock.nextCursor} + 1` })
-			.where(eq(syncJournalClock.id, true))
-			.returning({ cursor: syncJournalClock.nextCursor });
-		if (!clock) throw new Error("Sync journal clock is not initialized");
-		await tx
-			.insert(syncEntityVersions)
-			.values({
-				deleted: operation === "delete",
-				entityId,
-				entityType: "content",
-				entityVersion,
+	async updateTagColor(id: string, color: number): Promise<{ color: number; id: string; title: string }> {
+		const userId = this.ctx.user!.id;
+		const result = await this.ctx.db.transaction(async (tx) => {
+			const context = { ...this.ctx, db: tx } as unknown as Context;
+			const tag = await new ContentRepository(context).updateTagColor(id, color);
+			const current = await this.journal.findEntityVersion(tx, userId, "tag", id);
+			const appended = await this.append(tx, {
+				entityId: tag.id,
+				entityType: "tag",
+				operation: "upsert",
+				payload: tag,
+				previousVersion: current?.entityVersion ?? 0,
 				userId,
-			})
-			.onConflictDoUpdate({
-				target: [syncEntityVersions.userId, syncEntityVersions.entityType, syncEntityVersions.entityId],
-				set: { deleted: operation === "delete", entityVersion, updatedAt: new Date() },
 			});
-		await tx.insert(syncJournalEntries).values({
-			cursor: clock.cursor,
-			entityId,
-			entityType: "content",
-			entityVersion,
-			mutationId,
-			operation,
-			payload: content ?? null,
-			userId,
+			return { cursor: appended.cursor, tag };
 		});
-		return entityVersion;
+		await new SyncNotifierService(this.ctx).notify(userId, `j:${result.cursor}`);
+		await new GenericSyncJournalService(this.ctx).pruneRetained();
+		return result.tag;
+	}
+
+	/** Generic protocol seam for independently syncable Tag metadata. */
+	async applyIntent(intent: SyncIntent): Promise<MutationReceipt> {
+		if (intent.entityType !== "tag" || intent.operation !== "upsert" || !intent.entityId)
+			throw new ApiError({ code: "BAD_REQUEST", message: "Unsupported generic sync intent" });
+		const color = tagColor(intent.payload);
+		const userId = this.ctx.user!.id;
+		const requestHash = JSON.stringify(intent);
+		const receipt = await this.ctx.db.transaction(async (tx) => {
+			const claimed = await this.journal.claimReceipt(tx, userId, intent.mutationId, requestHash);
+			if (!claimed.length) {
+				const stored = await this.journal.getReceipt(tx, userId, intent.mutationId);
+				if (!stored || stored.requestHash !== requestHash || !stored.outcome)
+					throw new ApiError({
+						code: "CONFLICT",
+						message: "Sync mutation id belongs to a different immutable intent",
+					});
+				return stored.outcome as MutationReceipt;
+			}
+			await this.lockEntity(tx, userId, intent.entityId!, "tag");
+			const current = await this.journal.findEntityVersion(tx, userId, "tag", intent.entityId!);
+			if (
+				!current ||
+				current.deleted ||
+				(intent.baseEntityVersion !== undefined && intent.baseEntityVersion !== current.entityVersion)
+			) {
+				const conflict: MutationReceipt = { kind: "conflict", mutationId: intent.mutationId };
+				await this.journal.finalizeReceipt(tx, userId, intent.mutationId, conflict);
+				return conflict;
+			}
+			const context = { ...this.ctx, db: tx } as unknown as Context;
+			const tag = await new ContentRepository(context).updateTagColor(intent.entityId!, color);
+			const appended = await this.append(tx, {
+				entityId: tag.id,
+				entityType: "tag",
+				mutationId: intent.mutationId,
+				operation: "upsert",
+				payload: tag,
+				previousVersion: current.entityVersion,
+				userId,
+			});
+			const change: SyncChange = {
+				cursor: `j:${appended.cursor}`,
+				entityId: tag.id,
+				entityType: "tag",
+				entityVersion: appended.entityVersion,
+				mutationId: intent.mutationId,
+				operation: "upsert",
+				payload: tag,
+			};
+			const applied: MutationReceipt = { change, kind: "applied", mutationId: intent.mutationId };
+			await this.journal.finalizeReceipt(tx, userId, intent.mutationId, applied);
+			return applied;
+		});
+		const cursor = await this.journal.findMutationCursor(userId, intent.mutationId);
+		if (cursor) await new SyncNotifierService(this.ctx).notify(userId, `j:${cursor}`);
+		await new GenericSyncJournalService(this.ctx).pruneRetained();
+		return receipt;
+	}
+
+	private async append(tx: SyncJournalTransaction, command: JournalAppendCommand) {
+		return this.journal.append(tx, command);
+	}
+
+	private async appendTagSnapshots(
+		tx: SyncJournalTransaction,
+		context: Context,
+		content: Content
+	): Promise<void> {
+		if (!content.tag_ids.length) return;
+		const tags = await new ContentRepository(context).getTags(content.tag_ids);
+		for (const tag of tags) {
+			if (tag.userId !== content.user_id) continue;
+			const existing = await this.journal.findEntityVersion(tx, content.user_id, "tag", tag.id);
+			if (!existing) {
+				await this.append(tx, {
+					entityId: tag.id,
+					entityType: "tag",
+					operation: "upsert",
+					payload: tag,
+					previousVersion: 0,
+					userId: content.user_id,
+				});
+			}
+		}
 	}
 
 	private async conflict(
@@ -207,23 +245,23 @@ export class SyncMutationCoordinator {
 		};
 	}
 
-	private async finalize(
-		tx: any,
+	private async lockEntity(
+		tx: SyncJournalTransaction,
 		userId: string,
-		mutationId: string,
-		outcome: SyncMutationOutcome
+		entityId: string,
+		entityType = "content"
 	): Promise<void> {
-		await tx
-			.update(syncMutationReceiptsV2)
-			.set({ completedAt: new Date(), outcome, status: "finalized" })
-			.where(
-				and(eq(syncMutationReceiptsV2.userId, userId), eq(syncMutationReceiptsV2.mutationId, mutationId))
-			);
+		await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`${userId}:${entityType}:${entityId}`}))`);
 	}
+}
 
-	private async lockEntity(tx: any, userId: string, entityId: string): Promise<void> {
-		await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`${userId}:content:${entityId}`}))`);
-	}
+function tagColor(payload: unknown): number {
+	if (!payload || typeof payload !== "object" || !Number.isInteger((payload as { color?: unknown }).color))
+		throw new ApiError({ code: "BAD_REQUEST", message: "Tag upsert requires an integer color" });
+	const color = (payload as { color: number }).color;
+	if (color < 0 || color > 255)
+		throw new ApiError({ code: "BAD_REQUEST", message: "Tag color must be between 0 and 255" });
+	return color;
 }
 
 function appliedDeleted(clientMutationId: string, revision: number): SyncMutationOutcome {

@@ -1,5 +1,6 @@
 import {
 	ContentEntityAdapter,
+	TagEntityAdapter,
 	SyncEngine,
 	createEntityRegistry,
 	type JournalApi,
@@ -36,7 +37,7 @@ export class WebSyncRuntime {
 			journal: new BrowserJournalApi(),
 			outbox: new IndexedDbOutbox(`synapse-sync-${userId}`),
 			realtime: new CookieSseTransport(),
-			registry: createEntityRegistry(new ContentEntityAdapter()),
+			registry: createEntityRegistry(new ContentEntityAdapter(), new TagEntityAdapter()),
 			replica: this.replica,
 		});
 		this.engine = engine;
@@ -55,9 +56,27 @@ export class WebSyncRuntime {
 		return this.engine?.syncNow() ?? Promise.resolve();
 	}
 
+	isRunning(): boolean {
+		return this.engine !== undefined;
+	}
+
+	/** Enqueue a user mutation through the durable outbox and apply it optimistically. */
+	mutate(intent: SyncIntent): Promise<void> {
+		if (!this.engine) return Promise.reject(new Error("Web sync is not running"));
+		return this.engine.mutate(intent);
+	}
+
 	subscribeProjection(listener: ChangeListener): () => void {
 		this.listeners.add(listener);
 		return () => this.listeners.delete(listener);
+	}
+
+	async readProjection(entityType: string): Promise<SyncChange[]> {
+		return this.replica?.list(entityType) ?? [];
+	}
+
+	async readEntityVersion(entityType: string, entityId: string): Promise<number | undefined> {
+		return (await this.replica?.get(entityType, entityId))?.entityVersion;
 	}
 
 	private notifyProjection(): void {
@@ -81,19 +100,23 @@ export class BrowserJournalApi implements JournalApi {
 	async push(mutations: SyncIntent[]): Promise<MutationReceipt[]> {
 		const response = await jsonRequest<{ outcomes: Array<Record<string, unknown>> }>("/sync/push", {
 			body: JSON.stringify({
-				mutations: mutations.map((mutation) => ({
-					baseRevision: mutation.baseEntityVersion,
-					clientMutationId: mutation.mutationId,
-					content: mutation.operation === "upsert" ? mutation.payload : undefined,
-					kind: mutation.operation,
-					remoteId: mutation.entityId,
-				})),
+				mutations: mutations.map((mutation) =>
+					mutation.entityType === "tag"
+						? mutation
+						: {
+								baseRevision: mutation.baseEntityVersion,
+								clientMutationId: mutation.mutationId,
+								content: mutation.operation === "upsert" ? mutation.payload : undefined,
+								kind: mutation.operation,
+								remoteId: mutation.entityId,
+							}
+				),
 			}),
 			method: "POST",
 		});
 		return response.outcomes.map((outcome) => {
-			const mutationId = String(outcome.clientMutationId);
-			if (outcome.status === "conflict") {
+			const mutationId = String(outcome.mutationId ?? outcome.clientMutationId);
+			if (outcome.kind === "conflict" || outcome.status === "conflict") {
 				return { kind: "conflict", mutationId };
 			}
 			return { kind: "applied", mutationId };
@@ -136,6 +159,30 @@ class IndexedDbReplicaStore implements ReplicaStore {
 
 	async readCursor(): Promise<SyncCursor | undefined> {
 		return (await this.getMeta("cursor")) as SyncCursor | undefined;
+	}
+
+	async list(entityType: string): Promise<SyncChange[]> {
+		const db = await openDatabase(this.name);
+		const transaction = db.transaction("replica", "readonly");
+		const entries = (await request(transaction.objectStore("replica").getAll())) as StoredChange[];
+		await complete(transaction);
+		db.close();
+		return entries
+			.filter((entry) => entry.entityType === entityType)
+			.map(({ key: _key, ...change }) => change);
+	}
+
+	async get(entityType: string, entityId: string): Promise<SyncChange | undefined> {
+		const db = await openDatabase(this.name);
+		const transaction = db.transaction("replica", "readonly");
+		const entry = (await request(transaction.objectStore("replica").get(`${entityType}:${entityId}`))) as
+			| StoredChange
+			| undefined;
+		await complete(transaction);
+		db.close();
+		if (!entry) return undefined;
+		const { key: _key, ...change } = entry;
+		return change;
 	}
 
 	async transact(action: (transaction: ReplicaTransaction) => Promise<void>): Promise<void> {

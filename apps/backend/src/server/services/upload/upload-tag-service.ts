@@ -8,7 +8,7 @@ import type { UploadContentType } from "./upload-types";
 
 type DatabaseExecutor = Context["db"];
 
-export class UploadTagService {
+export default class UploadTagService {
 	constructor(
 		private readonly ctx: Context,
 		private readonly database: DatabaseExecutor = ctx.db

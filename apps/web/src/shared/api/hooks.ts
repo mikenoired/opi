@@ -13,6 +13,8 @@ import {
 } from "@tanstack/react-query";
 import { useMemo } from "react";
 
+import { webRuntime } from "@/platform/web-runtime";
+import { webSyncRuntime } from "@/platform/web-sync";
 import type {
 	AiTagsInput,
 	AiUsage,
@@ -111,6 +113,32 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 	return response.json() as Promise<T>;
 }
 
+async function projectedContents(input: Input): Promise<ContentList | undefined> {
+	if (!webSyncRuntime.isRunning()) return undefined;
+	const changes = await webSyncRuntime.readProjection("content");
+	let items = changes.flatMap((change) =>
+		change.payload ? [change.payload as ContentList["items"][number]] : []
+	);
+	const types = input?.types as string[] | undefined;
+	const tagIds = input?.tagIds as string[] | undefined;
+	const search = typeof input?.search === "string" ? input.search.toLocaleLowerCase() : undefined;
+	if (types?.length) items = items.filter((item) => types.includes(item.type));
+	if (tagIds?.length) items = items.filter((item) => tagIds.every((tagId) => item.tag_ids.includes(tagId)));
+	if (search)
+		items = items.filter((item) =>
+			`${item.title ?? ""} ${item.content} ${item.tags.join(" ")}`.toLocaleLowerCase().includes(search)
+		);
+	items.sort((left, right) => right.updated_at.localeCompare(left.updated_at));
+	return { items, nextCursor: undefined };
+}
+
+async function projectedTags(): Promise<ContentTags | undefined> {
+	if (!webSyncRuntime.isRunning()) return undefined;
+	return (await webSyncRuntime.readProjection("tag")).flatMap((change) =>
+		change.payload ? [change.payload as ContentTags[number]] : []
+	);
+}
+
 const keys = {
 	content: {
 		getAll: (input?: Input) => ["content", "getAll", input] as const,
@@ -143,7 +171,9 @@ const runtimeApi = {
 			useInfiniteQuery: (input: Input, options: any = {}) =>
 				useInfiniteQuery({
 					queryKey: keys.content.getAll(input),
-					queryFn: ({ pageParam }) => request(`/content${queryString({ ...input, cursor: pageParam })}`),
+					queryFn: async ({ pageParam }) =>
+						(await projectedContents(input)) ??
+						request(`/content${queryString({ ...input, cursor: pageParam })}`),
 					initialPageParam: undefined,
 					getNextPageParam: (page: any) => page.nextCursor,
 					...options,
@@ -153,13 +183,20 @@ const runtimeApi = {
 			useQuery: (input: any, options?: any) =>
 				useQuery({
 					queryKey: keys.content.getById(input),
-					queryFn: () => request(`/content/${input.id}`),
+					queryFn: async () => {
+						const projected = await projectedContents(undefined);
+						return projected?.items.find((item) => item.id === input.id) ?? request(`/content/${input.id}`);
+					},
 					...options,
 				}),
 		},
 		getTags: {
 			useQuery: (_input?: Input, options?: any) =>
-				useQuery({ queryKey: keys.content.getTags(), queryFn: () => request("/content/tags"), ...options }),
+				useQuery({
+					queryKey: keys.content.getTags(),
+					queryFn: async () => (await projectedTags()) ?? request("/content/tags"),
+					...options,
+				}),
 		},
 		getTagsWithContent: {
 			useQuery: (_input?: Input, options?: any) =>
@@ -195,7 +232,12 @@ const runtimeApi = {
 			useQuery: (_input?: Input, options?: any) =>
 				useQuery({
 					queryKey: keys.content.getAvailableTypes(),
-					queryFn: () => request("/content/types"),
+					queryFn: async () => {
+						const projected = await projectedContents(undefined);
+						return projected
+							? Array.from(new Set(projected.items.map((item) => item.type)))
+							: request("/content/types");
+					},
 					...options,
 				}),
 		},
@@ -206,26 +248,21 @@ const runtimeApi = {
 		update: {
 			useMutation: (options: any = {}) =>
 				useMutation({
-					mutationFn: (input: any) =>
-						request(`/content/${input.id}`, { method: "PATCH", body: JSON.stringify(input) }),
+					mutationFn: (input: any) => webRuntime.services.client.content.update(input),
 					...options,
 				}),
 		},
 		delete: {
 			useMutation: (options: any = {}) =>
 				useMutation({
-					mutationFn: (input: any) => request(`/content/${input.id}`, { method: "DELETE" }),
+					mutationFn: (input: any) => webRuntime.services.client.content.delete(input.id),
 					...options,
 				}),
 		},
 		updateTagColor: {
 			useMutation: (options: any = {}) =>
 				useMutation({
-					mutationFn: (input: any) =>
-						request(`/content/tags/${input.id}/color`, {
-							method: "PATCH",
-							body: JSON.stringify({ color: input.color }),
-						}),
+					mutationFn: (input: any) => webRuntime.services.client.content.updateTagColor(input),
 					...options,
 				}),
 		},

@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 
 import { eq, like } from "drizzle-orm";
 
-import { content, syncJournalEntries, syncRetentionWatermarks, users } from "../db/schema";
-import { GenericSyncJournalService } from "../services/generic-sync-journal.service";
+import { content, syncJournalEntries, syncRetentionWatermarks, tags, users } from "../db/schema";
+import GenericSyncJournalService from "../services/generic-sync-journal.service";
 
 const testPrefix = "bun-api-integration-";
 const password = "SecureTest123";
@@ -282,6 +282,35 @@ describe.serial("API integration", () => {
 		).toHaveLength(1);
 	});
 
+	test("journals owned Tag metadata as canonical changes", async () => {
+		const account = await register("v2-tag-journal");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
+		const created = await request("POST", "/content", {
+			body: { ...note("tagged"), tags: ["Sync tag"] },
+			token: account.token,
+		});
+		const tagId = (created.body as Json & { tag_ids: string[] }).tag_ids[0];
+		const reset = await request("GET", "/sync/v2/pull", { token: account.token });
+		expect(reset.body).toMatchObject({
+			changes: expect.arrayContaining([
+				expect.objectContaining({ entityId: tagId, entityType: "tag", operation: "upsert" }),
+			]),
+			kind: "reset",
+		});
+
+		const changed = await request("PATCH", `/content/tags/${tagId}/color`, {
+			body: { color: 42 },
+			token: account.token,
+		});
+		expect(changed.response.status).toBe(200);
+		const changes = await request("GET", `/sync/v2/pull?afterCursor=${reset.body.cursor}`, {
+			token: account.token,
+		});
+		expect(changes.body.kind).toBe("changes");
+		expect(JSON.stringify(changes.body)).toContain(`"entityId":"${tagId}"`);
+		expect(JSON.stringify(changes.body)).toContain('"color":42');
+	});
+
 	test("keeps the legacy pull URL as a V2 journal compatibility alias", async () => {
 		const account = await register("v2-pull-alias");
 		await db.update(users).set({ plan: "plus" }).where(eq(users.id, account.user.id));
@@ -427,6 +456,66 @@ describe.serial("API integration", () => {
 			.map((result) => ((result.body.outcomes as Json[])[0] as Json).status)
 			.sort();
 		expect(statuses).toEqual(["applied", "conflict"]);
+	});
+
+	test("pushes an owned Tag color through the generic durable journal contract", async () => {
+		const owner = await register("v2-tag-color");
+		const other = await register("v2-tag-color-other");
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, owner.user.id));
+		await db.update(users).set({ plan: "plus" }).where(eq(users.id, other.user.id));
+		const created = await request("POST", "/content", {
+			body: note("tagged", ["durable-tag"]),
+			token: owner.token,
+		});
+		const tagId = (created.body as Json & { tag_ids: string[] }).tag_ids[0]!;
+		const [version] = await db
+			.select({ entityVersion: syncJournalEntries.entityVersion })
+			.from(syncJournalEntries)
+			.where(eq(syncJournalEntries.entityId, tagId));
+		if (!version) throw new Error("Expected Tag journal baseline");
+
+		const mutationId = crypto.randomUUID();
+		const pushed = await request("POST", "/sync/push", {
+			body: {
+				mutations: [
+					{
+						baseEntityVersion: version.entityVersion,
+						entityId: tagId,
+						entityType: "tag",
+						mutationId,
+						operation: "upsert",
+						payload: { color: 7 },
+					},
+				],
+			},
+			token: owner.token,
+		});
+		expect(pushed.response.status).toBe(200);
+		expect(pushed.body.outcomes).toEqual([
+			expect.objectContaining({
+				kind: "applied",
+				mutationId,
+				change: expect.objectContaining({ entityType: "tag" }),
+			}),
+		]);
+		expect((await db.select().from(tags).where(eq(tags.id, tagId)))[0]?.color).toBe(7);
+
+		const foreign = await request("POST", "/sync/push", {
+			body: {
+				mutations: [
+					{
+						entityId: tagId,
+						entityType: "tag",
+						mutationId: crypto.randomUUID(),
+						operation: "upsert",
+						payload: { color: 8 },
+					},
+				],
+			},
+			token: other.token,
+		});
+		expect(foreign.response.status).toBe(200);
+		expect(foreign.body.outcomes).toEqual([expect.objectContaining({ kind: "conflict" })]);
 	});
 
 	test("catches up journal entries after a stored cursor in strict order", async () => {

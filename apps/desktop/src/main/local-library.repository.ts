@@ -503,6 +503,35 @@ export class LocalLibraryRepository {
 		return undefined;
 	}
 
+	/** Stores device-local asset references only when this is still the remote revision
+	 * that requested them. Binary download completion must not overwrite newer metadata. */
+	async applyHydratedAssets(
+		remoteId: string,
+		revision: number,
+		assets: LocalAsset[],
+		content: Content
+	): Promise<void> {
+		const data = await this.read();
+		const local = data.items.find(
+			(item) => item.remoteId === remoteId && item.serverRevision === revision && !item.deleted
+		);
+		if (!local) return;
+		data.items = data.items.map((item) =>
+			item.id === local.id
+				? {
+						...item,
+						...content,
+						assets,
+						id: item.id,
+						remoteId,
+						syncState: "synced",
+						syncVersion: revision,
+					}
+				: item
+		);
+		await this.write(data);
+	}
+
 	async getSyncCursor(): Promise<string | undefined> {
 		return (await this.read()).sync.cursor;
 	}

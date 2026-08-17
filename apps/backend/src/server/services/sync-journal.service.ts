@@ -16,7 +16,7 @@ export interface DurableSyncChange {
  * clients recover exclusively from this database-backed sequence after being
  * offline or after a process restart.
  */
-export class SyncJournalService {
+export default class SyncJournalService {
 	constructor(private readonly ctx: Context) {}
 
 	async recordContent(content: Content): Promise<number> {
