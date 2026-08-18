@@ -3,6 +3,7 @@ import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import type { SyncMutation } from "@synapse/api";
+import { parseAudioJson, parseMediaJson } from "@synapse/core";
 import {
 	DEFAULT_USER_PREFERENCES,
 	normalizeUserPreferences,
@@ -852,12 +853,32 @@ function normalizeTagTitle(title: string): string {
 /** Deliberately excludes IDs, timestamps and device-local object URLs. */
 function contentIdentity(item: Content): string {
 	return JSON.stringify({
-		content: item.content,
+		content: contentPayloadIdentity(item),
 		tags: [...item.tags].map(normalizeTagTitle).sort(),
 		title: item.title?.trim() ?? "",
 		type: item.type,
 		url: item.url?.trim() ?? "",
 	});
+}
+
+function contentPayloadIdentity(item: Content): string {
+	const media = item.type === "media" ? parseMediaJson(item.content) : null;
+	const audio = item.type === "audio" ? parseAudioJson(item.content) : null;
+	const asset = media?.media.object ?? media?.media.url ?? audio?.audio.object ?? audio?.audio.url;
+	const assetName = asset ? stableAssetName(asset) : "";
+	return assetName ? `asset:${assetName}` : item.content;
+}
+
+function stableAssetName(value: string): string {
+	let decoded = value;
+	try {
+		decoded = decodeURIComponent(value);
+	} catch {
+		// Invalid URL escapes remain comparable as their literal storage value.
+	}
+	const path = decoded.split(/[?#]/, 1)[0] ?? decoded;
+	const name = path.slice(path.lastIndexOf("/") + 1);
+	return name.replace(/^\d{10,}-/, "");
 }
 
 function normalizeLocalTags(tags: unknown): LocalTag[] {

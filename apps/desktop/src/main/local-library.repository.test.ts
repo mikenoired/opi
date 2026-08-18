@@ -198,12 +198,17 @@ describe("LocalLibraryRepository", () => {
 			user_id: "remote-user",
 		};
 
-		await library.applyRemoteChange({
-			content: remote,
-			entityId: remote.id,
-			operation: "upsert",
-			revision: 1,
-		});
+		await library.applyRemoteBatch(
+			[
+				{
+					content: remote,
+					entityId: remote.id,
+					operation: "upsert",
+					revision: 1,
+				},
+			],
+			"j:1"
+		);
 
 		expect(await library.getPendingOperations()).toEqual([]);
 		expect(await library.list()).toEqual([
@@ -237,6 +242,65 @@ describe("LocalLibraryRepository", () => {
 		expect(await library.getPendingOperations()).toEqual([]);
 		await library.queueLocalAttachmentsForSync();
 		expect(await library.getPendingOperations()).toHaveLength(1);
+	});
+
+	test("links a local media item to its canonical server upload without duplicating it", async () => {
+		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const library = new LocalLibraryRepository(root);
+		await library.updateSettings({ syncPolicy: "automatic" });
+		const local = await library.save({
+			content: JSON.stringify({
+				media: {
+					object: "local/imports/photo.png",
+					thumbnailBase64: "",
+					type: "image",
+					url: "synapse-object://local/local%2Fimports%2Fphoto.png",
+				},
+			}),
+			media_type: "image",
+			media_url: "synapse-object://local/local%2Fimports%2Fphoto.png",
+			tags: ["inbox"],
+			thumbnail_url: "synapse-object://local/local%2Fimports%2Fphoto.png",
+			title: "photo.png",
+			type: "media",
+		});
+		const remote = {
+			content: JSON.stringify({
+				media: {
+					object: "media/user-1/1787000000000-photo.png",
+					thumbnailBase64: "",
+					type: "image",
+					url: "/api/files/media/user-1/1787000000000-photo.png",
+				},
+			}),
+			created_at: local.created_at,
+			id: "remote-media",
+			media_type: "image" as const,
+			media_url: "/api/files/media/user-1/1787000000000-photo.png",
+			tag_ids: ["remote-tag"],
+			tags: ["inbox"],
+			thumbnail_url: "/api/files/media/user-1/1787000000000-photo.png",
+			title: "photo.png",
+			type: "media" as const,
+			updated_at: new Date().toISOString(),
+			user_id: "user-1",
+		};
+
+		await library.applyRemoteChange({
+			content: remote,
+			entityId: remote.id,
+			operation: "upsert",
+			revision: 1,
+		});
+
+		expect(await library.list()).toEqual([
+			expect.objectContaining({
+				id: local.id,
+				remoteId: remote.id,
+				syncState: "synced",
+			}),
+		]);
+		expect(await library.getPendingOperations()).toEqual([]);
 	});
 
 	test("turns a remotely deleted item into a new local-only item after an edit", async () => {

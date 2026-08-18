@@ -17,6 +17,7 @@
 	"scripts": {
 		"build": "electron-vite build",
 		"dist": "electron-vite build && electron-builder",
+		"icon:mac": "./scripts/png-to-icns.sh resources/icon.png resources/icon.icns",
 		"dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
 		"format": "bun x oxfmt --config ../../.oxfmtrc.json --write .",
 		"format:check": "bun x oxfmt --config ../../.oxfmtrc.json --check .",

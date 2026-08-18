@@ -77,6 +77,16 @@ app.on("second-instance", (_event, commandLine) => {
 	BrowserWindow.getAllWindows()[0]?.focus();
 });
 
+function setDockIcon() {
+	if (process.platform !== "darwin" || !app.dock) return;
+
+	const iconPath = app.isPackaged
+		? join(process.resourcesPath, "icon.png")
+		: join(__dirname, "../../resources/icon.png");
+
+	app.dock.setIcon(iconPath);
+}
+
 function createWindow(): void {
 	const window = new BrowserWindow({
 		width: 1_280,
@@ -266,6 +276,7 @@ app.whenReady().then(async () => {
 			request.headers.get("range")
 		);
 	});
+	setDockIcon();
 	createWindow();
 
 	app.on("activate", () => {
