@@ -98,8 +98,17 @@ function createWindow(): void {
 			process.platform === "darwin" ? undefined : { color: "#ffffff", symbolColor: "#111827", height: 36 },
 		webPreferences: {
 			contextIsolation: true,
+			nodeIntegration: false,
 			preload: join(__dirname, "../preload/index.cjs"),
+			sandbox: true,
+			webSecurity: true,
+			webviewTag: false,
 		},
+	});
+	window.webContents.on("will-navigate", (event) => event.preventDefault());
+	window.webContents.setWindowOpenHandler(({ url }) => {
+		if (isExternalUrl(url)) void shell.openExternal(url);
+		return { action: "deny" };
 	});
 	window.webContents.on("preload-error", (_event, preloadPath, error) => {
 		process.stderr.write(`Desktop preload failed: ${preloadPath}\n${error.stack}\n`);
@@ -109,6 +118,15 @@ function createWindow(): void {
 		void window.loadURL(process.env.ELECTRON_RENDERER_URL);
 	} else {
 		void window.loadFile(join(__dirname, "../renderer/index.html"));
+	}
+}
+
+function isExternalUrl(value: string): boolean {
+	try {
+		const url = new URL(value);
+		return url.protocol === "http:" || url.protocol === "https:" || url.protocol === "mailto:";
+	} catch {
+		return false;
 	}
 }
 
@@ -160,9 +178,9 @@ app.whenReady().then(async () => {
 			{
 				label: "Вид",
 				submenu: [
-					{ role: "reload" },
-					{ role: "toggleDevTools" },
-					{ type: "separator" },
+					...(app.isPackaged
+						? []
+						: ([{ role: "reload" }, { role: "toggleDevTools" }, { type: "separator" }] as const)),
 					{ role: "togglefullscreen" },
 				],
 			},

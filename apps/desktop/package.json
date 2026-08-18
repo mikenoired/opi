@@ -3,6 +3,7 @@
 	"productName": "Monolyth",
 	"description": "A personal knowledge hub for collecting, organizing, and connecting information.",
 	"author": "Mike Noired",
+	"copyright": "Copyright © 2026 Mike Noired",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -10,13 +11,43 @@
 	"build": {
 		"appId": "com.monolyth.desktop",
 		"productName": "Monolyth",
+		"artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+		"asar": true,
+		"directories": {
+			"buildResources": "resources",
+			"output": "release"
+		},
+		"extraResources": [
+			{
+				"from": "resources/icon.png",
+				"to": "icon.png"
+			}
+		],
 		"mac": {
-			"icon": "resources/icon.icon"
-		}
+			"category": "public.app-category.productivity",
+			"icon": "resources/icon.icns",
+			"target": [
+				"dmg",
+				"zip"
+			]
+		},
+		"dmg": {
+			"icon": "resources/icon.icns"
+		},
+		"protocols": [
+			{
+				"name": "Monolyth",
+				"schemes": [
+					"monolyth"
+				]
+			}
+		]
 	},
 	"scripts": {
 		"build": "electron-vite build",
-		"dist": "electron-vite build && electron-builder",
+		"clean:release": "bun -e \"await import('node:fs/promises').then(({ rm }) => rm('release', { recursive: true, force: true }))\"",
+		"dist": "bun run clean:release && electron-vite build && electron-builder",
+		"dist:mac": "bun run clean:release && electron-vite build && electron-builder --mac",
 		"icon:mac": "./scripts/png-to-icns.sh resources/icon.png resources/icon.icns",
 		"dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
 		"format": "bun x oxfmt --config ../../.oxfmtrc.json --write .",

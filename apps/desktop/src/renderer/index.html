@@ -3,6 +3,9 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'self'; script-src 'self' http://localhost:5174; style-src 'self' 'unsafe-inline' http://localhost:5174; img-src 'self' data: blob: monolyth-object:; media-src 'self' blob: monolyth-object:; connect-src 'self' ws://localhost:5174 http://localhost:5174; object-src 'none'; base-uri 'none'; form-action 'none'" />
 		<title>Monolyth</title>
 		<script type="module" src="./main.tsx"></script>
 	</head>

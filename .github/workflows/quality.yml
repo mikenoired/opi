@@ -44,6 +44,9 @@ jobs:
       - name: Check
         run: bun run check
 
+      - name: Build and test desktop application
+        run: bun --filter @monolyth/desktop build && bun --filter @monolyth/desktop test
+
       - name: Generate server coverage
         run: bun run test:coverage
 
