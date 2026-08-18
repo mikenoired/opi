@@ -134,7 +134,7 @@ function Tooltip({
           left undefined, the trigger inherits it from the provider. */}
 			<TooltipPrimitive.Trigger render={children} delay={delayDuration} />
 			<TooltipPrimitive.Portal container={portalContainer ?? undefined}>
-				<TooltipPrimitive.Positioner side={side} sideOffset={sideOffset} className="z-50">
+				<TooltipPrimitive.Positioner side={side} sideOffset={sideOffset} className="z-210">
 					<TooltipPrimitive.Popup
 						render={(props, state) => {
 							const exiting = state.transitionStatus === "ending";

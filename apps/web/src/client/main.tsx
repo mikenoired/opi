@@ -1,4 +1,7 @@
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { DashboardSurface } from "@synapse/features/app-shell";
+import { AppRuntimeProvider } from "@synapse/features/runtime";
+import { I18nProvider } from "@synapse/i18n";
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	createRootRoute,
 	createRoute,
@@ -9,17 +12,20 @@ import {
 	useParams,
 } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";
-import { StrictMode } from "react";
+import { StrictMode, useEffect, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "react-hot-toast";
 
-import DashboardContent from "@/app/dashboard/dashboard-content";
+import DesktopAuthPage from "@/app/desktop-auth/page";
 import HomePage from "@/app/page";
+import { webRuntime } from "@/platform/web-runtime";
+import { webSyncRuntime } from "@/platform/web-sync";
 import { apiClient, unwrap } from "@/shared/api/client";
 import type { ContentTags, Graph } from "@/shared/api/contracts";
 import { AuthProvider, useAuth } from "@/shared/lib/auth-context";
 import { DashboardProvider } from "@/shared/lib/dashboard-context";
 import { UserPreferencesProvider } from "@/shared/lib/user-preferences-context";
+import { useUserPreferences } from "@/shared/lib/user-preferences-context";
 import { ModalProvider } from "@/widgets/modals/context/modal-context";
 import { ModalManager } from "@/widgets/modals/context/modal-manager";
 import { SettingsModalController } from "@/widgets/settings-modal/ui/settings-modal-controller";
@@ -41,20 +47,59 @@ const queryClient = new QueryClient({
 
 function Root() {
 	return (
-		<QueryClientProvider client={queryClient}>
-			<AuthProvider>
-				<UserPreferencesProvider>
-					<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-						<ModalProvider>
-							<Outlet />
-							<ModalManager />
-							<Toaster position="bottom-right" />
-						</ModalProvider>
-					</ThemeProvider>
-				</UserPreferencesProvider>
-			</AuthProvider>
-		</QueryClientProvider>
+		<AppRuntimeProvider runtime={webRuntime}>
+			<QueryClientProvider client={queryClient}>
+				<AuthProvider>
+					<SyncListener />
+					<UserPreferencesProvider>
+						<WebI18n>
+							<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+								<ModalProvider>
+									<Outlet />
+									<ModalManager />
+									<Toaster position="bottom-right" />
+								</ModalProvider>
+							</ThemeProvider>
+						</WebI18n>
+					</UserPreferencesProvider>
+				</AuthProvider>
+			</QueryClientProvider>
+		</AppRuntimeProvider>
 	);
+}
+
+function WebI18n({ children }: { children: ReactNode }) {
+	const { interfaceLanguage } = useUserPreferences();
+	return <I18nProvider language={interfaceLanguage}>{children}</I18nProvider>;
+}
+
+function SyncListener() {
+	const { user } = useAuth();
+	const queryClient = useQueryClient();
+
+	useEffect(() => {
+		if (!user) {
+			void webSyncRuntime.stop();
+			return;
+		}
+
+		const invalidateProjection = () => {
+			void queryClient.invalidateQueries({
+				predicate: (query) => ["content", "graph", "user"].includes(String(query.queryKey[0])),
+			});
+		};
+		const unsubscribe = webSyncRuntime.subscribeProjection(invalidateProjection);
+		void webSyncRuntime.start(user.id).catch(() => {
+			// IndexedDB/API failures remain visible in DevTools and retry on a future lifecycle start.
+		});
+
+		return () => {
+			unsubscribe();
+			void webSyncRuntime.stop();
+		};
+	}, [queryClient, user?.id]);
+
+	return null;
 }
 
 function DashboardShell() {
@@ -65,9 +110,9 @@ function DashboardShell() {
 		<DashboardProvider>
 			<div className="flex h-screen min-h-0 w-full overflow-hidden bg-background dark:bg-muted">
 				<Sidebar />
-				<DashboardContent>
+				<DashboardSurface>
 					<Outlet />
-				</DashboardContent>
+				</DashboardSurface>
 				<SettingsModalController />
 			</div>
 		</DashboardProvider>
@@ -102,6 +147,11 @@ const dashboardRoute = createRoute({
 	id: "dashboard-shell",
 	component: DashboardShell,
 });
+const desktopAuthRoute = createRoute({
+	getParentRoute: () => rootRoute,
+	path: "/desktop-auth",
+	component: DesktopAuthPage,
+});
 const dashboardIndexRoute = createRoute({
 	getParentRoute: () => dashboardRoute,
 	path: "/",
@@ -116,6 +166,7 @@ const graphRoute = createRoute({
 });
 const routeTree = rootRoute.addChildren([
 	dashboardRoute.addChildren([dashboardIndexRoute, tagsRoute, tagRoute, graphRoute]),
+	desktopAuthRoute,
 ]);
 const router = createRouter({ routeTree, context: {} });
 

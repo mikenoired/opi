@@ -9,27 +9,35 @@
 	],
 	"scripts": {
 		"build:check": "bun run check && bun --filter @synapse/web build && bun run bundle:size",
-		"build:server:size": "bun build apps/web/src/server/index.ts --outfile apps/web/.server-build/server.js --target bun --minify && bun scripts/bundle-size.ts --server",
+		"build:server:size": "bun build apps/backend/src/index.ts --outfile apps/backend/.server-build/server.js --target bun --minify && bun scripts/bundle-size.ts --server",
 		"bundle:size": "bun scripts/bundle-size.ts",
 		"check": "bun run lint && bun run format:check && bun run typecheck && bun run test:all",
 		"format": "bun x oxfmt --config .oxfmtrc.json --write .",
 		"format:check": "bun x oxfmt --config .oxfmtrc.json --check .",
-		"lint": "bun run lint:js",
+		"lint": "bun run lint:js && bun scripts/check-feature-boundaries.ts",
 		"lint:fix": "bun run lint:js:fix",
 		"lint:js": "bun x oxlint . --config .oxlintrc.json --deny-warnings",
 		"lint:js:fix": "bun x oxlint . --config .oxlintrc.json --fix",
 		"test": "bun run test:server",
-		"test:server": "bun --filter @synapse/web test:server",
-		"test:api": "bun --filter @synapse/web test:api",
-		"test:all": "bun run test:server && bun run test:api",
-		"test:coverage": "bun --filter @synapse/web test:coverage",
+		"test:server": "bun --filter @synapse/backend test:server",
+		"test:api": "bun --filter @synapse/backend test:api",
+		"test:all": "bun test packages/sync/src tests/e2e/harness && bun run test:server && bun run test:api",
+		"test:coverage": "bun --filter @synapse/backend test:coverage",
+		"test:e2e:desktop": "bun scripts/run-desktop-e2e.ts",
+		"test:e2e:web": "bun scripts/run-web-e2e.ts",
 		"smoke:api": "bun run test:api",
 		"smoke:server": "JWT_SECRET=smoke-test-secret JWT_REFRESH_SECRET=smoke-test-refresh-secret API_RATE_LIMIT_MUTATION=1000 bun scripts/server-smoke.ts",
 		"smoke:release": "JWT_SECRET=smoke-test-secret JWT_REFRESH_SECRET=smoke-test-refresh-secret API_RATE_LIMIT_MUTATION=1000 SMOKE_WARMUP_RUNS=0 SMOKE_RUNS=1 bun scripts/server-smoke.ts",
-		"typecheck": "bun x tsc -p apps/web/tsconfig.json --noEmit && bun x tsc -p packages/ui/tsconfig.json --noEmit"
+		"typecheck": "bun x tsc -p apps/web/tsconfig.json --noEmit && bun --filter @synapse/backend typecheck && bun --filter @synapse/desktop typecheck && bun x tsc -p packages/ui/tsconfig.json --noEmit && bun --filter '@synapse/core' typecheck && bun --filter '@synapse/features' typecheck && bun --filter '@synapse/api' typecheck && bun --filter '@synapse/shared' typecheck && bun --filter '@synapse/sync' typecheck"
 	},
 	"devDependencies": {
 		"@types/bun": "^1.3.14",
+		"@wdio/cli": "^9.30.1",
+		"@wdio/electron-service": "^10.2.0",
+		"@wdio/local-runner": "^9.30.1",
+		"@wdio/mocha-framework": "^9.30.1",
+		"@wdio/spec-reporter": "^9.30.1",
+		"electron": "^43.3.0",
 		"oxfmt": "^0.61.0",
 		"oxlint": "^1.76.0",
 		"typescript": "^7.0.2"
@@ -41,6 +49,10 @@
 		"prosemirror-view": "1.41.9"
 	},
 	"dependencies": {
+		"electron-to-chromium": "^1.5.405",
 		"tailwindcss": "^4.3.3"
-	}
+	},
+	"trustedDependencies": [
+		"electron"
+	]
 }

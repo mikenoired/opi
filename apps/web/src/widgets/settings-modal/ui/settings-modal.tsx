@@ -1,14 +1,11 @@
-import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { SettingsModalShell } from "@synapse/features/app-shell";
+import { useI18n } from "@synapse/i18n";
 
 import AiTab from "@/features/settings-ai/ui/ai-tab";
 import AppearanceTab from "@/features/settings-appearance/ui/appearance-tab";
 import GeneralTab from "@/features/settings-general/ui/general-tab";
 import MediaTab from "@/features/settings-media/ui/media-tab";
 import type { SettingsTabKey } from "@/features/settings/model/settings-tabs";
-import { useI18n } from "@/shared/lib/i18n";
-import Link from "@/shared/router/link";
 import { usePathname, useSearchParams } from "@/shared/router/navigation";
 
 import { SettingsModalNav } from "./settings-modal-nav";
@@ -27,115 +24,23 @@ const tabComponentMap = {
 	ai: AiTab,
 };
 
-const settingsModalBackdropColor = "rgba(32, 29, 26, 0.26)";
-
-function useModalSideEffects(
-	open: boolean,
-	onClose: () => void,
-	modalRef: React.RefObject<HTMLDivElement | null>
-) {
-	useEffect(() => {
-		if (!open) {
-			return;
-		}
-
-		const previousOverflow = document.body.style.overflow;
-		document.body.style.overflow = "hidden";
-		modalRef.current?.focus();
-
-		return () => {
-			document.body.style.overflow = previousOverflow;
-		};
-	}, [modalRef, open]);
-
-	useEffect(() => {
-		if (!open) {
-			return;
-		}
-
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				onClose();
-			}
-		};
-
-		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [onClose, open]);
-}
-
-export function SettingsModal({ activeTab, closeHref, open, onClose }: SettingsModalProps) {
-	const modalRef = useRef<HTMLDivElement>(null);
+/** Routing is Web-owned; the visual dialog and all its interaction behavior are shared. */
+export function SettingsModal({ activeTab, closeHref: _closeHref, open, onClose }: SettingsModalProps) {
 	const ActiveTab = tabComponentMap[activeTab];
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const { t } = useI18n();
 
-	useModalSideEffects(open, onClose, modalRef);
-
 	return (
-		<AnimatePresence>
-			{open && (
-				<motion.div
-					initial={{ backdropFilter: "blur(0px)" }}
-					animate={{ backdropFilter: "blur(10px)" }}
-					exit={{ backdropFilter: "blur(0px)" }}
-					transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-					onClick={onClose}
-					className="fixed inset-0 z-90 flex items-center justify-center p-4 sm:p-6">
-					<motion.div
-						aria-hidden="true"
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-						className="absolute inset-0"
-						style={{ backgroundColor: settingsModalBackdropColor }}
-					/>
-					<motion.div
-						ref={modalRef}
-						tabIndex={-1}
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="settings-modal-title"
-						initial={{ filter: "blur(12px)", opacity: 0, scale: 0.98, y: 18 }}
-						animate={{ filter: "blur(0px)", opacity: 1, scale: 1, y: 0 }}
-						exit={{ filter: "blur(10px)", opacity: 0, scale: 0.985, y: 12 }}
-						transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
-						onClick={(event) => event.stopPropagation()}
-						className="relative grid h-[min(760px,calc(100vh-2rem))] w-full max-w-230 overflow-hidden rounded-xl border border-border bg-background md:grid-cols-[220px_minmax(0,1fr)]">
-						<Link
-							href={closeHref}
-							scroll={false}
-							className="absolute top-3 right-3 z-20 flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-							aria-label={t("settings.close")}>
-							<X className="size-4.5" />
-						</Link>
-						<div className="flex flex-col p-3 pt-12 md:border-r md:border-border md:p-3 md:pt-3">
-							<div className="mb-3 px-2">
-								<h1 id="settings-modal-title" className="text-lg font-semibold text-foreground">
-									{t("settings.title")}
-								</h1>
-							</div>
-							<SettingsModalNav activeTab={activeTab} pathname={pathname} search={searchParams.toString()} />
-						</div>
-						<div className="min-h-0 overflow-hidden">
-							<div className="h-full overflow-y-auto px-4 pt-3 pb-4 md:px-6 md:pt-6 md:pb-6">
-								<AnimatePresence mode="wait">
-									<motion.div
-										key={activeTab}
-										initial={{ filter: "blur(10px)", opacity: 0, y: 10 }}
-										animate={{ filter: "blur(0px)", opacity: 1, y: 0 }}
-										exit={{ filter: "blur(8px)", opacity: 0, y: -6 }}
-										transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}>
-										<ActiveTab />
-									</motion.div>
-								</AnimatePresence>
-							</div>
-						</div>
-					</motion.div>
-				</motion.div>
-			)}
-		</AnimatePresence>
+		<SettingsModalShell
+			activeKey={activeTab}
+			open={open}
+			onClose={onClose}
+			title={t("settings.title")}
+			navigation={
+				<SettingsModalNav activeTab={activeTab} pathname={pathname} search={searchParams.toString()} />
+			}>
+			<ActiveTab />
+		</SettingsModalShell>
 	);
 }

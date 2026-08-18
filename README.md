@@ -21,17 +21,18 @@ brew install ffmpeg
 ### 2. Настройте окружение
 
 ```bash
+cp apps/backend/.env.example apps/backend/.env
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-Заполните обязательные секреты в `apps/web/.env.local`:
+Заполните обязательные секреты только в `apps/backend/.env`:
 
 ```env
 JWT_SECRET=<случайная строка>
 JWT_REFRESH_SECRET=<другая случайная строка>
 ```
 
-Сгенерировать значения можно командой `openssl rand -hex 32` — отдельно для каждого секрета. Остальные значения уже подходят для локального запуска.
+Сгенерировать значения можно командой `openssl rand -base64 32` — отдельно для каждого секрета. Web `.env.local` содержит только публичный адрес API и не должен содержать секреты, пароли БД или ключи AI.
 
 ### 3. Запустите инфраструктуру
 
@@ -45,9 +46,9 @@ docker compose ps
 ### 4. Создайте таблицы
 
 ```bash
-bun --filter @synapse/web db:push
-bun --filter @synapse/web db:install-tag-merge
-bun --filter @synapse/web search:backfill
+bun --filter @synapse/backend db:push
+bun --filter @synapse/backend db:install-tag-merge
+bun --filter @synapse/backend search:backfill
 ```
 
 ### 5. Создайте bucket в MinIO
@@ -57,15 +58,20 @@ bun --filter @synapse/web search:backfill
 ### 6. Запустите приложение в режиме разработки
 
 ```bash
+bun --filter @synapse/backend dev
+# в отдельном терминале
 bun --filter @synapse/web dev
+# в третьем терминале (Desktop)
+bun --filter @synapse/desktop dev
 ```
 
-Команда запускает два процесса:
+Приложения запускаются отдельными процессами:
 
 - Vite-клиент: [http://localhost:5173](http://localhost:5173)
 - Bun + Hono API: [http://localhost:3000](http://localhost:3000)
+- Electron Desktop: отдельное нативное окно
 
-Для этого режима оставьте в `apps/web/.env.local`:
+Vite автоматически проксирует `/api` на Backend. Если Web и Backend должны работать с разных origin, задайте:
 
 ```env
 VITE_API_URL=http://localhost:3000/api
@@ -74,28 +80,42 @@ CORS_ORIGIN=http://localhost:5173
 
 API-документация Scalar доступна на [http://localhost:3000/api/docs](http://localhost:3000/api/docs), а спецификация OpenAPI — на [http://localhost:3000/api/openapi.json](http://localhost:3000/api/openapi.json).
 
+### Проверка Synapse Sync в Desktop
+
+1. Зарегистрируйте пользователя в Web.
+2. Для локального теста включите платный план у существующих пользователей: `bun --filter @synapse/backend db:set-god-mode`.
+3. В Desktop нажмите **Подключить аккаунт Synapse**. Вход или регистрация выполняются в браузере; после успеха браузер вернёт вас в приложение.
+4. Создайте заметку и нажмите **Синхронизировать очередь**.
+5. Убедитесь в Web, что материал появился. В Desktop кнопка **Удалить с сервера** сохраняет локальную копию и удаляет только удалённую.
+
+Desktop по умолчанию использует `http://localhost:5173` для Web и `http://localhost:3000/api` для API. В другой среде задайте `SYNAPSE_WEB_URL` и `SYNAPSE_API_URL` в окружении Desktop-процесса.
+
+Токен Desktop хранится только в памяти main-процесса и сбрасывается при закрытии приложения; это сделано для безопасного локального тестирования до добавления системного защищённого хранилища.
+
 ## Production-сборка и запуск
 
-Соберите клиент для same-origin deployment:
+Соберите Web-клиент с адресом Backend API:
 
 ```bash
-VITE_API_URL= bun --filter @synapse/web build
+VITE_API_URL=https://api.example.com/api bun --filter @synapse/web build
 ```
 
 Для полной проверки перед сборкой:
 
 ```bash
 bun run check
-VITE_API_URL= bun --filter @synapse/web build
+VITE_API_URL=https://api.example.com/api bun --filter @synapse/web build
 ```
 
-В production Bun отдаёт и SPA, и Hono API с одного origin на порту `3000`:
+Запустите Backend отдельно:
 
 ```bash
-NODE_ENV=production bun --filter @synapse/web start
+NODE_ENV=production bun --filter @synapse/backend start
 ```
 
-После запуска приложение и API будут доступны на [http://localhost:3000](http://localhost:3000). `VITE_API_URL` встраивается Vite во время **сборки**, поэтому для same-origin запуска он должен быть пустым именно в команде `build`: тогда клиент использует относительный путь `/api`.
+Backend API будет доступен на [http://localhost:3000/api](http://localhost:3000/api); `apps/web/dist` нужно раздавать отдельным статическим хостингом. `VITE_API_URL` встраивается Vite во время **сборки**.
+
+Для Desktop также укажите публичные адреса `SYNAPSE_WEB_URL` и `SYNAPSE_API_URL`: они используются для входа через системный браузер и возврата по `synapse://auth/callback`.
 
 ## Остановка
 

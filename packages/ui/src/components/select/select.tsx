@@ -374,7 +374,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(({ classNam
 				align="start"
 				sideOffset={6}
 				alignItemWithTrigger={false}
-				className="z-50 outline-none">
+				className="z-210 outline-none">
 				<motion.div
 					initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
 					animate={open ? { opacity: 1, y: 0, scaleY: 1 } : { opacity: 0, y: -4, scaleY: 0.96 }}
@@ -435,7 +435,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(({ classNam
 								<AnimatePresence>
 									{checkedRect && (
 										<motion.div
-											className={`absolute ${shape.bg} bg-active pointer-events-none`}
+											className={`absolute ${shape.bg} pointer-events-none bg-active`}
 											// Position lives in `animate` so an in-session value
 											// change springs the marker to the picked row (the
 											// selection acknowledgment). Safe against the reopen
@@ -466,7 +466,7 @@ const SelectContent = forwardRef<HTMLDivElement, SelectContentProps>(({ classNam
 									{activeRect && (
 										<motion.div
 											key={sessionRef.current}
-											className={`absolute ${shape.bg} bg-hover pointer-events-none`}
+											className={`absolute ${shape.bg} pointer-events-none bg-hover`}
 											initial={{
 												opacity: 0,
 												top: activeRect.top,

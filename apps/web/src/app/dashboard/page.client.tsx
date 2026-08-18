@@ -1,3 +1,5 @@
+import { useI18n } from "@synapse/i18n";
+import type { Content } from "@synapse/shared/schemas";
 import type { DragEvent } from "react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -9,17 +11,19 @@ import {
 	isContentTypeFilterAvailable,
 } from "@/shared/lib/content-type-options";
 import { useDashboard } from "@/shared/lib/dashboard-context";
-import { useI18n } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
-import { usePathname, useRouter, useSearchParams } from "@/shared/router/navigation";
+import { useRouter, useSearchParams } from "@/shared/router/navigation";
 import { useModal } from "@/widgets/modals/context/modal-context";
 
 const ContentFilter = lazy(() =>
-	import("@/features/content-filter/content-filter").then((mod) => ({ default: mod.ContentFilter }))
+	import("@/features/content-filter/content-filter").then((mod) => ({
+		default: mod.ContentFilter,
+	}))
 );
 const ContentGrid = lazy(() =>
-	import("@/features/content-grid/content-grid").then((mod) => ({ default: mod.ContentGrid }))
+	import("@/features/content-grid/content-grid").then((mod) => ({
+		default: mod.ContentGrid,
+	}))
 );
 
 const FILTER_TYPE_KEYS = contentTypeOptions.map((option) => option.key);
@@ -45,7 +49,6 @@ export default function DashboardClient({
 	const { openModal } = useModal();
 	const { t } = useI18n();
 	const router = useRouter();
-	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const [searchQuery, setSearchQuery] = useState(() => searchParams?.get("search") ?? "");
 	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => searchParams?.get("search") ?? "");
@@ -80,9 +83,10 @@ export default function DashboardClient({
 
 	useEffect(() => {
 		if (availableContentTypes.length === 0) return;
-		setSelectedContentTypes((current) =>
-			current.filter((type) => isContentTypeFilterAvailable(type, availableContentTypes))
-		);
+		setSelectedContentTypes((current) => {
+			const available = current.filter((type) => isContentTypeFilterAvailable(type, availableContentTypes));
+			return available.length === current.length ? current : available;
+		});
 	}, [availableContentTypes]);
 
 	const queryInput = useMemo<ContentListQueryInput>(
@@ -157,7 +161,6 @@ export default function DashboardClient({
 		[invalidateRelatedQueries, utils]
 	);
 
-	// URL → state: применяем фильтры из адресной строки (перезагрузка, шаринг, назад/вперёд).
 	useEffect(() => {
 		if (!searchParams) return;
 
@@ -173,28 +176,11 @@ export default function DashboardClient({
 		setSelectedTags((current) => (sameStringSet(current, nextTags) ? current : nextTags));
 	}, [searchParams]);
 
-	// state → URL: обновляем адресную строку через нативный History API, чтобы
-	// НЕ триггерить ре-рендер серверного page.tsx и лишний серверный content.getAll.
-	// Важно: первым аргументом передаём null. Next патчит window.history.replaceState
-	// и при data без __NA/_N диспатчит ACTION_RESTORE — тогда useSearchParams тоже
-	// обновляется (иначе модалки/сайдбар, строящие URL через useSearchParams, теряли
-	// текущие фильтры). ACTION_RESTORE переиспользует кеш (HistoryTraversal), без RSC-fetch.
 	useEffect(() => {
-		const params = new URLSearchParams(window.location.search);
-		if (searchQuery) params.set("search", searchQuery);
-		else params.delete("search");
-		if (selectedContentTypes.length > 0) params.set("types", selectedContentTypes.join(","));
-		else params.delete("types");
-		if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
-		else params.delete("tags");
-
-		const queryString = params.toString();
-		const url = queryString ? `${pathname}?${queryString}` : pathname;
-		window.history.replaceState(null, "", url);
-	}, [searchQuery, selectedContentTypes, selectedTags, pathname]);
-
-	useEffect(() => {
-		setAddDialogDefaults({ initialTags: [], onContentAdded: handleContentAdded });
+		setAddDialogDefaults({
+			initialTags: [],
+			onContentAdded: handleContentAdded,
+		});
 		return () => setAddDialogDefaults({ initialTags: [], onContentAdded: null });
 	}, [setAddDialogDefaults, handleContentAdded]);
 
@@ -280,7 +266,7 @@ export default function DashboardClient({
 		<div className="relative flex h-full min-w-0 flex-col">
 			{dragActive && (
 				<div
-					className="pointer-events-auto fixed inset-0 z-100 flex animate-in flex-col items-center justify-center bg-black/60 transition-all fade-in-0 select-none"
+					className="animate-in fade-in-0 pointer-events-auto fixed inset-0 z-100 flex flex-col items-center justify-center bg-black/60 transition-all select-none"
 					style={{ backdropFilter: "blur(2px)" }}>
 					<div className="flex flex-col items-center gap-4">
 						<svg
@@ -297,10 +283,10 @@ export default function DashboardClient({
 								d="M12 19V6m0 0l-5 5m5-5l5 5"
 							/>
 						</svg>
-						<div className="animate-in rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-center text-2xl font-semibold shadow-xl fade-in-0">
-							{t("dashboard.drop.title")}
+						<div className="animate-in fade-in-0 rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-center text-2xl font-semibold shadow-xl">
+							{t("library.drop.title")}
 							<div className="mt-2 text-base font-normal text-muted-foreground">
-								{t("dashboard.drop.subtitle")}
+								{t("library.drop.subtitle")}
 							</div>
 						</div>
 					</div>

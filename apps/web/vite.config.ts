@@ -14,4 +14,14 @@ export default defineConfig({
 		outDir: "dist",
 		sourcemap: true,
 	},
+	server: {
+		port: Number(process.env.WEB_PORT ?? 5173),
+		strictPort: true,
+		proxy: {
+			"/api": {
+				target: process.env.BACKEND_URL || "http://localhost:3000",
+				changeOrigin: true,
+			},
+		},
+	},
 });

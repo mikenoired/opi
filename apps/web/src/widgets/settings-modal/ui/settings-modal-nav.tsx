@@ -1,39 +1,43 @@
-import { TabItem, Tabs, TabsList } from "@synapse/ui/components";
+import { ConfiguredSettingsNavigation } from "@synapse/features/app-shell";
+import type { SettingsTabConfig } from "@synapse/features/runtime";
+import { useI18n } from "@synapse/i18n";
 
 import { getSettingsHref } from "@/features/settings/lib/settings-modal-url";
-import { isSettingsTab, settingsTabs, type SettingsTabKey } from "@/features/settings/model/settings-tabs";
-import { useI18n } from "@/shared/lib/i18n";
+import { isSettingsTab, type SettingsTabKey } from "@/features/settings/model/settings-tabs";
+import { webRuntime } from "@/platform/web-runtime";
 import { useRouter } from "@/shared/router/navigation";
 
-interface SettingsModalNavProps {
+export function SettingsModalNav({
+	activeTab,
+	pathname,
+	search,
+}: {
 	activeTab: SettingsTabKey;
 	pathname: string;
 	search: string;
-}
-
-export function SettingsModalNav({ activeTab, pathname, search }: SettingsModalNavProps) {
+}) {
 	const router = useRouter();
-	const searchParams = new URLSearchParams(search);
 	const { t } = useI18n();
-
-	const handleValueChange = (value: string) => {
-		if (!isSettingsTab(value)) return;
-		router.replace(getSettingsHref(pathname, searchParams, value), { scroll: false });
+	const labels: Record<SettingsTabKey, string> = {
+		ai: t("ai.title"),
+		appearance: t("appearance.title"),
+		general: t("account.title"),
+		media: t("media.title"),
 	};
-
+	const tabs: SettingsTabConfig[] = webRuntime.configuration.settings.map((tab) => ({
+		...tab,
+		groups: [],
+		label: labels[tab.id as SettingsTabKey],
+	}));
 	return (
-		<Tabs value={activeTab} onValueChange={handleValueChange} orientation="vertical">
-			<TabsList orientation="vertical" aria-label={t("settings.title")}>
-				{settingsTabs.map((tab) => (
-					<TabItem
-						key={tab.key}
-						value={tab.key}
-						icon={tab.icon}
-						label={t(tab.labelKey)}
-						className="h-10 w-full justify-start"
-					/>
-				))}
-			</TabsList>
-		</Tabs>
+		<ConfiguredSettingsNavigation
+			activeId={activeTab}
+			capabilities={{ enabled: ["account", "ai", "cloud-storage", "media-import"] }}
+			tabs={tabs}
+			onSelect={(value) => {
+				if (isSettingsTab(value))
+					router.replace(getSettingsHref(pathname, new URLSearchParams(search), value), { scroll: false });
+			}}
+		/>
 	);
 }

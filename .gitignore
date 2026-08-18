@@ -12,11 +12,14 @@ node_modules
 
 # testing
 /coverage
+/.cache/
 
 # production
 /build
 apps/web/dist/
 apps/web/.server-build/
+apps/backend/.server-build/
+apps/desktop/out/
 
 # misc
 .DS_Store

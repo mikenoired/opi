@@ -1,8 +1,6 @@
-import { Skeleton } from "@synapse/ui/components";
+import { ContentMasonry as SharedContentMasonry } from "@synapse/features";
+import type { Content } from "@synapse/shared/schemas";
 import { lazy, memo } from "react";
-import Masonry from "react-masonry-css";
-
-import type { Content } from "@/shared/lib/schemas";
 
 const Item = lazy(() => import("@/entities/item/ui/item"));
 
@@ -17,24 +15,6 @@ interface ContentMasonryProps {
 	compact?: boolean;
 }
 
-const defaultBreakpoints = {
-	default: 4,
-	2560: 5,
-	1920: 4,
-	1280: 3,
-	1024: 2,
-	768: 2,
-	640: 1,
-};
-
-const compactBreakpoints = {
-	default: 5,
-	1920: 4,
-	1280: 3,
-	900: 2,
-	640: 1,
-};
-
 export const ContentMasonry = memo(
 	({
 		items,
@@ -46,31 +26,21 @@ export const ContentMasonry = memo(
 		excludedTag,
 		compact = false,
 	}: ContentMasonryProps) => (
-		<Masonry
-			breakpointCols={compact ? compactBreakpoints : defaultBreakpoints}
-			className="masonry-grid"
-			columnClassName="masonry-grid_column">
-			{isLoading
-				? Array.from({ length: compact ? 5 : 4 }).map((_, index) => (
-						<div className="mb-4 bg-transparent" key={index}>
-							<Skeleton className="h-40 w-full rounded-lg" />
-						</div>
-					))
-				: items.map((item, index) => (
-						<div
-							key={item.id}
-							className={`animate-in rounded-xl shadow duration-300 fade-in-0`}
-							onMouseEnter={onItemHover}>
-							<Item
-								item={item}
-								index={index}
-								onContentUpdated={onContentUpdated}
-								onContentDeleted={onContentDeleted}
-								onItemClick={onItemClick}
-								excludedTag={excludedTag}
-							/>
-						</div>
-					))}
-		</Masonry>
+		<SharedContentMasonry
+			items={items}
+			isLoading={isLoading}
+			compact={compact}
+			onItemHover={onItemHover}
+			renderItem={(item, index) => (
+				<Item
+					item={item}
+					index={index}
+					onContentUpdated={onContentUpdated}
+					onContentDeleted={onContentDeleted}
+					onItemClick={onItemClick}
+					excludedTag={excludedTag}
+				/>
+			)}
+		/>
 	)
 );

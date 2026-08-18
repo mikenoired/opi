@@ -1,8 +1,8 @@
+import type { Content } from "@synapse/shared/schemas";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { api } from "@/shared/api/hooks";
-import type { Content } from "@/shared/lib/schemas";
 import { usePathname, useRouter, useSearchParams } from "@/shared/router/navigation";
 
 export type ModalType = "viewer" | "editor" | "confirm" | "custom";
@@ -68,7 +68,12 @@ export function ModalProvider({ children }: ModalProviderProps) {
 			if (config.type === "viewer" && config.item) {
 				viewerPropsRef.current = config.props ?? {};
 				viewerPathnameRef.current = pathname;
+				setModal(null);
 				router.push(viewerUrl(config.item.id), { state: { synapseViewer: true } });
+				// List endpoints intentionally provide a compact preview. Wait for the
+				// detail query below before mounting the viewer so a note never opens
+				// with truncated rich-text JSON.
+				return;
 			}
 			setModal(config);
 		},

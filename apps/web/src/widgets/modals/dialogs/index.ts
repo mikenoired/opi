@@ -1,1 +1,2 @@
-export * from "./confirm-dialog";
+export { ConfirmDialog } from "@synapse/features";
+export type { ConfirmDialogProps } from "@synapse/features";

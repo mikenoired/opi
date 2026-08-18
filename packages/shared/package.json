@@ -1,0 +1,31 @@
+{
+	"name": "@synapse/shared",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts",
+		"./animations": "./src/animations.ts",
+		"./content-search": "./src/content-search.ts",
+		"./content-types": "./src/content-types.ts",
+		"./file-types": "./src/file-types.ts",
+		"./formatting": "./src/formatting.ts",
+		"./plans": "./src/plans.ts",
+		"./preferences": "./src/preferences.ts",
+		"./schemas": "./src/schemas.ts",
+		"./tag-colors": "./src/tag-colors.ts"
+	},
+	"scripts": {
+		"format": "bun x oxfmt --config ../../.oxfmtrc.json --write .",
+		"format:check": "bun x oxfmt --config ../../.oxfmtrc.json --check .",
+		"lint": "bun x oxlint . --config ../../.oxlintrc.json --deny-warnings",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@synapse/tsconfig": "workspace:*",
+		"typescript": "^7.0.2"
+	},
+	"dependencies": {
+		"zod": "^4.4.3"
+	}
+}

@@ -169,6 +169,12 @@ export function useProximityHover<T extends HTMLElement>(
 
 	const registerItem = useCallback(
 		(index: number, element: HTMLElement | null) => {
+			const previousElement = itemsRef.current.get(index);
+			// React may invoke callback refs repeatedly with the same node while a
+			// parent re-renders. Re-measuring in that case feeds geometry state back
+			// into the parent for no layout change and can form an update loop.
+			if (previousElement === element) return;
+
 			if (element) {
 				itemsRef.current.set(index, element);
 			} else {

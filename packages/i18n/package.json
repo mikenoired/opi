@@ -1,0 +1,23 @@
+{
+	"name": "@synapse/i18n",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"format": "bun x oxfmt --config ../../.oxfmtrc.json --write .",
+		"format:check": "bun x oxfmt --config ../../.oxfmtrc.json --check .",
+		"lint": "bun x oxlint . --config ../../.oxlintrc.json --deny-warnings",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"react": "^19.2.8"
+	},
+	"devDependencies": {
+		"@synapse/tsconfig": "workspace:*",
+		"@types/react": "^19.2.18",
+		"typescript": "^7.0.2"
+	}
+}

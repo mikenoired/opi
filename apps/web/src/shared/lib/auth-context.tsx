@@ -17,8 +17,16 @@ export interface AuthError {
 interface AuthContextType {
 	user: User | null;
 	loading: boolean;
-	signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-	signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+	signUp: (
+		email: string,
+		password: string,
+		options?: { redirect?: boolean }
+	) => Promise<{ error: AuthError | null }>;
+	signIn: (
+		email: string,
+		password: string,
+		options?: { redirect?: boolean }
+	) => Promise<{ error: AuthError | null }>;
 	signOut: () => Promise<void>;
 }
 
@@ -67,7 +75,7 @@ export function AuthProvider({
 		return () => controller.abort();
 	}, [initialUser]);
 
-	const signUp = async (email: string, password: string) => {
+	const signUp = async (email: string, password: string, options?: { redirect?: boolean }) => {
 		try {
 			const result = await fetch(apiUrl("/auth/register"), {
 				method: "POST",
@@ -111,14 +119,14 @@ export function AuthProvider({
 			}
 
 			setUser({ id: data.user!.id, email: data.user!.email });
-			router.push("/");
+			if (options?.redirect !== false) router.push("/");
 			return { error: null };
 		} catch (error) {
 			return { error: { message: error instanceof Error ? error.message : "Register error" } };
 		}
 	};
 
-	const signIn = async (email: string, password: string) => {
+	const signIn = async (email: string, password: string, options?: { redirect?: boolean }) => {
 		try {
 			const result = await fetch(apiUrl("/auth/login"), {
 				method: "POST",
@@ -162,7 +170,7 @@ export function AuthProvider({
 			}
 
 			setUser({ id: data.user!.id, email: data.user!.email });
-			router.push("/");
+			if (options?.redirect !== false) router.push("/");
 			return { error: null };
 		} catch (error) {
 			return { error: { message: error instanceof Error ? error.message : "Login error" } };

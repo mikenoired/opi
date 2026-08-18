@@ -1,4 +1,6 @@
-import { Check, Palette, Slash } from "lucide-react";
+import { TagHeader } from "@synapse/features";
+import { useI18n } from "@synapse/i18n";
+import type { Content } from "@synapse/shared/schemas";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -6,9 +8,6 @@ import { ContentGrid } from "@/features/content-grid/content-grid";
 import { api } from "@/shared/api/hooks";
 import type { ContentListQueryInput } from "@/shared/lib/content-query-sync";
 import { useDashboard } from "@/shared/lib/dashboard-context";
-import { useI18n } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
-import { getTagColor, getTagColorStyle, TAG_COLOR_PALETTE } from "@/shared/lib/tag-colors";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
 import { useRouter } from "@/shared/router/navigation";
 import { useModal } from "@/widgets/modals/context/modal-context";
@@ -27,7 +26,6 @@ export default function TagClient({ tagId, tagTitle, initialColor, initial }: Pr
 	const [dragActive, setDragActive] = useState(false);
 	const [tagColor, setTagColor] = useState(initialColor);
 	const previousTagColor = useRef(initialColor);
-	const [paletteOpen, setPaletteOpen] = useState(false);
 	const dragCounter = useRef(0);
 	const router = useRouter();
 	const utils = api.useUtils();
@@ -207,63 +205,23 @@ export default function TagClient({ tagId, tagTitle, initialColor, initial }: Pr
 			onDrop={handleDrop}>
 			{dragActive && (
 				<div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/40 select-none">
-					<div className="animate-in rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-2xl font-semibold shadow-xl fade-in-0">
+					<div className="animate-in fade-in-0 rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-2xl font-semibold shadow-xl">
 						Drop files to add content
 					</div>
 				</div>
 			)}
-			<header className="relative flex flex-wrap items-center gap-3 px-6 py-4">
-				<h1
-					className="rounded-full border border-transparent px-3 py-1 text-2xl font-semibold capitalize"
-					style={getTagColorStyle(tagColor)}>
-					{tagTitle}
-				</h1>
-				<div className="relative">
-					<button
-						type="button"
-						aria-expanded={paletteOpen}
-						aria-label={t("tagColor.picker")}
-						onClick={() => setPaletteOpen((open) => !open)}
-						className="flex size-9 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
-						<Palette className="size-4" style={{ color: getTagColor(tagColor) }} />
-					</button>
-					{paletteOpen && (
-						<div className="absolute top-11 left-0 z-30 w-56 rounded-3xl border border-border bg-background p-3 shadow-xl">
-							<p className="mb-2 px-1 text-xs font-medium text-muted-foreground">{t("tagColor.picker")}</p>
-							<div className="grid grid-cols-7 gap-1.5">
-								<button
-									type="button"
-									aria-label={t("tagColor.none")}
-									aria-pressed={tagColor === 0}
-									onClick={() => updateTagColorMutation.mutate({ id: tagId, color: 0 })}
-									className="relative flex size-6 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-									<Slash className="size-3" />
-									{tagColor === 0 && (
-										<Check className="absolute -top-1 -right-1 size-3 rounded-full bg-foreground p-0.5 text-background" />
-									)}
-								</button>
-								{TAG_COLOR_PALETTE.map((color, index) => {
-									const value = index + 1;
-									return (
-										<button
-											key={color}
-											type="button"
-											aria-label={t("tagColor.option", { number: value })}
-											aria-pressed={tagColor === value}
-											disabled={updateTagColorMutation.isPending}
-											onClick={() => updateTagColorMutation.mutate({ id: tagId, color: value })}
-											className="relative size-6 rounded-full ring-offset-2 ring-offset-background transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-											style={{ backgroundColor: color }}>
-											{tagColor === value && (
-												<Check className="absolute inset-1 size-4 text-white drop-shadow-sm" />
-											)}
-										</button>
-									);
-								})}
-							</div>
-						</div>
-					)}
-				</div>
+			<header className="relative px-6 py-4">
+				<TagHeader
+					color={tagColor}
+					disabled={updateTagColorMutation.isPending}
+					labels={{
+						picker: t("library.tagColor.picker"),
+						none: t("library.tagColor.none"),
+						option: (number) => t("library.tagColor.option", { number }),
+					}}
+					onColorChange={(color) => updateTagColorMutation.mutate({ id: tagId, color })}
+					title={tagTitle}
+				/>
 			</header>
 			<main className="flex-1 overflow-y-auto p-6">
 				<ContentGrid

@@ -1,3 +1,4 @@
+import type { Content } from "@synapse/shared/schemas";
 import { Skeleton } from "@synapse/ui/components";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -6,7 +7,6 @@ import { TagStack } from "@/entities/item/ui/tag-stack";
 import { api } from "@/shared/api/hooks";
 import { useInfiniteScroll } from "@/shared/hooks/use-infinite-scroll";
 import { useDashboard } from "@/shared/lib/dashboard-context";
-import type { Content } from "@/shared/lib/schemas";
 import { getTagColor, getTagColorStyle } from "@/shared/lib/tag-colors";
 import { normalizeDroppedFiles } from "@/shared/lib/upload-file-kind";
 import Link from "@/shared/router/link";
@@ -133,7 +133,7 @@ export default function TagsClient({
 				onDrop={handleDrop}>
 				{dragActive && (
 					<div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/40 select-none">
-						<div className="animate-in rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-2xl font-semibold shadow-xl fade-in-0">
+						<div className="animate-in fade-in-0 rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-2xl font-semibold shadow-xl">
 							Drop files to add content
 						</div>
 					</div>
@@ -153,7 +153,7 @@ export default function TagsClient({
 			onDrop={handleDrop}>
 			{dragActive && (
 				<div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/40 select-none">
-					<div className="animate-in rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-2xl font-semibold shadow-xl fade-in-0">
+					<div className="animate-in fade-in-0 rounded-xl border-2 border-primary bg-white/90 px-8 py-6 text-2xl font-semibold shadow-xl">
 						Drop files to add content
 					</div>
 				</div>

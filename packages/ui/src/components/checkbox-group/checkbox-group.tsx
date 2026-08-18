@@ -57,7 +57,6 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
 		const { activeIndex, setActiveIndex, itemRects, sessionRef, handlers, registerItem, measureItems } =
 			useProximityHover(containerRef);
 
-		const checkedSignature = [...checkedIndices].sort((a, b) => a - b).join(",");
 		const synchronizeItems = useCallback(() => {
 			const items = Array.from(
 				containerRef.current?.querySelectorAll<HTMLElement>("[data-checkbox-item]") ?? []
@@ -71,12 +70,11 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
 
 		useLayoutEffect(() => {
 			synchronizeItems();
-			const container = containerRef.current;
-			if (!container || typeof MutationObserver === "undefined") return;
-			const observer = new MutationObserver(synchronizeItems);
-			observer.observe(container, { childList: true, subtree: true });
-			return () => observer.disconnect();
-		}, [checkedSignature, children, synchronizeItems]);
+			// Row geometry does not change when a checkbox toggles. Register once on
+			// mount: re-registering every render feeds measurement state back into
+			// the component and can cause an update loop with animated backgrounds.
+			// eslint-disable-next-line react-hooks/exhaustive-deps
+		}, []);
 
 		// Group contiguous checked indices into runs with stable IDs
 		const runs: { start: number; end: number }[] = [];
@@ -186,7 +184,7 @@ const CheckboxGroup = forwardRef<HTMLDivElement, CheckboxGroupProps>(
 						{activeRect && (
 							<motion.div
 								key={sessionRef.current}
-								className={`absolute ${shape.bg} bg-hover pointer-events-none`}
+								className={`absolute ${shape.bg} pointer-events-none bg-hover`}
 								initial={{
 									opacity: 0,
 									top: activeRect.top,

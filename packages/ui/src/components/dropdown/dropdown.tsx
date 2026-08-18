@@ -133,7 +133,7 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
 					<AnimatePresence>
 						{checkedRect && (
 							<motion.div
-								className={`absolute ${shape.bg} bg-active pointer-events-none`}
+								className={`absolute ${shape.bg} pointer-events-none bg-active`}
 								initial={false}
 								animate={{
 									top: checkedRect.top,
@@ -156,7 +156,7 @@ const Dropdown = forwardRef<HTMLDivElement, DropdownProps>(
 						{activeRect && (
 							<motion.div
 								key={sessionRef.current}
-								className={`absolute ${shape.bg} bg-hover pointer-events-none`}
+								className={`absolute ${shape.bg} pointer-events-none bg-hover`}
 								initial={{
 									opacity: 0,
 									top: checkedRect?.top ?? activeRect.top,
@@ -399,7 +399,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
 
 		return (
 			<Menu.Portal>
-				<Menu.Positioner side={side} align={align} sideOffset={sideOffset} className="z-50 outline-none">
+				<Menu.Positioner side={side} align={align} sideOffset={sideOffset} className="z-210 outline-none">
 					<motion.div
 						initial={{ opacity: 0, y: -4, scaleY: 0.96 }}
 						animate={open ? { opacity: 1, y: 0, scaleY: 1 } : { opacity: 0, y: -4, scaleY: 0.96 }}
@@ -453,7 +453,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
 								<AnimatePresence>
 									{checkedRect && (
 										<motion.div
-											className={`absolute ${shape.bg} bg-active pointer-events-none`}
+											className={`absolute ${shape.bg} pointer-events-none bg-active`}
 											initial={false}
 											animate={{
 												top: checkedRect.top,
@@ -476,7 +476,7 @@ const DropdownContent = forwardRef<HTMLDivElement, DropdownContentProps>(
 									{activeRect && (
 										<motion.div
 											key={sessionRef.current}
-											className={`absolute ${shape.bg} bg-hover pointer-events-none`}
+											className={`absolute ${shape.bg} pointer-events-none bg-hover`}
 											initial={{
 												opacity: 0,
 												top: checkedRect?.top ?? activeRect.top,

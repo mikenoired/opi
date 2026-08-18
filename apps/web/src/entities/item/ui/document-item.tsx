@@ -1,10 +1,10 @@
+import type { Content } from "@synapse/shared/schemas";
+import { calculateReadingTime } from "@synapse/shared/schemas";
 import { Badge } from "@synapse/ui/components";
 import { motion } from "framer-motion";
 import { Calendar, Clock } from "lucide-react";
 import { useMemo } from "react";
 
-import type { Content } from "@/shared/lib/schemas";
-import { calculateReadingTime } from "@/shared/lib/schemas";
 import { ContentTag } from "@/shared/ui/content-tag";
 
 function ensureDataUri(base64: string): string {
@@ -124,7 +124,7 @@ export default function DocumentItem({ item, index, onItemClick }: DocumentItemP
 									key={tag}
 									tag={tag}
 									tagId={item.tag_ids[tagIndex]}
-									className="hover:bg-hover bg-muted px-2 py-1 text-xs"
+									className="bg-muted px-2 py-1 text-xs hover:bg-hover"
 								/>
 							))}
 							{item.tags.length > 3 && (

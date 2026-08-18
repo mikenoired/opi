@@ -1,72 +1,56 @@
-import type { LucideProps } from "lucide-react";
-import { Home, Network, Plus, Settings, Tag } from "lucide-react";
-import type { ForwardRefExoticComponent, RefAttributes } from "react";
+import { ConfiguredAppSidebar } from "@synapse/features/app-shell";
+import { useI18n } from "@synapse/i18n";
 import { useCallback } from "react";
 
 import { getSettingsHref } from "@/features/settings/lib/settings-modal-url";
 import { DEFAULT_SETTINGS_TAB, SETTINGS_QUERY_PARAM } from "@/features/settings/model/settings-tabs";
+import { webRuntime } from "@/platform/web-runtime";
 import { useDashboard } from "@/shared/lib/dashboard-context";
-import { useI18n } from "@/shared/lib/i18n";
-import { usePathname, useSearchParams } from "@/shared/router/navigation";
-
-import DesktopSidebar from "./desktop-sidebar";
-import MobileSidebar from "./mobile-sidebar";
-
-export type NavItem =
-	| {
-			href: string;
-			icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
-			label: string;
-			isActive?: boolean;
-			action?: undefined;
-			onMouseEnter?: undefined;
-	  }
-	| {
-			action: () => void;
-			icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
-			label: string;
-			onMouseEnter: () => void;
-			isActive?: boolean;
-			href?: undefined;
-	  };
+import { usePathname, useRouter, useSearchParams } from "@/shared/router/navigation";
 
 export default function Sidebar() {
 	const { openAddDialog } = useDashboard();
 	const pathname = usePathname();
+	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { t } = useI18n();
 
 	const preloadAddContentDialog = useCallback(() => {
-		import("@/features/add-content/ui/add-content-dialog");
+		import("@/widgets/modals/editor/add-content-modal");
 	}, []);
 
-	const navItems: NavItem[] = [
-		{
-			action: () => openAddDialog(),
-			icon: Plus,
-			label: t("add"),
-			onMouseEnter: preloadAddContentDialog,
-		},
-		{ href: "/", icon: Home, label: t("home"), isActive: pathname === "/" },
-		{
-			href: "/tags",
-			icon: Tag,
-			label: t("tags"),
-			isActive: pathname === "/tags" || pathname.startsWith("/tags/"),
-		},
-		{ href: "/graph", icon: Network, label: t("graph"), isActive: pathname === "/graph" },
-		{
-			href: getSettingsHref(pathname, searchParams, DEFAULT_SETTINGS_TAB),
-			icon: Settings,
-			isActive: searchParams.has(SETTINGS_QUERY_PARAM),
-			label: t("settings"),
-		},
-	];
-
 	return (
-		<>
-			<MobileSidebar navItems={navItems} />
-			<DesktopSidebar navItems={navItems} />
-		</>
+		<ConfiguredAppSidebar
+			activeId={searchParams.has(SETTINGS_QUERY_PARAM) ? "settings" : undefined}
+			activeRoute={
+				pathname === "/graph"
+					? "graph"
+					: pathname === "/tags" || pathname.startsWith("/tags/")
+						? "tags"
+						: "dashboard"
+			}
+			capabilities={webRuntime.services.capabilities}
+			items={webRuntime.configuration.navigation}
+			labels={{
+				add: t("library.add"),
+				dashboard: t("library.title"),
+				graph: t("library.graph"),
+				settings: t("library.settings"),
+				tags: t("library.tags"),
+			}}
+			onCommand={(command) => {
+				if (command === "content.add") openAddDialog();
+				if (command === "settings.open")
+					router.push(getSettingsHref(pathname, searchParams, DEFAULT_SETTINGS_TAB));
+			}}
+			onItemHover={(id) => {
+				if (id === "add") preloadAddContentDialog();
+			}}
+			onNavigate={(route) => {
+				if (route === "dashboard") router.push("/");
+				if (route === "tags") router.push("/tags");
+				if (route === "graph") router.push("/graph");
+			}}
+		/>
 	);
 }

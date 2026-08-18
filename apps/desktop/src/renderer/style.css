@@ -1,0 +1,38 @@
+@import "@synapse/features/styles.css";
+
+@source "./";
+
+.desktop-app-shell {
+	height: 100dvh;
+}
+
+.desktop-app-shell--mac {
+	padding-top: 34px;
+	/*background: var(--background);*/
+	background: transparent;
+}
+
+.desktop-app-shell--mac > .h-screen {
+	height: calc(100dvh - 34px);
+}
+
+.desktop-titlebar-drag-region {
+	position: fixed;
+	top: 0;
+	right: 0;
+	left: 70px;
+	z-index: 1;
+	height: 32px;
+	/*background: var(--background);*/
+	background: transparent;
+	-webkit-app-region: drag;
+}
+
+/*@media (prefers-color-scheme: dark) {
+	.desktop-titlebar-drag-region {
+		background: var(--color-muted);
+	}
+	.desktop-app-shell--mac {
+		background: var(--color-muted);
+	}
+}*/

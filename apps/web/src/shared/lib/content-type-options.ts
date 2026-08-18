@@ -1,3 +1,5 @@
+import type { TranslationKey } from "@synapse/i18n";
+import type { Content } from "@synapse/shared/schemas";
 import {
 	FileText,
 	FileUp,
@@ -8,16 +10,19 @@ import {
 	Music2,
 } from "lucide-react";
 
-import type { KeysWithoutParams } from "@/shared/lib/i18n";
-import type { Content } from "@/shared/lib/schemas";
+export {
+	documentContentTypes,
+	getQueryTypesForFilter,
+	isContentTypeFilterAvailable,
+} from "@synapse/shared/content-types";
 
 interface ContentTypeOption {
 	description: string;
-	descriptionKey: KeysWithoutParams;
+	descriptionKey: TranslationKey;
 	icon: LucideIcon;
 	key: Content["type"];
 	label: string;
-	labelKey: KeysWithoutParams;
+	labelKey: TranslationKey;
 }
 
 export const contentTypeOptions: ContentTypeOption[] = [
@@ -25,7 +30,7 @@ export const contentTypeOptions: ContentTypeOption[] = [
 		key: "note",
 		icon: FileText,
 		label: "Заметка",
-		labelKey: "note",
+		labelKey: "library.types.note",
 		description: "Быстрые мысли, заметки и длинные тексты",
 		descriptionKey: "contentType.note.description",
 	},
@@ -33,7 +38,7 @@ export const contentTypeOptions: ContentTypeOption[] = [
 		key: "media",
 		icon: ImageIcon,
 		label: "Медиа",
-		labelKey: "media",
+		labelKey: "library.types.media",
 		description: "Изображения и видео для быстрой навигации",
 		descriptionKey: "contentType.media.description",
 	},
@@ -41,7 +46,7 @@ export const contentTypeOptions: ContentTypeOption[] = [
 		key: "audio",
 		icon: Music2,
 		label: "Аудио",
-		labelKey: "audio",
+		labelKey: "library.types.audio",
 		description: "Файлы, треки и голосовые материалы",
 		descriptionKey: "contentType.audio.description",
 	},
@@ -49,7 +54,7 @@ export const contentTypeOptions: ContentTypeOption[] = [
 		key: "link",
 		icon: Link,
 		label: "Ссылка",
-		labelKey: "link",
+		labelKey: "library.types.link",
 		description: "Сохранённые ссылки с превью и метаданными",
 		descriptionKey: "contentType.link.description",
 	},
@@ -57,7 +62,7 @@ export const contentTypeOptions: ContentTypeOption[] = [
 		key: "todo",
 		icon: ListChecks,
 		label: "Задачи",
-		labelKey: "todo",
+		labelKey: "library.types.todo",
 		description: "Короткие списки дел и контрольные пункты",
 		descriptionKey: "contentType.todo.description",
 	},
@@ -65,21 +70,11 @@ export const contentTypeOptions: ContentTypeOption[] = [
 		key: "doc",
 		icon: FileUp,
 		label: "Документ",
-		labelKey: "documents",
+		labelKey: "library.types.doc",
 		description: "PDF, DOCX, EPUB, XLSX, CSV и другие документы",
 		descriptionKey: "contentType.doc.description",
 	},
 ];
-
-export const documentContentTypes: Content["type"][] = ["doc", "pdf", "docx", "epub", "xlsx", "csv"];
-
-export function getQueryTypesForFilter(type: Content["type"]) {
-	return type === "doc" ? documentContentTypes : [type];
-}
-
-export function isContentTypeFilterAvailable(type: Content["type"], availableTypes: Content["type"][]) {
-	return getQueryTypesForFilter(type).some((queryType) => availableTypes.includes(queryType));
-}
 
 export function getContentTypeMeta(type: Content["type"]) {
 	return contentTypeOptions.find((option) => option.key === type) ?? contentTypeOptions[0];
