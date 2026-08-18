@@ -1,32 +1,24 @@
 .masonry-grid {
-	display: flex;
-	width: auto;
-	margin-left: -1rem;
-	will-change: transform;
+	position: relative;
+	width: 100%;
+	transition: opacity 120ms ease-out;
+}
+
+.masonry-grid[data-zoomable] {
+	touch-action: pan-y;
+}
+
+.masonry-grid_item {
+	position: absolute;
+	top: 0;
+	left: 0;
 	contain: layout style paint;
+	transition: box-shadow 160ms ease-out;
 }
-.masonry-grid_column {
-	padding-left: 1rem;
-	background-clip: padding-box;
-	contain: layout style;
-}
-.masonry-grid_column > div {
-	margin-bottom: 1rem;
-	break-inside: avoid;
-	will-change: transform;
-	contain: layout style paint;
-}
-.animate-in {
-	animation-duration: 0.15s;
-	animation-timing-function: ease-out;
-	animation-fill-mode: both;
-}
-.fade-in-0 {
-	animation-name: monolyth-fade-in;
-}
-@keyframes monolyth-fade-in {
-	from {
-		opacity: 0;
-		transform: translateY(10px);
-	}
+
+.masonry-grid_item[data-column-changing] {
+	box-shadow:
+		0 20px 40px rgb(15 23 42 / 18%),
+		0 6px 14px rgb(15 23 42 / 12%);
+	z-index: 1;
 }

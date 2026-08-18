@@ -40,7 +40,6 @@
 		"lucide-react": "^1.21.0",
 		"lowlight": "^3.3.0",
 		"react": "^19.2.7",
-		"react-dom": "^19.2.8",
-		"react-masonry-css": "^1.0.16"
+		"react-dom": "^19.2.8"
 	}
 }
