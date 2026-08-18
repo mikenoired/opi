@@ -53,6 +53,7 @@ const library = new LocalLibraryRepository(join(app.getPath("userData"), "librar
 const sync = new DesktopSyncService(library, objectStorage, undefined, (url) => shell.openExternal(url));
 const sessionPath = join(app.getPath("userData"), "desktop-session.bin");
 const pendingDeepLinks: string[] = [];
+const desktopAppName = "Synapse";
 
 sync.setLibraryChangedListener(() => {
 	for (const window of BrowserWindow.getAllWindows()) window.webContents.send("library:changed");
@@ -80,6 +81,7 @@ function createWindow(): void {
 	const window = new BrowserWindow({
 		width: 1_280,
 		height: 800,
+		title: desktopAppName,
 		backgroundColor: "#ffffff",
 		titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
 		titleBarOverlay:

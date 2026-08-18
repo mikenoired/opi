@@ -1,11 +1,22 @@
 {
 	"name": "@synapse/desktop",
-	"version": "0.0.0",
+	"productName": "Synapse",
+	"description": "A personal knowledge hub for collecting, organizing, and connecting information.",
+	"author": "Mike Noired",
+	"version": "0.1.0",
 	"private": true,
 	"type": "module",
 	"main": "./out/main/index.js",
+	"build": {
+		"appId": "com.synapse.desktop",
+		"productName": "Synapse",
+		"mac": {
+			"icon": "resources/icon.icon"
+		}
+	},
 	"scripts": {
 		"build": "electron-vite build",
+		"dist": "electron-vite build && electron-builder",
 		"dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev",
 		"format": "bun x oxfmt --config ../../.oxfmtrc.json --write .",
 		"format:check": "bun x oxfmt --config ../../.oxfmtrc.json --check .",
@@ -21,7 +32,6 @@
 		"@synapse/i18n": "workspace:*",
 		"@synapse/shared": "workspace:*",
 		"@synapse/sync": "workspace:*",
-		"electron": "^43.3.0",
 		"lucide-react": "^1.28.0",
 		"music-metadata": "^11.13.0",
 		"react": "^19.2.8",
@@ -34,6 +44,8 @@
 		"@types/node": "^24.13.3",
 		"@types/react": "^19.2.18",
 		"@types/react-dom": "^19.2.4",
+		"electron": "^43.3.0",
+		"electron-builder": "^26.15.3",
 		"electron-vite": "^5.0.0",
 		"tailwindcss": "^4.3.3",
 		"typescript": "^7.0.2"
