@@ -40,7 +40,7 @@ export function needsPlayableAudioTranscode(codec?: string): boolean {
 }
 
 export async function transcodeAlacToAac(buffer: Buffer, fileName: string): Promise<Buffer> {
-	const directory = await mkdtemp(join(tmpdir(), "synapse-audio-"));
+	const directory = await mkdtemp(join(tmpdir(), "monolyth-audio-"));
 	const sourcePath = join(directory, `source${extname(fileName) || ".m4a"}`);
 	const targetPath = join(directory, "playable.m4a");
 	try {

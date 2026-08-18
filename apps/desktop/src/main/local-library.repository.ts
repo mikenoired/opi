@@ -2,15 +2,15 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import type { SyncMutation } from "@synapse/api";
-import { parseAudioJson, parseMediaJson } from "@synapse/core";
+import type { SyncMutation } from "@monolyth/api";
+import { parseAudioJson, parseMediaJson } from "@monolyth/core";
 import {
 	DEFAULT_USER_PREFERENCES,
 	normalizeUserPreferences,
 	type UserPreferences,
 	type UserPreferencesInput,
-} from "@synapse/shared/preferences";
-import type { Content, CreateContent } from "@synapse/shared/schemas";
+} from "@monolyth/shared/preferences";
+import type { Content, CreateContent } from "@monolyth/shared/schemas";
 
 export type LocalContentType = Content["type"];
 export type SyncPolicy = "manual" | "automatic";
@@ -732,7 +732,7 @@ function toCreateContent(item: LocalItem): CreateContent {
 function toRemoteAssetUrls(value: string, assets: LocalAsset[] | undefined): string {
 	let remote = value;
 	for (const asset of assets ?? []) {
-		const localUrl = `synapse-object://local/${encodeURIComponent(asset.localObjectName)}`;
+		const localUrl = `monolyth-object://local/${encodeURIComponent(asset.localObjectName)}`;
 		remote = remote.replaceAll(localUrl, `/api/files/${asset.storageKey}`);
 	}
 	return remote;
@@ -917,6 +917,6 @@ function hasLocalObjectReference(
 	item: Partial<Pick<Content, "content" | "media_url" | "thumbnail_url" | "url">>
 ) {
 	return [item.content, item.media_url, item.thumbnail_url, item.url].some((value) =>
-		value?.includes("synapse-object://")
+		value?.includes("monolyth-object://")
 	);
 }

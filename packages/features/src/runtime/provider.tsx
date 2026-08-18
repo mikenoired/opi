@@ -1,4 +1,4 @@
-import type { SynapseClient } from "@synapse/api";
+import type { MonolythClient } from "@monolyth/api";
 import { createContext, useContext, type ReactNode } from "react";
 
 import type { AppConfiguration, CapabilitySnapshot } from "./config";
@@ -15,7 +15,7 @@ export interface CommandExecutor {
  */
 export interface AppServices {
 	capabilities: CapabilitySnapshot;
-	client: SynapseClient;
+	client: MonolythClient;
 	commands: CommandExecutor;
 }
 

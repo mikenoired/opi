@@ -5,7 +5,7 @@ import {
 	needsPlayableAudioTranscode,
 	scrapeAudioMetadata,
 	type AudioContentMetadata,
-} from "@synapse/core";
+} from "@monolyth/core";
 import * as mm from "music-metadata";
 
 export interface LocalAudioArtwork {

@@ -1,4 +1,4 @@
-import { Button } from "@synapse/ui/components";
+import { Button } from "@monolyth/ui/components";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, X, type LucideIcon } from "lucide-react";
 

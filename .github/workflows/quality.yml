@@ -16,7 +16,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: synapse
+          POSTGRES_DB: monolyth
         ports:
           - 5432:5432
         options: >-
@@ -39,7 +39,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Prepare test database
-        run: bun --filter @synapse/backend db:push
+        run: bun --filter @monolyth/backend db:push
 
       - name: Check
         run: bun run check

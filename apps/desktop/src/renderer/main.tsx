@@ -1,4 +1,4 @@
-import type { AiUsage } from "@synapse/api";
+import type { AiUsage } from "@monolyth/api";
 import {
 	AccountSettingsPanel,
 	AiSettingsPanel,
@@ -6,12 +6,12 @@ import {
 	LibraryWorkspace,
 	LocalSyncSettingsPanel,
 	MediaSettingsPanel,
-} from "@synapse/features";
-import { ConfiguredSettingsNavigation, SettingsModalShell } from "@synapse/features/app-shell";
-import { AppRuntimeProvider, useAppServices } from "@synapse/features/runtime";
-import { createTranslator, I18nProvider, useI18n } from "@synapse/i18n";
-import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@synapse/shared/preferences";
-import type { Content } from "@synapse/shared/schemas";
+} from "@monolyth/features";
+import { ConfiguredSettingsNavigation, SettingsModalShell } from "@monolyth/features/app-shell";
+import { AppRuntimeProvider, useAppServices } from "@monolyth/features/runtime";
+import { createTranslator, I18nProvider, useI18n } from "@monolyth/i18n";
+import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@monolyth/shared/preferences";
+import type { Content } from "@monolyth/shared/schemas";
 import { AlertCircle, CheckCircle2, LoaderCircle, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -456,7 +456,7 @@ function DesktopSettingsContent({
 							}
 						: null
 				}
-				synapseSync={
+				monolythSync={
 					session ? (
 						<LocalSyncSettingsPanel
 							isSyncing={syncing}

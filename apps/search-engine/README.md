@@ -1,6 +1,6 @@
-# Synapse Search Engine
+# Monolyth Search Engine
 
-Локальный стенд для сравнения поисковых алгоритмов на данных Synapse.
+Локальный стенд для сравнения поисковых алгоритмов на данных Monolyth.
 
 ```bash
 cd apps/search-engine

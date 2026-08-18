@@ -1,4 +1,4 @@
 /* Web contributes source discovery only; all visual tokens and rules live in the shared UI package. */
-@import "@synapse/features/styles.css";
+@import "@monolyth/features/styles.css";
 
 @source "../";

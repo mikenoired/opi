@@ -1,4 +1,4 @@
-import { cn } from "@synapse/ui/cn";
+import { cn } from "@monolyth/ui/cn";
 import * as React from "react";
 import type { ControllerProps, FieldPath, FieldValues } from "react-hook-form";
 import { Controller, FormProvider, useFormContext, useFormState } from "react-hook-form";

@@ -9,10 +9,10 @@ import type {
 	SyncPullResult,
 	SyncPushResult,
 	SyncRunResult,
-} from "@synapse/api";
-import { parseAudioJson, parseMediaJson } from "@synapse/core";
-import type { Content } from "@synapse/shared/schemas";
-import { createEntityRegistry, SyncEngine, TagEntityAdapter } from "@synapse/sync";
+} from "@monolyth/api";
+import { parseAudioJson, parseMediaJson } from "@monolyth/core";
+import type { Content } from "@monolyth/shared/schemas";
+import { createEntityRegistry, SyncEngine, TagEntityAdapter } from "@monolyth/sync";
 
 import type { DesktopStorageProvider } from "./desktop-storage.provider";
 import {
@@ -107,11 +107,11 @@ export class DesktopSyncService {
 
 	async connectAccount(): Promise<DesktopSyncSession> {
 		if (this.pendingAuthorization) throw new Error("Подключение аккаунта уже ожидает завершения");
-		this.apiUrl = normalizeApiUrl(process.env.SYNAPSE_API_URL || "http://localhost:3000/api");
+		this.apiUrl = normalizeApiUrl(process.env.MONOLYTH_API_URL || "http://localhost:3000/api");
 		const state = randomUrlValue(24);
 		const codeVerifier = randomUrlValue(48);
 		const codeChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
-		const webUrl = (process.env.SYNAPSE_WEB_URL || "http://localhost:5173").replace(/\/$/, "");
+		const webUrl = (process.env.MONOLYTH_WEB_URL || "http://localhost:5173").replace(/\/$/, "");
 		const url = new URL(`${webUrl}/desktop-auth`);
 		url.searchParams.set("code_challenge", codeChallenge);
 		url.searchParams.set("state", state);
@@ -137,13 +137,13 @@ export class DesktopSyncService {
 			const code = url.searchParams.get("code");
 			const state = url.searchParams.get("state");
 			if (
-				url.protocol !== "synapse:" ||
+				url.protocol !== "monolyth:" ||
 				url.hostname !== "auth" ||
 				url.pathname !== "/callback" ||
 				!code ||
 				state !== pending.state
 			)
-				throw new Error("Некорректный ответ авторизации Synapse");
+				throw new Error("Некорректный ответ авторизации Monolyth");
 			const result = await this.request<LoginResponse>("/auth/desktop/exchange", {
 				code,
 				codeVerifier: pending.codeVerifier,
@@ -190,7 +190,7 @@ export class DesktopSyncService {
 				refreshToken: string;
 				token: string;
 			}>("/auth/refresh", undefined, "POST", {
-				"x-synapse-refresh-token": stored.refreshToken,
+				"x-monolyth-refresh-token": stored.refreshToken,
 			});
 			this.token = refreshed.token;
 			this.refreshToken = refreshed.refreshToken;
@@ -227,7 +227,7 @@ export class DesktopSyncService {
 	}
 
 	async syncAll(): Promise<SyncRunResult> {
-		if (!this.session) throw new Error("Сначала подключите аккаунт Synapse");
+		if (!this.session) throw new Error("Сначала подключите аккаунт Monolyth");
 		// The plan may change after the Desktop session was created; do not keep a
 		// stale entitlement in memory and incorrectly block a newly upgraded user.
 		const entitlement = await this.request<{ eligible: boolean; plan: string }>(
@@ -236,7 +236,7 @@ export class DesktopSyncService {
 			"GET"
 		);
 		this.session = { ...this.session, ...entitlement };
-		if (!this.session.eligible) throw new Error("Synapse Sync доступен на платных планах");
+		if (!this.session.eligible) throw new Error("Monolyth Sync доступен на платных планах");
 		await this.startSyncLifecycle();
 		if (await this.library.hasBulkDeleteRequest()) {
 			await this.request<{ success: true }>("/sync/delete-all");
@@ -367,7 +367,7 @@ export class DesktopSyncService {
 
 	private async uploadLocalAsset(
 		itemId: string
-	): Promise<{ content: import("@synapse/shared/schemas").Content; revision: number } | undefined> {
+	): Promise<{ content: import("@monolyth/shared/schemas").Content; revision: number } | undefined> {
 		if (!this.storage) return undefined;
 		const item = await this.library.get(itemId);
 		const objectName =
@@ -379,7 +379,7 @@ export class DesktopSyncService {
 		const name = basename(objectName);
 		const result = await this.request<{
 			contents: Array<{
-				content: import("@synapse/shared/schemas").Content;
+				content: import("@monolyth/shared/schemas").Content;
 				revision: number;
 			}>;
 			errors: string[];
@@ -552,9 +552,9 @@ export class DesktopSyncService {
 	}
 
 	private async fetchAsset(storageKey: string): Promise<Uint8Array> {
-		if (!this.apiUrl) throw new Error("Сначала укажите адрес Synapse API");
+		if (!this.apiUrl) throw new Error("Сначала укажите адрес Monolyth API");
 		const response = await fetch(`${this.apiUrl}/files/${encodeURIComponent(storageKey)}`, {
-			headers: this.token ? { "x-synapse-access-token": this.token } : {},
+			headers: this.token ? { "x-monolyth-access-token": this.token } : {},
 		});
 		if (!response.ok) throw new Error(`Не удалось скачать файл (${response.status})`);
 		return new Uint8Array(await response.arrayBuffer());
@@ -566,14 +566,14 @@ export class DesktopSyncService {
 		method = "POST",
 		extraHeaders?: Record<string, string>
 	): Promise<T> {
-		if (!this.apiUrl) throw new Error("Сначала укажите адрес Synapse API");
+		if (!this.apiUrl) throw new Error("Сначала укажите адрес Monolyth API");
 		let response: Response | undefined;
 		for (let attempt = 0; attempt < 2; attempt++) {
 			response = await fetch(`${this.apiUrl}${path}`, {
 				...(body === undefined ? {} : { body: JSON.stringify(body) }),
 				headers: {
 					"Content-Type": "application/json",
-					...(this.token ? { "x-synapse-access-token": this.token } : {}),
+					...(this.token ? { "x-monolyth-access-token": this.token } : {}),
 					...extraHeaders,
 				},
 				method,
@@ -582,12 +582,12 @@ export class DesktopSyncService {
 			const retryAfter = Number(response.headers.get("retry-after"));
 			await wait(Math.max(1, Number.isFinite(retryAfter) ? retryAfter : 60) * 1_000);
 		}
-		if (!response) throw new Error("Synapse API returned no response");
+		if (!response) throw new Error("Monolyth API returned no response");
 		if (!response.ok) {
 			const payload = (await response.json().catch(() => null)) as {
 				error?: string;
 			} | null;
-			throw new Error(payload?.error || `Synapse API returned ${response.status}`);
+			throw new Error(payload?.error || `Monolyth API returned ${response.status}`);
 		}
 		return (await response.json()) as T;
 	}
@@ -646,9 +646,9 @@ function replaceAssetUrls(content: Content, assets: LocalAsset[], storage: Deskt
 }
 
 function getLocalObjectName(value: string | undefined): string | undefined {
-	if (!value?.startsWith("synapse-object://local/")) return undefined;
+	if (!value?.startsWith("monolyth-object://local/")) return undefined;
 	try {
-		return decodeURIComponent(value.slice("synapse-object://local/".length));
+		return decodeURIComponent(value.slice("monolyth-object://local/".length));
 	} catch {
 		return undefined;
 	}

@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 
-import type { Content } from "@synapse/shared/schemas";
+import type { Content } from "@monolyth/shared/schemas";
 
 export interface UploadedFileInfo {
 	objectName: string;

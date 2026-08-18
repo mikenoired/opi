@@ -4,7 +4,7 @@ import postgres from "postgres";
 // Новые регистрации всегда получают starter (default колонки + registerUser),
 // поэтому этот скрипт нужен только для аккаунтов, созданных до появления планов.
 
-const connectionString = `postgres://${process.env.POSTGRES_USER || "postgres"}:${process.env.POSTGRES_PASSWORD || "postgres"}@${process.env.POSTGRES_HOST || "localhost"}:${process.env.POSTGRES_PORT || 5432}/${process.env.POSTGRES_DB || "synapse"}`;
+const connectionString = `postgres://${process.env.POSTGRES_USER || "postgres"}:${process.env.POSTGRES_PASSWORD || "postgres"}@${process.env.POSTGRES_HOST || "localhost"}:${process.env.POSTGRES_PORT || 5432}/${process.env.POSTGRES_DB || "monolyth"}`;
 const sql = postgres(connectionString, { max: 1 });
 
 try {

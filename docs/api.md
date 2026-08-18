@@ -5,7 +5,7 @@
 - Primary API: typed Hono RPC at `/api`. `Api` is exported from the server and consumed through `hc<Api>`; request and response types therefore stay synchronized without code generation.
 - Inputs are validated by Zod at the HTTP boundary. Errors have a stable `{ error, code, fieldErrors }` shape.
 - TanStack Query owns client cache and request lifecycle. Browser requests include cookies.
-- `apps/backend/src/index.ts` is a Bun HTTP server; run it locally with `bun --filter @synapse/backend dev`.
+- `apps/backend/src/index.ts` is a Bun HTTP server; run it locally with `bun --filter @monolyth/backend dev`.
 - The OpenAPI 3.1 document is available at `/api/openapi.json`; the interactive Scalar reference is at `/api/docs`.
 - During local Vite development, `/api` is proxied to `http://localhost:3000` by default. Set `VITE_API_URL=http://localhost:3000/api` when serving Web and Backend from separate origins in another environment.
 - Set `CORS_ORIGIN=http://localhost:5173` (or a comma-separated allowlist) for credentialed browser requests to a separate API origin.
@@ -24,7 +24,7 @@
 ## Authentication and authorization
 
 - Credentials use bcrypt password hashes. Auth endpoints issue signed access and refresh JWTs.
-- Cookies: `synapse_token` access token (one day) and `synapse_refresh_token` refresh token (seven days); both are `httpOnly`, `sameSite=strict`, and secure in production.
+- Cookies: `monolyth_token` access token (one day) and `monolyth_refresh_token` refresh token (seven days); both are `httpOnly`, `sameSite=strict`, and secure in production.
 - Context accepts bearer token, middleware-forwarded token, or session cookies. Protected Hono routes require a resolved user.
 - Repositories enforce the user boundary on data access. The file route additionally verifies the MinIO path's user segment before issuing a presigned redirect.
 

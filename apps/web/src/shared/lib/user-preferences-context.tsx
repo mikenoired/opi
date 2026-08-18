@@ -6,7 +6,7 @@ import {
 	type UserPreferences,
 	type UserPreferencesInput,
 	normalizeUserPreferences,
-} from "@synapse/shared/preferences";
+} from "@monolyth/shared/preferences";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -24,8 +24,8 @@ interface UserPreferencesContextValue extends UserPreferences {
 }
 
 const UserPreferencesContext = createContext<UserPreferencesContextValue | undefined>(undefined);
-const languageStorageKey = "synapse-interface-language";
-const paletteStorageKey = "synapse-color-palette";
+const languageStorageKey = "monolyth-interface-language";
+const paletteStorageKey = "monolyth-color-palette";
 const preferencesSaveDelay = 750;
 
 function getStoredInterfaceLanguage(): InterfaceLanguage {

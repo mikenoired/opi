@@ -1,7 +1,7 @@
 services:
   minio:
     image: quay.io/minio/minio:latest
-    container_name: synapse-minio
+    container_name: monolyth-minio
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
@@ -19,9 +19,9 @@ services:
       retries: 3
     restart: unless-stopped
     networks:
-      - synapse-network
+      - monolyth-network
   redis:
-    container_name: synapse-redis
+    container_name: monolyth-redis
     image: redis:7-alpine
     restart: unless-stopped
     ports:
@@ -32,19 +32,19 @@ services:
     networks:
       - redis-network
   postgres:
-    container_name: synapse-postgres
+    container_name: monolyth-postgres
     image: postgres:15
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-synapse}
+      POSTGRES_DB: ${POSTGRES_DB:-monolyth}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - synapse-network
+      - monolyth-network
       - postgres-network
     healthcheck:
       test: [CMD-SHELL, pg_isready -U postgres]
@@ -63,7 +63,7 @@ volumes:
     driver: local
 
 networks:
-  synapse-network:
+  monolyth-network:
     driver: bridge
   redis-network:
     driver: bridge

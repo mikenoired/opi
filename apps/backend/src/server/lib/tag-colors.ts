@@ -1,4 +1,4 @@
-import { normalizeUserPreferences } from "@synapse/shared/preferences";
+import { normalizeUserPreferences } from "@monolyth/shared/preferences";
 import { eq } from "drizzle-orm";
 
 import type { Context } from "../context";

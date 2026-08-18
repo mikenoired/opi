@@ -1,7 +1,7 @@
 import {
 	AuthDialog as SharedAuthDialog,
 	type AuthDialogProps as SharedAuthDialogProps,
-} from "@synapse/features";
+} from "@monolyth/features";
 
 import { useAuth } from "@/shared/lib/auth-context";
 

@@ -1,1 +1,1 @@
-export type * from "@synapse/backend/contracts";
+export type * from "@monolyth/backend/contracts";

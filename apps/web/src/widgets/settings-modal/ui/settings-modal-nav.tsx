@@ -1,6 +1,6 @@
-import { ConfiguredSettingsNavigation } from "@synapse/features/app-shell";
-import type { SettingsTabConfig } from "@synapse/features/runtime";
-import { useI18n } from "@synapse/i18n";
+import { ConfiguredSettingsNavigation } from "@monolyth/features/app-shell";
+import type { SettingsTabConfig } from "@monolyth/features/runtime";
+import { useI18n } from "@monolyth/i18n";
 
 import { getSettingsHref } from "@/features/settings/lib/settings-modal-url";
 import { isSettingsTab, type SettingsTabKey } from "@/features/settings/model/settings-tabs";

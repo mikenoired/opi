@@ -1,9 +1,9 @@
-import { useI18n } from "@synapse/i18n";
+import { useI18n } from "@monolyth/i18n";
 import { Pause, Play, RotateCcw, RotateCw, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 const defaultAccentPalette = ["#d9906e", "#875eb8", "#457fa9"] as const;
-const audioVolumeStorageKey = "synapse.audio-volume";
+const audioVolumeStorageKey = "monolyth.audio-volume";
 const defaultAudioVolume = 25;
 
 export interface CustomAudioPlayerProps {

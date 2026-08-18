@@ -1,5 +1,5 @@
-import type { Content } from "@synapse/shared/schemas";
-import { Skeleton } from "@synapse/ui/components";
+import type { Content } from "@monolyth/shared/schemas";
+import { Skeleton } from "@monolyth/ui/components";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 

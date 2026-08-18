@@ -1,5 +1,5 @@
-import { ContentEditDialog } from "@synapse/features";
-import type { Content } from "@synapse/shared/schemas";
+import { ContentEditDialog } from "@monolyth/features";
+import type { Content } from "@monolyth/shared/schemas";
 import toast from "react-hot-toast";
 
 import { api } from "@/shared/api/hooks";

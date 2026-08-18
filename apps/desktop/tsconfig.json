@@ -1,5 +1,5 @@
 {
-	"extends": "@synapse/tsconfig/react-library.json",
+	"extends": "@monolyth/tsconfig/react-library.json",
 	"compilerOptions": {
 		"target": "ES2022",
 		"lib": ["DOM", "ES2022"],

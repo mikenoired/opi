@@ -1,5 +1,5 @@
 {
-	"extends": "@synapse/tsconfig/base.json",
+	"extends": "@monolyth/tsconfig/base.json",
 	"compilerOptions": {
 		"target": "ES2022",
 		"lib": ["ES2022"],

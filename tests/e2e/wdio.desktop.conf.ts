@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 // module itself as an app and can fail with EPERM while loading it.
 const appEntryPoint =
 	process.env.E2E_DESKTOP_APP_DIR ?? fileURLToPath(new URL("../../apps/desktop/", import.meta.url));
-const userDataDir = process.env.E2E_ELECTRON_PROFILE_DIR ?? "/tmp/synapse-e2e-electron-profile";
+const userDataDir = process.env.E2E_ELECTRON_PROFILE_DIR ?? "/tmp/monolyth-e2e-electron-profile";
 const cacheDir = fileURLToPath(new URL("../../.cache/wdio", import.meta.url));
 const specs = fileURLToPath(new URL("./desktop/**/*.e2e.ts", import.meta.url));
 const require = createRequire(import.meta.url);

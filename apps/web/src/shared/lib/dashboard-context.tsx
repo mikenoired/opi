@@ -1,4 +1,4 @@
-import type { Content } from "@synapse/shared/schemas";
+import type { Content } from "@monolyth/shared/schemas";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 

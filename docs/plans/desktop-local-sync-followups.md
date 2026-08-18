@@ -1,4 +1,4 @@
-# Desktop local mode and Synapse Sync — follow-up plan
+# Desktop local mode and Monolyth Sync — follow-up plan
 
 ## Scope and ordering
 
@@ -10,11 +10,11 @@ The work is intentionally ordered so policy and user interface are built on a te
 
 ### Goal
 
-For an eligible subscription, let a user choose between automatic upload to Synapse Sync when content is added and deliberate, item-level synchronization through the interface. Let the user remove a synced item from the server without deleting its local copy.
+For an eligible subscription, let a user choose between automatic upload to Monolyth Sync when content is added and deliberate, item-level synchronization through the interface. Let the user remove a synced item from the server without deleting its local copy.
 
 ### Deliverables
 
-- A Backend entitlement contract that exposes whether the current account can use Synapse Sync.
+- A Backend entitlement contract that exposes whether the current account can use Monolyth Sync.
 - A local sync-state model per item: local-only, queued, synced, failed, and remote-deleted where applicable.
 - An explicit conflict and retry policy for local edits, remote edits, deletions, and interrupted transfers.
 - UI for the default policy, per-item selection, upload progress/errors, retry, and remote-only deletion confirmation.
@@ -27,7 +27,7 @@ For an eligible subscription, let a user choose between automatic upload to Syna
 - “Delete from server” removes only the remote copy and retains the local item and its files.
 - A failed or interrupted transfer is visible and retryable; it never silently loses the local item.
 
-## 2. Local and Synapse Sync settings
+## 2. Local and Monolyth Sync settings
 
 ### Goal
 

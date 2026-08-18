@@ -1,7 +1,7 @@
 import { contextBridge, type IpcRendererEvent } from "electron";
 import { ipcRenderer } from "electron";
 
-contextBridge.exposeInMainWorld("synapseDesktop", {
+contextBridge.exposeInMainWorld("monolythDesktop", {
 	ai: {
 		getUsageOverview: () => ipcRenderer.invoke("ai:get-usage"),
 		suggestTags: (input: unknown) => ipcRenderer.invoke("ai:suggest-tags", input),

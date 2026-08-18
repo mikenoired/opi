@@ -1,4 +1,4 @@
-import { Skeleton } from "@synapse/ui/components";
+import { Skeleton } from "@monolyth/ui/components";
 import { memo, type ReactNode } from "react";
 import Masonry from "react-masonry-css";
 
@@ -15,7 +15,7 @@ export interface ContentMasonryProps<T extends { id: string }> {
 	renderItem: (item: T, index: number) => ReactNode;
 }
 
-/** The exact content-grid layout used by both Synapse renderers. */
+/** The exact content-grid layout used by both Monolyth renderers. */
 export const ContentMasonry = memo(function ContentMasonry<T extends { id: string }>({
 	compact = false,
 	isLoading = false,

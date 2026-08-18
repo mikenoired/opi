@@ -4,7 +4,7 @@ import {
 	linkContentSchema,
 	type Content,
 	type LinkContent,
-} from "@synapse/shared/schemas";
+} from "@monolyth/shared/schemas";
 
 interface MediaDimensions {
 	height: number;

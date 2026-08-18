@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import type { Context } from "../context";
 import { createListenClient } from "../db";
 
-const CHANNEL = "synapse_sync_cursor";
+const CHANNEL = "monolyth_sync_cursor";
 
 /** PostgreSQL persistence and LISTEN/NOTIFY lifecycle for cursor hints. */
 export default class SyncHintRepository {

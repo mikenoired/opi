@@ -1,4 +1,4 @@
-# Synapse
+# Monolyth
 
 _Private media/data manager w/ AI autosorting & context asking_
 
@@ -46,23 +46,23 @@ docker compose ps
 ### 4. Создайте таблицы
 
 ```bash
-bun --filter @synapse/backend db:push
-bun --filter @synapse/backend db:install-tag-merge
-bun --filter @synapse/backend search:backfill
+bun --filter @monolyth/backend db:push
+bun --filter @monolyth/backend db:install-tag-merge
+bun --filter @monolyth/backend search:backfill
 ```
 
 ### 5. Создайте bucket в MinIO
 
-Откройте [http://localhost:9001](http://localhost:9001), войдите с логином и паролем `minioadmin`, затем создайте bucket `synapse`.
+Откройте [http://localhost:9001](http://localhost:9001), войдите с логином и паролем `minioadmin`, затем создайте bucket `monolyth`.
 
 ### 6. Запустите приложение в режиме разработки
 
 ```bash
-bun --filter @synapse/backend dev
+bun --filter @monolyth/backend dev
 # в отдельном терминале
-bun --filter @synapse/web dev
+bun --filter @monolyth/web dev
 # в третьем терминале (Desktop)
-bun --filter @synapse/desktop dev
+bun --filter @monolyth/desktop dev
 ```
 
 Приложения запускаются отдельными процессами:
@@ -80,15 +80,15 @@ CORS_ORIGIN=http://localhost:5173
 
 API-документация Scalar доступна на [http://localhost:3000/api/docs](http://localhost:3000/api/docs), а спецификация OpenAPI — на [http://localhost:3000/api/openapi.json](http://localhost:3000/api/openapi.json).
 
-### Проверка Synapse Sync в Desktop
+### Проверка Monolyth Sync в Desktop
 
 1. Зарегистрируйте пользователя в Web.
-2. Для локального теста включите платный план у существующих пользователей: `bun --filter @synapse/backend db:set-god-mode`.
-3. В Desktop нажмите **Подключить аккаунт Synapse**. Вход или регистрация выполняются в браузере; после успеха браузер вернёт вас в приложение.
+2. Для локального теста включите платный план у существующих пользователей: `bun --filter @monolyth/backend db:set-god-mode`.
+3. В Desktop нажмите **Подключить аккаунт Monolyth**. Вход или регистрация выполняются в браузере; после успеха браузер вернёт вас в приложение.
 4. Создайте заметку и нажмите **Синхронизировать очередь**.
 5. Убедитесь в Web, что материал появился. В Desktop кнопка **Удалить с сервера** сохраняет локальную копию и удаляет только удалённую.
 
-Desktop по умолчанию использует `http://localhost:5173` для Web и `http://localhost:3000/api` для API. В другой среде задайте `SYNAPSE_WEB_URL` и `SYNAPSE_API_URL` в окружении Desktop-процесса.
+Desktop по умолчанию использует `http://localhost:5173` для Web и `http://localhost:3000/api` для API. В другой среде задайте `MONOLYTH_WEB_URL` и `MONOLYTH_API_URL` в окружении Desktop-процесса.
 
 Токен Desktop хранится только в памяти main-процесса и сбрасывается при закрытии приложения; это сделано для безопасного локального тестирования до добавления системного защищённого хранилища.
 
@@ -97,25 +97,25 @@ Desktop по умолчанию использует `http://localhost:5173` д�
 Соберите Web-клиент с адресом Backend API:
 
 ```bash
-VITE_API_URL=https://api.example.com/api bun --filter @synapse/web build
+VITE_API_URL=https://api.example.com/api bun --filter @monolyth/web build
 ```
 
 Для полной проверки перед сборкой:
 
 ```bash
 bun run check
-VITE_API_URL=https://api.example.com/api bun --filter @synapse/web build
+VITE_API_URL=https://api.example.com/api bun --filter @monolyth/web build
 ```
 
 Запустите Backend отдельно:
 
 ```bash
-NODE_ENV=production bun --filter @synapse/backend start
+NODE_ENV=production bun --filter @monolyth/backend start
 ```
 
 Backend API будет доступен на [http://localhost:3000/api](http://localhost:3000/api); `apps/web/dist` нужно раздавать отдельным статическим хостингом. `VITE_API_URL` встраивается Vite во время **сборки**.
 
-Для Desktop также укажите публичные адреса `SYNAPSE_WEB_URL` и `SYNAPSE_API_URL`: они используются для входа через системный браузер и возврата по `synapse://auth/callback`.
+Для Desktop также укажите публичные адреса `MONOLYTH_WEB_URL` и `MONOLYTH_API_URL`: они используются для входа через системный браузер и возврата по `monolyth://auth/callback`.
 
 ## Остановка
 

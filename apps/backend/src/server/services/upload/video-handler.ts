@@ -3,7 +3,7 @@ import { readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { buildVideoMediaContent } from "@synapse/core";
+import { buildVideoMediaContent } from "@monolyth/core";
 
 import { getPublicUrl, uploadFile } from "../../../storage/minio";
 import { generateThumbnail, getImageDimensions } from "../../lib/generate-thumbnail";

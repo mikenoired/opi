@@ -1,4 +1,4 @@
-import { ContentTag as SharedContentTag, type ContentTagProps } from "@synapse/features";
+import { ContentTag as SharedContentTag, type ContentTagProps } from "@monolyth/features";
 import { useMemo } from "react";
 
 import { api } from "@/shared/api/hooks";

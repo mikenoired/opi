@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 
-import { extractOwnedNoteImages, sanitizeNoteContent } from "@synapse/core";
+import { extractOwnedNoteImages, sanitizeNoteContent } from "@monolyth/core";
 
 let deleteStoredNoteImages: typeof import("./note-images").deleteStoredNoteImages;
 let prepareNoteImages: typeof import("./note-images").prepareNoteImages;

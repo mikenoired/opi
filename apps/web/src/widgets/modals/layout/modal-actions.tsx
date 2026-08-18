@@ -1,5 +1,5 @@
-import { cn } from "@synapse/ui/cn";
-import { Button } from "@synapse/ui/components";
+import { cn } from "@monolyth/ui/cn";
+import { Button } from "@monolyth/ui/components";
 import type { ComponentProps, ReactNode } from "react";
 
 type ButtonVariant = ComponentProps<typeof Button>["variant"];

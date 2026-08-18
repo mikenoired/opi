@@ -1,5 +1,5 @@
-import type { createContentSchema, updateContentSchema } from "@synapse/shared/schemas";
-import { contentTypeSchema } from "@synapse/shared/schemas";
+import type { createContentSchema, updateContentSchema } from "@monolyth/shared/schemas";
+import { contentTypeSchema } from "@monolyth/shared/schemas";
 import type { z } from "zod";
 
 import type AiUsageRepository from "./server/repositories/ai-usage.repository";
@@ -41,7 +41,7 @@ export type User = Awaited<ReturnType<UserService["getUser"]>>;
 export type StorageUsage = Awaited<ReturnType<UserService["getStorageUsage"]>>;
 export type Preferences = Awaited<ReturnType<UserService["getPreferences"]>>;
 export type AiUsage = Awaited<ReturnType<AiUsageRepository["getOverview"]>>;
-export type SyncEntitlement = { eligible: boolean; plan: import("@synapse/shared/plans").PlanId };
+export type SyncEntitlement = { eligible: boolean; plan: import("@monolyth/shared/plans").PlanId };
 export type CreateContentInput = z.input<typeof createContentSchema>;
 export type UpdateContentInput = z.input<typeof updateContentSchema>;
 export type CreateContentResult = Awaited<ReturnType<ContentService["create"]>>;

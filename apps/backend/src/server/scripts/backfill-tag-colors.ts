@@ -2,7 +2,7 @@ import postgres from "postgres";
 
 import { AVAILABLE_TAG_COLOR_COUNT } from "../lib/tag-colors";
 
-const connectionString = `postgres://${process.env.POSTGRES_USER || "postgres"}:${process.env.POSTGRES_PASSWORD || "postgres"}@${process.env.POSTGRES_HOST || "localhost"}:${process.env.POSTGRES_PORT || 5432}/${process.env.POSTGRES_DB || "synapse"}`;
+const connectionString = `postgres://${process.env.POSTGRES_USER || "postgres"}:${process.env.POSTGRES_PASSWORD || "postgres"}@${process.env.POSTGRES_HOST || "localhost"}:${process.env.POSTGRES_PORT || 5432}/${process.env.POSTGRES_DB || "monolyth"}`;
 const sql = postgres(connectionString, { max: 1 });
 
 try {

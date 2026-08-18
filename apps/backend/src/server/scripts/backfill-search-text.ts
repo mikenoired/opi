@@ -1,4 +1,4 @@
-import { buildContentSearchText } from "@synapse/shared/content-search";
+import { buildContentSearchText } from "@monolyth/shared/content-search";
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "../db";

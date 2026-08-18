@@ -1,4 +1,4 @@
-import { Button } from "@synapse/ui/components";
+import { Button } from "@monolyth/ui/components";
 import { Info, X, type LucideIcon } from "lucide-react";
 
 import { BaseModal } from "./base-modal";

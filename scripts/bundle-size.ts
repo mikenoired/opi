@@ -57,7 +57,7 @@ try {
 	console.error(
 		isServer
 			? "Server bundle was not found. Run `bun run build:server:size` first."
-			: "Bundle output was not found. Run `bun --filter @synapse/web run build` first."
+			: "Bundle output was not found. Run `bun --filter @monolyth/web run build` first."
 	);
 	process.exit(1);
 }

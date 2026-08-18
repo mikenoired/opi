@@ -1,4 +1,4 @@
-import type { SyncChange as CoreSyncChange } from "@synapse/core";
+import type { SyncChange as CoreSyncChange } from "@monolyth/core";
 
 export type SyncOperation = "delete" | "upsert";
 export type SyncCursor = string;

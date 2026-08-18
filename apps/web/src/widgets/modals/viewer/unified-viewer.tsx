@@ -1,5 +1,5 @@
-import { ContentViewer, type ContentSuggestionGroup } from "@synapse/features";
-import type { Content } from "@synapse/shared/schemas";
+import { ContentViewer, type ContentSuggestionGroup } from "@monolyth/features";
+import type { Content } from "@monolyth/shared/schemas";
 import { useCallback, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 

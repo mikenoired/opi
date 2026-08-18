@@ -1,5 +1,5 @@
-import { mapCurrentUser, mergeUserPreferences, type CurrentUser } from "@synapse/core";
-import { normalizeUserPreferences, type UserPreferencesInput } from "@synapse/shared/preferences";
+import { mapCurrentUser, mergeUserPreferences, type CurrentUser } from "@monolyth/core";
+import { normalizeUserPreferences, type UserPreferencesInput } from "@monolyth/shared/preferences";
 import { eq } from "drizzle-orm";
 
 import type { Context } from "../context";

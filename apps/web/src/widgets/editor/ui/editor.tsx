@@ -1,4 +1,4 @@
-import { RichTextEditor, type RichTextEditorProps } from "@synapse/features";
+import { RichTextEditor, type RichTextEditorProps } from "@monolyth/features";
 
 import { useWebEditorOptions } from "../lib/web-editor-options";
 

@@ -1,4 +1,4 @@
-import { buildImageMediaContent } from "@synapse/core";
+import { buildImageMediaContent } from "@monolyth/core";
 
 import { deleteFile, getPublicUrl, uploadFile } from "../../../storage/minio";
 import { generateThumbnail, getImageDimensions } from "../../lib/generate-thumbnail";

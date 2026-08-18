@@ -1,4 +1,4 @@
-import { AppearanceSettingsPanel } from "@synapse/features";
+import { AppearanceSettingsPanel } from "@monolyth/features";
 import { useTheme } from "next-themes";
 
 import { useUserPreferences } from "@/shared/lib/user-preferences-context";

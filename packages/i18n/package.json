@@ -1,5 +1,5 @@
 {
-	"name": "@synapse/i18n",
+	"name": "@monolyth/i18n",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -16,7 +16,7 @@
 		"react": "^19.2.8"
 	},
 	"devDependencies": {
-		"@synapse/tsconfig": "workspace:*",
+		"@monolyth/tsconfig": "workspace:*",
 		"@types/react": "^19.2.18",
 		"typescript": "^7.0.2"
 	}

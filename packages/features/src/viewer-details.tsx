@@ -1,6 +1,6 @@
-import type { Content } from "@synapse/shared/schemas";
-import { cn } from "@synapse/ui/cn";
-import { Dropdown, useDropdown } from "@synapse/ui/components";
+import type { Content } from "@monolyth/shared/schemas";
+import { cn } from "@monolyth/ui/cn";
+import { Dropdown, useDropdown } from "@monolyth/ui/components";
 import { motion } from "framer-motion";
 import {
 	Calendar,

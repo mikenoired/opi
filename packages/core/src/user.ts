@@ -1,9 +1,9 @@
-import { DEFAULT_PLAN_ID, isPlanId, type PlanId } from "@synapse/shared/plans";
+import { DEFAULT_PLAN_ID, isPlanId, type PlanId } from "@monolyth/shared/plans";
 import {
 	normalizeUserPreferences,
 	type UserPreferences,
 	type UserPreferencesInput,
-} from "@synapse/shared/preferences";
+} from "@monolyth/shared/preferences";
 
 export interface CurrentUser {
 	createdAt: Date | null;

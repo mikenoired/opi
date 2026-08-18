@@ -1,4 +1,4 @@
-import { RichTextRenderer, type RichTextRendererProps } from "@synapse/features";
+import { RichTextRenderer, type RichTextRendererProps } from "@monolyth/features";
 
 export type EditorRendererProps = RichTextRendererProps;
 

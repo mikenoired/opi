@@ -1,5 +1,5 @@
-import { ContentCard } from "@synapse/features";
-import type { Content } from "@synapse/shared/schemas";
+import { ContentCard } from "@monolyth/features";
+import type { Content } from "@monolyth/shared/schemas";
 import { lazy, Suspense, useState } from "react";
 import toast from "react-hot-toast";
 

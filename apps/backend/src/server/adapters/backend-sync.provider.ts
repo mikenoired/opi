@@ -1,5 +1,5 @@
-import type { SyncChange, SyncProvider } from "@synapse/core";
-import type { SyncEvent, SyncEventHandler, SyncSubscriber } from "@synapse/sync";
+import type { SyncChange, SyncProvider } from "@monolyth/core";
+import type { SyncEvent, SyncEventHandler, SyncSubscriber } from "@monolyth/sync";
 
 /**
  * Process-local delivery hub. Domain writes remain authoritative in Postgres;

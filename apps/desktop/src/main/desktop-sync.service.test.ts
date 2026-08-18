@@ -27,9 +27,9 @@ describe("DesktopSyncService", () => {
 			});
 		}) as typeof fetch;
 		try {
-			const root = await mkdtemp(join(tmpdir(), "synapse-sync-"));
+			const root = await mkdtemp(join(tmpdir(), "monolyth-sync-"));
 			const service = new DesktopSyncService(new LocalLibraryRepository(root));
-			await service.login("https://synapse.example", "mike@example.com", "secret");
+			await service.login("https://monolyth.example", "mike@example.com", "secret");
 
 			await expect(service.getAiUsage()).resolves.toMatchObject({ plan: "pro" });
 			await expect(

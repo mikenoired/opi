@@ -9,7 +9,7 @@ import { join } from "node:path";
  * prerequisite and is bundled in the server image for the web path.
  */
 export async function transcodeLocalAudioToAac(bytes: Uint8Array, extension: string): Promise<Uint8Array> {
-	const directory = await mkdtemp(join(tmpdir(), "synapse-audio-"));
+	const directory = await mkdtemp(join(tmpdir(), "monolyth-audio-"));
 	const sourcePath = join(directory, `source.${extension || "m4a"}`);
 	const targetPath = join(directory, "playable.m4a");
 	try {

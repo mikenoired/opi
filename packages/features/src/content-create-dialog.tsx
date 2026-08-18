@@ -1,7 +1,7 @@
-import type { BinaryFile } from "@synapse/api";
-import { useI18n } from "@synapse/i18n";
-import type { Content } from "@synapse/shared/schemas";
-import { Button, CheckboxGroup, CheckboxItem, InputField, Label } from "@synapse/ui/components";
+import type { BinaryFile } from "@monolyth/api";
+import { useI18n } from "@monolyth/i18n";
+import type { Content } from "@monolyth/shared/schemas";
+import { Button, CheckboxGroup, CheckboxItem, InputField, Label } from "@monolyth/ui/components";
 import type { JSONContent } from "@tiptap/core";
 import { Plus, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";

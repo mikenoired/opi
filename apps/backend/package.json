@@ -1,5 +1,5 @@
 {
-	"name": "@synapse/backend",
+	"name": "@monolyth/backend",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -26,10 +26,10 @@
 	},
 	"dependencies": {
 		"@scalar/hono-api-reference": "^0.11.12",
-		"@synapse/api": "workspace:*",
-		"@synapse/core": "workspace:*",
-		"@synapse/shared": "workspace:*",
-		"@synapse/sync": "workspace:*",
+		"@monolyth/api": "workspace:*",
+		"@monolyth/core": "workspace:*",
+		"@monolyth/shared": "workspace:*",
+		"@monolyth/sync": "workspace:*",
 		"drizzle-orm": "^0.45.2",
 		"epub2": "^3.0.2",
 		"hono": "^4.12.34",
@@ -46,7 +46,7 @@
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
-		"@synapse/tsconfig": "workspace:*",
+		"@monolyth/tsconfig": "workspace:*",
 		"@types/bun": "^1.3.14",
 		"@types/jsonwebtoken": "^9.0.10",
 		"@types/minio": "^7.1.1",

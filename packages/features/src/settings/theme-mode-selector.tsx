@@ -1,4 +1,4 @@
-import { SIDEBAR_ANIMATION } from "@synapse/shared/animations";
+import { SIDEBAR_ANIMATION } from "@monolyth/shared/animations";
 import { motion } from "framer-motion";
 import { Palette } from "lucide-react";
 import { MouseEventHandler } from "react";

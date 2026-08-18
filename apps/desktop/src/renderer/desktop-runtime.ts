@@ -1,12 +1,12 @@
-import { createParsedLinkFallback, type SynapseClient } from "@synapse/api";
+import { createParsedLinkFallback, type MonolythClient } from "@monolyth/api";
 import {
 	commonAppConfiguration,
 	mergeAppConfiguration,
 	type AppRuntime,
 	type NavigationItemConfig,
 	type SettingsTabConfig,
-} from "@synapse/features/runtime";
-import { createTranslator, type InterfaceLanguage } from "@synapse/i18n";
+} from "@monolyth/features/runtime";
+import { createTranslator, type InterfaceLanguage } from "@monolyth/i18n";
 
 import { getDesktopBridge } from "./desktop-bridge";
 
@@ -20,7 +20,7 @@ export const desktopRuntime: AppRuntime = {
 		capabilities: {
 			enabled: ["account", "ai", "local-storage", "media-import", "sync", "system-integration"],
 		},
-		client: createDesktopSynapseClient(),
+		client: createDesktopMonolythClient(),
 		commands: { execute: async () => undefined },
 	},
 };
@@ -58,7 +58,7 @@ export function getDesktopSettings(language: InterfaceLanguage): SettingsTabConf
 	];
 }
 
-function createDesktopSynapseClient(): SynapseClient {
+function createDesktopMonolythClient(): MonolythClient {
 	return {
 		account: {
 			getCurrentUser: async () => {
@@ -79,11 +79,11 @@ function createDesktopSynapseClient(): SynapseClient {
 				return { fileSize: stats.localBytes, files: stats.itemCount };
 			},
 			signIn: async () => ({
-				error: { message: "Use the Synapse Sync settings to choose a server" },
+				error: { message: "Use the Monolyth Sync settings to choose a server" },
 				user: null,
 			}),
 			signOut: () => getDesktopBridge().sync.logout(),
-			signUp: async () => ({ error: { message: "Use Synapse Web to create an account" }, user: null }),
+			signUp: async () => ({ error: { message: "Use Monolyth Web to create an account" }, user: null }),
 			updatePreferences: (input) => getDesktopBridge().library.updatePreferences(input),
 		},
 		ai: {

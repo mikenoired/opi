@@ -1,9 +1,9 @@
 const cwd = process.cwd();
 const environment = { ...process.env, ELECTRON_RUN_AS_NODE: "" };
-const stagedAppDir = "/tmp/synapse-e2e-desktop";
-const profileDir = "/tmp/synapse-e2e-electron-profile";
+const stagedAppDir = "/tmp/monolyth-e2e-desktop";
+const profileDir = "/tmp/monolyth-e2e-electron-profile";
 
-const build = Bun.spawn(["bun", "--filter", "@synapse/desktop", "build"], {
+const build = Bun.spawn(["bun", "--filter", "@monolyth/desktop", "build"], {
 	cwd,
 	env: environment,
 	stderr: "inherit",

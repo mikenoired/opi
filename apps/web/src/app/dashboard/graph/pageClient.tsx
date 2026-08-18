@@ -1,5 +1,5 @@
-import { GraphSurface } from "@synapse/features";
-import type { Content } from "@synapse/shared/schemas";
+import { GraphSurface } from "@monolyth/features";
+import type { Content } from "@monolyth/shared/schemas";
 import { lazy, Suspense, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { api } from "@/shared/api/hooks";

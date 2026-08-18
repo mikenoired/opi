@@ -1,5 +1,5 @@
-import { cn } from "@synapse/ui/cn";
-import { Button } from "@synapse/ui/components";
+import { cn } from "@monolyth/ui/cn";
+import { Button } from "@monolyth/ui/components";
 import type { LucideIcon } from "lucide-react";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";

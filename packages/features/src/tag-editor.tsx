@@ -1,8 +1,8 @@
-import type { AiTagsInput } from "@synapse/api";
-import { uniqueTagTitles } from "@synapse/core";
-import { useI18n } from "@synapse/i18n";
-import type { Content } from "@synapse/shared/schemas";
-import { Button } from "@synapse/ui/components";
+import type { AiTagsInput } from "@monolyth/api";
+import { uniqueTagTitles } from "@monolyth/core";
+import { useI18n } from "@monolyth/i18n";
+import type { Content } from "@monolyth/shared/schemas";
+import { Button } from "@monolyth/ui/components";
 import { Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 

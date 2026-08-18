@@ -1,6 +1,6 @@
-import { parseMediaJson } from "@synapse/core";
-import { TagStack as SharedTagStack } from "@synapse/features";
-import type { Content } from "@synapse/shared/schemas";
+import { parseMediaJson } from "@monolyth/core";
+import { TagStack as SharedTagStack } from "@monolyth/features";
+import type { Content } from "@monolyth/shared/schemas";
 import { FileText, LinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 

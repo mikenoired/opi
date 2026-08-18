@@ -1,4 +1,4 @@
-import type { UserPreferences } from "@synapse/shared/preferences";
+import type { UserPreferences } from "@monolyth/shared/preferences";
 
 /** Visual icon names are resolved by shared UI, so platform configs never render JSX. */
 export type AppIcon =

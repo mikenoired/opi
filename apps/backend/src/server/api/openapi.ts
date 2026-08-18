@@ -48,9 +48,9 @@ const idParameter = [{ name: "id", in: "path", required: true, schema: { type: "
 export const openApiDocument = {
 	openapi: "3.1.0",
 	info: {
-		title: "Synapse API",
+		title: "Monolyth API",
 		version: "1.0.0",
-		description: "Typed Hono API for the Synapse personal archive.",
+		description: "Typed Hono API for the Monolyth personal archive.",
 	},
 	servers: [{ url: "/api", description: "Current server" }],
 	tags: [
@@ -131,6 +131,6 @@ export const openApiDocument = {
 		"/ai/tags": { post: operation("AI tags", { body: true, mutation: true }) },
 	},
 	components: {
-		securitySchemes: { cookieAuth: { type: "apiKey", in: "cookie", name: "synapse_token" } },
+		securitySchemes: { cookieAuth: { type: "apiKey", in: "cookie", name: "monolyth_token" } },
 	},
 } as const;

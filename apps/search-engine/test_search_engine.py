@@ -14,19 +14,19 @@ class SearchEngineTest(unittest.TestCase):
                 "type": "doc",
                 "content": [
                     {"type": "heading", "content": [{"type": "text", "text": "Поиск"}]},
-                    {"type": "paragraph", "content": [{"type": "text", "text": "в Synapse"}]},
+                    {"type": "paragraph", "content": [{"type": "text", "text": "в Monolyth"}]},
                 ],
             }
         )
-        self.assertEqual(extract_text(raw), "Поиск\nв Synapse")
+        self.assertEqual(extract_text(raw), "Поиск\nв Monolyth")
 
         corpus = [
-            {"id": "new", "title": "Поиск", "text": "Synapse", "created_at": "2"},
-            {"id": "old", "title": "Поиск", "text": "Synapse", "created_at": "1"},
+            {"id": "new", "title": "Поиск", "text": "Monolyth", "created_at": "2"},
+            {"id": "old", "title": "Поиск", "text": "Monolyth", "created_at": "1"},
         ]
         run = substring_run(corpus, [{"id": "q01", "query": "поиск"}], 10)
         self.assertEqual([row["document_id"] for row in run], ["new", "old"])
-        bm25 = bm25_run(corpus, [{"id": "q01", "query": "Synapse"}], 10)
+        bm25 = bm25_run(corpus, [{"id": "q01", "query": "Monolyth"}], 10)
         self.assertEqual([row["document_id"] for row in bm25], ["new", "old"])
         hybrid = rrf_run(
             [

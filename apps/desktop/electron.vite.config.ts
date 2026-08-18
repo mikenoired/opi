@@ -7,7 +7,7 @@ export default defineConfig({
 	main: {
 		build: {
 			externalizeDeps: {
-				exclude: ["@synapse/api", "@synapse/core", "@synapse/shared", "@synapse/sync", "music-metadata"],
+				exclude: ["@monolyth/api", "@monolyth/core", "@monolyth/shared", "@monolyth/sync", "music-metadata"],
 			},
 		},
 	},

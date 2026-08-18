@@ -1,7 +1,7 @@
-import { parseAudioJson, parseLinkContent, parseMediaJson } from "@synapse/core";
-import { useI18n } from "@synapse/i18n";
-import type { Content, UpdateContent } from "@synapse/shared/schemas";
-import { CheckboxGroup, CheckboxItem } from "@synapse/ui/components";
+import { parseAudioJson, parseLinkContent, parseMediaJson } from "@monolyth/core";
+import { useI18n } from "@monolyth/i18n";
+import type { Content, UpdateContent } from "@monolyth/shared/schemas";
+import { CheckboxGroup, CheckboxItem } from "@monolyth/ui/components";
 import { Download, Edit2, Image as ImageIcon, Info, Sparkles, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 

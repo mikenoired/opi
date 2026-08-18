@@ -5,7 +5,7 @@ import { Glob } from "bun";
 const rules = [
 	{ description: "Electron module import", pattern: /from\s+["']electron["']/ },
 	{ description: "Electron IPC API", pattern: /\b(?:ipcMain|ipcRenderer|contextBridge)\b/ },
-	{ description: "Electron preload global", pattern: /window\.(?:electron|synapseDesktop)\b/ },
+	{ description: "Electron preload global", pattern: /window\.(?:electron|monolythDesktop)\b/ },
 	{ description: "Node platform check", pattern: /process\.platform\b/ },
 	{ description: "platform identity branch", pattern: /\b(?:isDesktop|isElectron|isWeb)\b/ },
 	{ description: "application-relative platform import", pattern: /from\s+["']@\// },

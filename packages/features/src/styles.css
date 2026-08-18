@@ -722,7 +722,7 @@ html.dark[data-palette] {
 }
 
 @layer components {
-	.synapse-prose {
+	.monolyth-prose {
 		max-width: 65ch;
 		color: var(--prose-body);
 		font-size: 1rem;
@@ -1026,7 +1026,7 @@ html.dark[data-palette] {
 
 /* Tiptap task items use a label/input beside a content div. Reset the
  * typography list defaults so the checkbox and text share one baseline. */
-.synapse-editor-content ul[data-type="taskList"] {
+.monolyth-editor-content ul[data-type="taskList"] {
 	position: relative;
 	display: flex;
 	width: min(100%, 28rem);
@@ -1039,7 +1039,7 @@ html.dark[data-palette] {
 	padding: 0;
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] {
 	position: relative;
 	z-index: 10;
 	display: flex;
@@ -1056,40 +1056,40 @@ html.dark[data-palette] {
 	transition: background-color 80ms ease;
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"]:hover,
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"]:focus-within {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"]:hover,
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"]:focus-within {
 	background: color-mix(in oklch, var(--muted) 72%, transparent);
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"][data-checked="true"] {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"][data-checked="true"] {
 	background: color-mix(in oklch, var(--muted) 62%, transparent);
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li.synapse-task-item {
+.monolyth-editor-content ul[data-type="taskList"] > li.monolyth-task-item {
 	display: block;
 	height: auto;
 	min-height: 0;
 	padding: 0;
 }
 
-.synapse-editor-content .synapse-task-list-content {
+.monolyth-editor-content .monolyth-task-list-content {
 	display: contents;
 }
 
-.synapse-editor-content .synapse-task-item {
+.monolyth-editor-content .monolyth-task-item {
 	display: block;
 	margin: 0;
 	padding: 0;
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label {
 	display: inline-flex;
 	flex: 0 0 auto;
 	align-items: center;
 	user-select: none;
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input {
 	display: block;
 	width: 15px;
 	height: 15px;
@@ -1106,16 +1106,16 @@ html.dark[data-palette] {
 		background-color 80ms ease;
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input:hover,
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input:focus-visible {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input:hover,
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input:focus-visible {
 	border-color: var(--muted-foreground);
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input:checked {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input:checked {
 	border-color: transparent;
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input:checked::after {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > label > input:checked::after {
 	content: "";
 	display: block;
 	width: 7px;
@@ -1126,14 +1126,14 @@ html.dark[data-palette] {
 	transform: rotate(-45deg);
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > div {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > div {
 	display: block;
 	flex: 1 1 auto;
 	min-width: 0;
 	overflow: hidden;
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > div > p {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"] > div > p {
 	overflow: hidden;
 	margin: 0;
 	font-size: 0.8125rem;
@@ -1142,7 +1142,7 @@ html.dark[data-palette] {
 	white-space: nowrap;
 }
 
-.synapse-editor-content ul[data-type="taskList"] > li[data-type="taskItem"][data-checked="true"] > div > p {
+.monolyth-editor-content ul[data-type="taskList"] > li[data-type="taskItem"][data-checked="true"] > div > p {
 	font-weight: 500;
 	text-decoration: line-through;
 	text-decoration-thickness: 1px;
@@ -1216,13 +1216,13 @@ html.dark[data-palette] {
 }
 
 .slide-in-from-left-2 {
-	--synapse-enter-translate-x: -0.5rem;
+	--monolyth-enter-translate-x: -0.5rem;
 }
 
 @keyframes fadeIn {
 	from {
 		opacity: 0;
-		transform: translate(var(--synapse-enter-translate-x, 0), 10px);
+		transform: translate(var(--monolyth-enter-translate-x, 0), 10px);
 	}
 
 	to {

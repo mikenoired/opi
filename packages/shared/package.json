@@ -1,5 +1,5 @@
 {
-	"name": "@synapse/shared",
+	"name": "@monolyth/shared",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -22,7 +22,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
-		"@synapse/tsconfig": "workspace:*",
+		"@monolyth/tsconfig": "workspace:*",
 		"typescript": "^7.0.2"
 	},
 	"dependencies": {

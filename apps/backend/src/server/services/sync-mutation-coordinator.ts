@@ -1,6 +1,6 @@
-import type { SyncMutation, SyncMutationOutcome } from "@synapse/api";
-import type { Content, CreateContent } from "@synapse/shared/schemas";
-import type { MutationReceipt, SyncChange, SyncIntent } from "@synapse/sync";
+import type { SyncMutation, SyncMutationOutcome } from "@monolyth/api";
+import type { Content, CreateContent } from "@monolyth/shared/schemas";
+import type { MutationReceipt, SyncChange, SyncIntent } from "@monolyth/sync";
 import { sql } from "drizzle-orm";
 
 import type { Context } from "../context";

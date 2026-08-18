@@ -1,4 +1,4 @@
-import type { Content } from "@synapse/shared/schemas";
+import type { Content } from "@monolyth/shared/schemas";
 import type { ReactNode } from "react";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
@@ -69,7 +69,7 @@ export function ModalProvider({ children }: ModalProviderProps) {
 				viewerPropsRef.current = config.props ?? {};
 				viewerPathnameRef.current = pathname;
 				setModal(null);
-				router.push(viewerUrl(config.item.id), { state: { synapseViewer: true } });
+				router.push(viewerUrl(config.item.id), { state: { monolythViewer: true } });
 				// List endpoints intentionally provide a compact preview. Wait for the
 				// detail query below before mounting the viewer so a note never opens
 				// with truncated rich-text JSON.
@@ -91,7 +91,7 @@ export function ModalProvider({ children }: ModalProviderProps) {
 			const props = { ...viewerPropsRef.current, items };
 			viewerPropsRef.current = props;
 			setModal({ ...current, item, props });
-			router.push(viewerUrl(item.id), { state: { synapseViewer: true } });
+			router.push(viewerUrl(item.id), { state: { monolythViewer: true } });
 		},
 		[router, setModal, viewerUrl]
 	);

@@ -1,14 +1,14 @@
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, extname, join, resolve } from "node:path";
 
-import type { BinaryFile } from "@synapse/api";
+import type { BinaryFile } from "@monolyth/api";
 import {
 	buildAudioContent,
 	buildImageMediaContent,
 	buildVideoMediaContent,
 	parseAudioJson,
-} from "@synapse/core";
-import type { UserPreferencesInput } from "@synapse/shared/preferences";
+} from "@monolyth/core";
+import type { UserPreferencesInput } from "@monolyth/shared/preferences";
 import {
 	app,
 	BaseWindow,
@@ -44,7 +44,7 @@ protocol.registerSchemesAsPrivileged([
 			stream: true,
 			supportFetchAPI: true,
 		},
-		scheme: "synapse-object",
+		scheme: "monolyth-object",
 	},
 ]);
 
@@ -53,7 +53,7 @@ const library = new LocalLibraryRepository(join(app.getPath("userData"), "librar
 const sync = new DesktopSyncService(library, objectStorage, undefined, (url) => shell.openExternal(url));
 const sessionPath = join(app.getPath("userData"), "desktop-session.bin");
 const pendingDeepLinks: string[] = [];
-const desktopAppName = "Synapse";
+const desktopAppName = "Monolyth";
 
 sync.setLibraryChangedListener(() => {
 	for (const window of BrowserWindow.getAllWindows()) window.webContents.send("library:changed");
@@ -61,18 +61,18 @@ sync.setLibraryChangedListener(() => {
 
 if (!app.requestSingleInstanceLock()) app.quit();
 if (process.defaultApp) {
-	app.setAsDefaultProtocolClient("synapse", process.execPath, [resolve(process.argv[1] || "")]);
+	app.setAsDefaultProtocolClient("monolyth", process.execPath, [resolve(process.argv[1] || "")]);
 } else {
-	app.setAsDefaultProtocolClient("synapse");
+	app.setAsDefaultProtocolClient("monolyth");
 }
-const initialDeepLink = process.argv.find((argument) => argument.startsWith("synapse://"));
+const initialDeepLink = process.argv.find((argument) => argument.startsWith("monolyth://"));
 if (initialDeepLink) pendingDeepLinks.push(initialDeepLink);
 app.on("open-url", (event, url) => {
 	event.preventDefault();
 	void receiveDesktopAuthCallback(url);
 });
 app.on("second-instance", (_event, commandLine) => {
-	const url = commandLine.find((argument) => argument.startsWith("synapse://"));
+	const url = commandLine.find((argument) => argument.startsWith("monolyth://"));
 	if (url) void receiveDesktopAuthCallback(url);
 	BrowserWindow.getAllWindows()[0]?.focus();
 });
@@ -120,7 +120,7 @@ app.whenReady().then(async () => {
 	Menu.setApplicationMenu(
 		Menu.buildFromTemplate([
 			{
-				label: "Synapse",
+				label: "Monolyth",
 				submenu: [
 					{
 						label: "Настройки",
@@ -267,7 +267,7 @@ app.whenReady().then(async () => {
 	// Retained only for the transitional preload surface. Deletion is journaled
 	// locally and reaches the server through the durable sync protocol.
 	ipcMain.handle("sync:delete-remote", (_event, id: string) => library.delete(id));
-	protocol.handle("synapse-object", async (request) => {
+	protocol.handle("monolyth-object", async (request) => {
 		const objectName = decodeURIComponent(new URL(request.url).pathname.slice(1));
 		const objectPath = objectStorage.getObjectPath(objectName);
 		return createDesktopObjectResponse(

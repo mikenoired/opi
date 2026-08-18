@@ -1,5 +1,5 @@
-import { useI18n } from "@synapse/i18n";
-import type { Content } from "@synapse/shared/schemas";
+import { useI18n } from "@monolyth/i18n";
+import type { Content } from "@monolyth/shared/schemas";
 import type { DragEvent } from "react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 

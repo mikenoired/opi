@@ -1,4 +1,4 @@
-import { createParsedLinkFallback } from "@synapse/api";
+import { createParsedLinkFallback } from "@monolyth/api";
 import type {
 	AiTagsResult,
 	AiUsage,
@@ -17,15 +17,15 @@ import type {
 	StorageUsage,
 	SyncEntitlement,
 	SyncRunResult,
-	SynapseClient,
+	MonolythClient,
 	TagsPage,
 	TagsWithContent,
 	UpdateTagColorInput,
 	UploadInput,
 	UploadResult,
-} from "@synapse/api";
-import type { UserPreferences } from "@synapse/shared/preferences";
-import type { Content, CreateContent, UpdateContent } from "@synapse/shared/schemas";
+} from "@monolyth/api";
+import type { UserPreferences } from "@monolyth/shared/preferences";
+import type { Content, CreateContent, UpdateContent } from "@monolyth/shared/schemas";
 
 import { apiUrl } from "@/shared/config/api";
 
@@ -34,7 +34,7 @@ import { webSyncRuntime, type WebSyncRuntime } from "./web-sync";
 type WebMutationRuntime = Pick<WebSyncRuntime, "mutate" | "readEntity" | "readEntityVersion">;
 
 /** Browser implementation of the shared UI client contract. */
-export function createWebSynapseClient(syncRuntime: WebMutationRuntime = webSyncRuntime): SynapseClient {
+export function createWebMonolythClient(syncRuntime: WebMutationRuntime = webSyncRuntime): MonolythClient {
 	return {
 		account: {
 			getCurrentUser: () => request<CurrentUser | null>("/user", { allowUnauthorized: true }),
@@ -76,7 +76,7 @@ function createContentClient(syncRuntime: WebMutationRuntime): ContentClient {
 				});
 				const canonical = await syncRuntime.readEntity("content", entityId);
 				if (!canonical?.payload || typeof canonical.payload !== "object")
-					throw new Error("Synapse Sync did not return the created content");
+					throw new Error("Monolyth Sync did not return the created content");
 				return canonical.payload as Content;
 			} catch (error) {
 				if (error instanceof Error && error.message === "Web sync is not running")
@@ -264,5 +264,5 @@ async function uploadMultipart(
 }
 
 function unsupportedSync(): Promise<SyncRunResult> {
-	return Promise.reject(new Error("Synapse Sync is only available from a local-first client"));
+	return Promise.reject(new Error("Monolyth Sync is only available from a local-first client"));
 }

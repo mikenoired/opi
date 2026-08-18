@@ -3,7 +3,7 @@ import type {
 	GraphProvider,
 	TagTitleRecord,
 	TagTitleRepository,
-} from "@synapse/core";
+} from "@monolyth/core";
 
 import ContentRepository from "../repositories/content.repository";
 

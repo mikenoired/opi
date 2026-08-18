@@ -1,5 +1,5 @@
 {
-	"name": "@synapse/web",
+	"name": "@monolyth/web",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -16,14 +16,14 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@synapse/api": "workspace:*",
-		"@synapse/backend": "workspace:*",
-		"@synapse/core": "workspace:*",
-		"@synapse/features": "workspace:*",
-		"@synapse/i18n": "workspace:*",
-		"@synapse/shared": "workspace:*",
-		"@synapse/sync": "workspace:*",
-		"@synapse/ui": "workspace:*",
+		"@monolyth/api": "workspace:*",
+		"@monolyth/backend": "workspace:*",
+		"@monolyth/core": "workspace:*",
+		"@monolyth/features": "workspace:*",
+		"@monolyth/i18n": "workspace:*",
+		"@monolyth/shared": "workspace:*",
+		"@monolyth/sync": "workspace:*",
+		"@monolyth/ui": "workspace:*",
 		"@tanstack/react-query": "^5.101.0",
 		"@tanstack/react-router": "^1.170.18",
 		"@tiptap/core": "^3.27.0",
@@ -48,7 +48,7 @@
 		"vite": "^8.2.0"
 	},
 	"devDependencies": {
-		"@synapse/tsconfig": "workspace:*",
+		"@monolyth/tsconfig": "workspace:*",
 		"@tailwindcss/postcss": "^4.3.1",
 		"@types/bun": "^1.3.14",
 		"@types/lowlight": "^2.0.1",

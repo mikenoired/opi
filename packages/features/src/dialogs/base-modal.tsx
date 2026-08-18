@@ -1,4 +1,4 @@
-import { cn } from "@synapse/ui/cn";
+import { cn } from "@monolyth/ui/cn";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";

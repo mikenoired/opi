@@ -45,7 +45,7 @@ async function gitInfo() {
 
 async function request(method: string, path: string, token?: string, body?: JsonObject) {
 	const headers = new Headers({ "content-type": "application/json", "x-forwarded-for": "127.0.0.1" });
-	if (token) headers.set("x-synapse-access-token", token);
+	if (token) headers.set("x-monolyth-access-token", token);
 	const response = await api.fetch(
 		new Request(`http://smoke.test${path}`, {
 			method,
@@ -100,7 +100,7 @@ async function readImage() {
 }
 
 async function runScenario(run: number, samples: StepSamples) {
-	const email = `smoke-${Date.now()}-${run}@synapse.local`;
+	const email = `smoke-${Date.now()}-${run}@monolyth.local`;
 	const password = "SmokeTest123";
 	let token: string | undefined;
 	let userId: string | undefined;

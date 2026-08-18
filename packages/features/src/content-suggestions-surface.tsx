@@ -1,7 +1,7 @@
-import { useI18n } from "@synapse/i18n";
-import type { Content } from "@synapse/shared/schemas";
-import { cn } from "@synapse/ui/cn";
-import { Skeleton } from "@synapse/ui/components";
+import { useI18n } from "@monolyth/i18n";
+import type { Content } from "@monolyth/shared/schemas";
+import { cn } from "@monolyth/ui/cn";
+import { Skeleton } from "@monolyth/ui/components";
 import { motion } from "framer-motion";
 import { Hash } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";

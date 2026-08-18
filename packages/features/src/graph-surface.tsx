@@ -1,5 +1,5 @@
-import type { GraphEdge, GraphNode } from "@synapse/api";
-import { useI18n } from "@synapse/i18n";
+import type { GraphEdge, GraphNode } from "@monolyth/api";
+import { useI18n } from "@monolyth/i18n";
 import { Minus, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 

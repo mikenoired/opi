@@ -1,6 +1,6 @@
-import { AccountSettingsPanel, ConfirmDialog } from "@synapse/features";
-import { useI18n } from "@synapse/i18n";
-import { Button } from "@synapse/ui/components";
+import { AccountSettingsPanel, ConfirmDialog } from "@monolyth/features";
+import { useI18n } from "@monolyth/i18n";
+import { Button } from "@monolyth/ui/components";
 import { useState } from "react";
 
 import { api } from "@/shared/api/hooks";

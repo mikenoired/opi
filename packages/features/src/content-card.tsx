@@ -1,7 +1,7 @@
-import { getAudioDisplayTitle, parseAudioJson, parseLinkContent, parseMediaJson } from "@synapse/core";
-import { useI18n } from "@synapse/i18n";
-import type { Content, LinkContent } from "@synapse/shared/schemas";
-import { extractTextFromStructuredContent } from "@synapse/shared/schemas";
+import { getAudioDisplayTitle, parseAudioJson, parseLinkContent, parseMediaJson } from "@monolyth/core";
+import { useI18n } from "@monolyth/i18n";
+import type { Content, LinkContent } from "@monolyth/shared/schemas";
+import { extractTextFromStructuredContent } from "@monolyth/shared/schemas";
 import { motion } from "framer-motion";
 import { Check, FileText, ListChecks, Music2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";

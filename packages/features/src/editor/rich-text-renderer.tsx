@@ -9,7 +9,7 @@ export function RichTextRenderer({ data }: RichTextRendererProps) {
 	if (!data || !data.content) return null;
 
 	return (
-		<div className="synapse-editor-content">
+		<div className="monolyth-editor-content">
 			<RichTextEditor data={data} readOnly />
 		</div>
 	);

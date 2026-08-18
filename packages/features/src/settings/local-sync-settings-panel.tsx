@@ -1,5 +1,5 @@
-import { useI18n } from "@synapse/i18n";
-import { Button, Switch } from "@synapse/ui/components";
+import { useI18n } from "@monolyth/i18n";
+import { Button, Switch } from "@monolyth/ui/components";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
 

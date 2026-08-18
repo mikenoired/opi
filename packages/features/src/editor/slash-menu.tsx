@@ -1,4 +1,4 @@
-import { useI18n } from "@synapse/i18n";
+import { useI18n } from "@monolyth/i18n";
 import type { Editor } from "@tiptap/core";
 import {
 	FileCode2,

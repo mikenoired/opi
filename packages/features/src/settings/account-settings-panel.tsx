@@ -1,6 +1,6 @@
-import type { CurrentUser } from "@synapse/api";
-import { useI18n } from "@synapse/i18n";
-import { Button, Skeleton } from "@synapse/ui/components";
+import type { CurrentUser } from "@monolyth/api";
+import { useI18n } from "@monolyth/i18n";
+import { Button, Skeleton } from "@monolyth/ui/components";
 import { CalendarDays, LogInIcon, LogOutIcon, Mail } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -12,7 +12,7 @@ export interface AccountSettingsPanelProps {
 	onSignOut: () => void;
 	onConnectAccount?: () => void;
 	user: CurrentUser | null | undefined;
-	synapseSync?: ReactNode;
+	monolythSync?: ReactNode;
 }
 
 export function AccountSettingsPanel({
@@ -23,7 +23,7 @@ export function AccountSettingsPanel({
 	onSignOut,
 	onConnectAccount,
 	user,
-	synapseSync,
+	monolythSync,
 }: AccountSettingsPanelProps) {
 	const { t, locale } = useI18n();
 	if (isLoading) return <AccountSettingsSkeleton />;
@@ -81,7 +81,7 @@ export function AccountSettingsPanel({
 					</Button>
 				) : null}
 			</div>
-			{synapseSync}
+			{monolythSync}
 		</div>
 	);
 }

@@ -15,7 +15,7 @@ export interface PlanMeta extends PlanLimits {
 }
 
 export const DEFAULT_PLAN_ID: PlanId = "starter";
-export const SYNAPSE_SYNC_PLAN_IDS = ["plus", "pro", "god-mode"] as const satisfies readonly PlanId[];
+export const MONOLYTH_SYNC_PLAN_IDS = ["plus", "pro", "god-mode"] as const satisfies readonly PlanId[];
 
 const GiB = 1024 ** 3;
 
@@ -74,7 +74,7 @@ export function isUnlimited(value: number): boolean {
 	return !Number.isFinite(value);
 }
 
-/** Synapse Sync is a paid-plan capability; local Desktop storage remains available to every plan. */
-export function canUseSynapseSync(plan: PlanId): boolean {
-	return (SYNAPSE_SYNC_PLAN_IDS as readonly PlanId[]).includes(plan);
+/** Monolyth Sync is a paid-plan capability; local Desktop storage remains available to every plan. */
+export function canUseMonolythSync(plan: PlanId): boolean {
+	return (MONOLYTH_SYNC_PLAN_IDS as readonly PlanId[]).includes(plan);
 }

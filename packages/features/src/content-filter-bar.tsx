@@ -1,5 +1,5 @@
-import type { Content } from "@synapse/shared/schemas";
-import { cn } from "@synapse/ui/cn";
+import type { Content } from "@monolyth/shared/schemas";
+import { cn } from "@monolyth/ui/cn";
 import { FileText, FileUp, Image, Link, ListChecks, Music2, X } from "lucide-react";
 import { type ChangeEvent, type FocusEvent, useEffect, useRef, useState } from "react";
 

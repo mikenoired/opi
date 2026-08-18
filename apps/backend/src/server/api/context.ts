@@ -9,10 +9,10 @@ import CacheRepository from "../repositories/cache.repository";
 
 export async function createContext(c: HonoContext) {
 	const authHeader = c.req.header("authorization");
-	const middlewareAccessToken = c.req.header("x-synapse-access-token");
-	const middlewareRefreshToken = c.req.header("x-synapse-refresh-token");
-	const cookieToken = getCookie(c, "synapse_token");
-	const refreshToken = middlewareRefreshToken || getCookie(c, "synapse_refresh_token");
+	const middlewareAccessToken = c.req.header("x-monolyth-access-token");
+	const middlewareRefreshToken = c.req.header("x-monolyth-refresh-token");
+	const cookieToken = getCookie(c, "monolyth_token");
+	const refreshToken = middlewareRefreshToken || getCookie(c, "monolyth_refresh_token");
 	const token = authHeader?.replace("Bearer ", "") || middlewareAccessToken || cookieToken;
 
 	return {

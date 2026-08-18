@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import { basename, extname, relative, resolve } from "node:path";
 
-import type { StorageProvider } from "@synapse/core";
+import type { StorageProvider } from "@monolyth/core";
 
 /** Filesystem-backed object storage for the desktop application's user-data directory. */
 export class DesktopStorageProvider implements StorageProvider {
@@ -23,7 +23,7 @@ export class DesktopStorageProvider implements StorageProvider {
 
 	getObjectUrl(objectName: string): string {
 		this.getObjectPath(objectName);
-		return `synapse-object://local/${encodeURIComponent(objectName)}`;
+		return `monolyth-object://local/${encodeURIComponent(objectName)}`;
 	}
 
 	async putObject(

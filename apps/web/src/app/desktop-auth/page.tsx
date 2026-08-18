@@ -1,6 +1,6 @@
-import { useI18n } from "@synapse/i18n";
-import { authSchema } from "@synapse/shared/schemas";
-import { Button, InputField } from "@synapse/ui/components";
+import { useI18n } from "@monolyth/i18n";
+import { authSchema } from "@monolyth/shared/schemas";
+import { Button, InputField } from "@monolyth/ui/components";
 import { useCallback, useEffect, useState } from "react";
 
 import { apiUrl } from "@/shared/config/api";
@@ -34,7 +34,7 @@ export default function DesktopAuthPage() {
 		const payload = (await response.json()) as { code?: string; error?: string };
 		if (!response.ok || !payload.code) throw new Error(payload.error || t("desktopAuth.completeFailed"));
 		setCallbackUrl(
-			`synapse://auth/callback?code=${encodeURIComponent(payload.code)}&state=${encodeURIComponent(state!)}`
+			`monolyth://auth/callback?code=${encodeURIComponent(payload.code)}&state=${encodeURIComponent(state!)}`
 		);
 	}, [codeChallenge, state, t]);
 
@@ -75,7 +75,7 @@ export default function DesktopAuthPage() {
 		<main className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-10">
 			<section className="w-full max-w-md space-y-7 rounded-2xl border bg-background p-6 shadow-sm">
 				<div className="space-y-2">
-					<p className="text-sm font-medium text-primary">Synapse Desktop</p>
+					<p className="text-sm font-medium text-primary">Monolyth Desktop</p>
 					<h1 className="text-2xl font-semibold">
 						{mode === "login" ? t("desktopAuth.loginTitle") : t("desktopAuth.registerTitle")}
 					</h1>

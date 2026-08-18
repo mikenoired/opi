@@ -1,6 +1,6 @@
 {
-	"name": "@synapse/desktop",
-	"productName": "Synapse",
+	"name": "@monolyth/desktop",
+	"productName": "Monolyth",
 	"description": "A personal knowledge hub for collecting, organizing, and connecting information.",
 	"author": "Mike Noired",
 	"version": "0.1.0",
@@ -8,8 +8,8 @@
 	"type": "module",
 	"main": "./out/main/index.js",
 	"build": {
-		"appId": "com.synapse.desktop",
-		"productName": "Synapse",
+		"appId": "com.monolyth.desktop",
+		"productName": "Monolyth",
 		"mac": {
 			"icon": "resources/icon.icon"
 		}
@@ -27,19 +27,19 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@synapse/api": "workspace:*",
-		"@synapse/core": "workspace:*",
-		"@synapse/features": "workspace:*",
-		"@synapse/i18n": "workspace:*",
-		"@synapse/shared": "workspace:*",
-		"@synapse/sync": "workspace:*",
+		"@monolyth/api": "workspace:*",
+		"@monolyth/core": "workspace:*",
+		"@monolyth/features": "workspace:*",
+		"@monolyth/i18n": "workspace:*",
+		"@monolyth/shared": "workspace:*",
+		"@monolyth/sync": "workspace:*",
 		"lucide-react": "^1.28.0",
 		"music-metadata": "^11.13.0",
 		"react": "^19.2.8",
 		"react-dom": "^19.2.8"
 	},
 	"devDependencies": {
-		"@synapse/tsconfig": "workspace:*",
+		"@monolyth/tsconfig": "workspace:*",
 		"@tailwindcss/postcss": "^4.3.3",
 		"@types/bun": "^1.3.14",
 		"@types/node": "^24.13.3",

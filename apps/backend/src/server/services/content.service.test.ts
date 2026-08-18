@@ -17,8 +17,8 @@ import {
 	resolveTagTitlesToIds,
 	deleteContentWithRelations,
 	writeContentTagRelations,
-} from "@synapse/core";
-import { DEFAULT_USER_PREFERENCES } from "@synapse/shared/preferences";
+} from "@monolyth/core";
+import { DEFAULT_USER_PREFERENCES } from "@monolyth/shared/preferences";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import type { Context } from "../context";
@@ -27,8 +27,8 @@ import { content, contentTags, edges, nodes, tags, users } from "../db/schema";
 import { AVAILABLE_TAG_COLOR_COUNT } from "../lib/tag-colors";
 import type ContentServiceType from "./content.service";
 
-const testEmail = "bun-content-test@synapse.local";
-const foreignEmail = "bun-content-foreign@synapse.local";
+const testEmail = "bun-content-test@monolyth.local";
+const foreignEmail = "bun-content-foreign@monolyth.local";
 let userId = "";
 let ContentService: typeof ContentServiceType;
 

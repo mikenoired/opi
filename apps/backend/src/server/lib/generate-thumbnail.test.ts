@@ -10,7 +10,7 @@ const asset = (name: string) => Bun.file(join(import.meta.dir, "../../../../../t
 let tempDir: string;
 
 beforeAll(async () => {
-	tempDir = await mkdtemp(join(tmpdir(), "synapse-thumbnail-"));
+	tempDir = await mkdtemp(join(tmpdir(), "monolyth-thumbnail-"));
 });
 
 afterAll(async () => {

@@ -22,9 +22,9 @@
 	animation-fill-mode: both;
 }
 .fade-in-0 {
-	animation-name: synapse-fade-in;
+	animation-name: monolyth-fade-in;
 }
-@keyframes synapse-fade-in {
+@keyframes monolyth-fade-in {
 	from {
 		opacity: 0;
 		transform: translateY(10px);

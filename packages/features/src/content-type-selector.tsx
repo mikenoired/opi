@@ -1,6 +1,6 @@
-import { useI18n } from "@synapse/i18n";
-import type { Content } from "@synapse/shared/schemas";
-import { cn } from "@synapse/ui/cn";
+import { useI18n } from "@monolyth/i18n";
+import type { Content } from "@monolyth/shared/schemas";
+import { cn } from "@monolyth/ui/cn";
 import {
 	FileText,
 	Image as ImageIcon,

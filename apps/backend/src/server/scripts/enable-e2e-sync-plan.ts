@@ -5,7 +5,7 @@ const email = process.env.E2E_USER_EMAIL;
 if (!email) throw new Error("E2E_USER_EMAIL is required");
 
 const connection = postgres({
-	database: process.env.POSTGRES_DB ?? "synapse",
+	database: process.env.POSTGRES_DB ?? "monolyth",
 	host: process.env.POSTGRES_HOST ?? "localhost",
 	password: process.env.POSTGRES_PASSWORD ?? "postgres",
 	port: Number(process.env.POSTGRES_PORT ?? 5432),

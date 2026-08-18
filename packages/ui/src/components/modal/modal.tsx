@@ -1,4 +1,4 @@
-import { cn } from "@synapse/ui/cn";
+import { cn } from "@monolyth/ui/cn";
 import type { HTMLMotionProps } from "motion/react";
 import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";

@@ -1,5 +1,5 @@
-import { getAudioDisplayTitle, parseAudioJson, parseMediaJson } from "@synapse/core";
-import type { Content } from "@synapse/shared/schemas";
+import { getAudioDisplayTitle, parseAudioJson, parseMediaJson } from "@monolyth/core";
+import type { Content } from "@monolyth/shared/schemas";
 import { Music2 } from "lucide-react";
 import { useMemo, useState } from "react";
 

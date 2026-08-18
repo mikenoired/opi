@@ -7,7 +7,7 @@ import { DesktopStorageProvider } from "./desktop-storage.provider";
 
 describe("DesktopStorageProvider", () => {
 	test("persists objects locally through the Core storage contract", async () => {
-		const provider = new DesktopStorageProvider(await mkdtemp(join(tmpdir(), "synapse-desktop-")));
+		const provider = new DesktopStorageProvider(await mkdtemp(join(tmpdir(), "monolyth-desktop-")));
 		const data = new TextEncoder().encode("desktop content");
 		const result = await provider.putObject(data, {
 			contentType: "text/plain",
@@ -21,7 +21,7 @@ describe("DesktopStorageProvider", () => {
 		expect(await readFile(provider.getObjectPath(result.objectName), "utf8")).toBe("desktop content");
 		expect(await provider.getObjectMetadata(result.objectName)).toEqual({ size: data.byteLength });
 		expect(provider.getObjectUrl(result.objectName)).toBe(
-			`synapse-object://local/${encodeURIComponent(result.objectName)}`
+			`monolyth-object://local/${encodeURIComponent(result.objectName)}`
 		);
 
 		await provider.deleteObject(result.objectName);
@@ -29,7 +29,7 @@ describe("DesktopStorageProvider", () => {
 	});
 
 	test("rejects object names that escape the local storage root", () => {
-		const provider = new DesktopStorageProvider("/tmp/synapse-desktop");
+		const provider = new DesktopStorageProvider("/tmp/monolyth-desktop");
 		expect(() => provider.getObjectPath("../outside")).toThrow("Invalid desktop object name");
 	});
 });

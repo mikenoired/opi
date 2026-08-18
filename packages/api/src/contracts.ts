@@ -1,6 +1,6 @@
-import type { PlanId, PlanLimits } from "@synapse/shared/plans";
-import type { UserPreferences, UserPreferencesInput } from "@synapse/shared/preferences";
-import type { Content, ContentListItem, CreateContent, UpdateContent } from "@synapse/shared/schemas";
+import type { PlanId, PlanLimits } from "@monolyth/shared/plans";
+import type { UserPreferences, UserPreferencesInput } from "@monolyth/shared/preferences";
+import type { Content, ContentListItem, CreateContent, UpdateContent } from "@monolyth/shared/schemas";
 
 /**
  * Transport-neutral contract used by the shared product UI.
@@ -9,7 +9,7 @@ import type { Content, ContentListItem, CreateContent, UpdateContent } from "@sy
  * No method exposes a transport detail such as Request, Response, fetch or IPC
  * channel names.
  */
-export interface SynapseClient {
+export interface MonolythClient {
 	ai: AiClient;
 	account: AccountClient;
 	content: ContentClient;

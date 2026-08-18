@@ -5,7 +5,7 @@ import { parsePDF } from "./pdf";
 import type { ParsedDocument, ParserOptions } from "./types";
 import { parseXLSX } from "./xlsx";
 
-export type { SupportedFileType } from "@synapse/shared/file-types";
+export type { SupportedFileType } from "@monolyth/shared/file-types";
 
 export interface FileInfo {
 	name: string;
@@ -33,4 +33,4 @@ export async function parseFile(file: FileInfo, options: ParserOptions = {}): Pr
 	}
 }
 
-import { getFileType } from "@synapse/shared/file-types";
+import { getFileType } from "@monolyth/shared/file-types";

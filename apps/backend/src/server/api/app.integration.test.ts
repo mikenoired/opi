@@ -15,7 +15,7 @@ let db: typeof import("../db").db;
 type Json = Record<string, unknown>;
 
 function email(name: string) {
-	return `${testPrefix}${name}-${crypto.randomUUID()}@synapse.local`;
+	return `${testPrefix}${name}-${crypto.randomUUID()}@monolyth.local`;
 }
 
 async function request(
@@ -25,7 +25,7 @@ async function request(
 ) {
 	const headers = new Headers({ "content-type": "application/json", "x-forwarded-for": crypto.randomUUID() });
 	for (const [name, value] of new Headers(options.headers)) headers.set(name, value);
-	if (options.token) headers.set("x-synapse-access-token", options.token);
+	if (options.token) headers.set("x-monolyth-access-token", options.token);
 	const response = await api.fetch(
 		new Request(`http://api.integration${path}`, {
 			method,
@@ -100,7 +100,7 @@ describe.serial("API integration", () => {
 			body: { refreshToken: account.refreshToken, token: account.token },
 		});
 		expect(session.response.status).toBe(200);
-		expect(session.response.headers.get("set-cookie")).toContain("synapse_token=");
+		expect(session.response.headers.get("set-cookie")).toContain("monolyth_token=");
 		expect(session.response.headers.get("set-cookie")).toContain("HttpOnly");
 
 		const previousNodeEnv = process.env.NODE_ENV;
@@ -236,7 +236,7 @@ describe.serial("API integration", () => {
 		expect(JSON.parse(detailed.body.content as string)).toEqual(JSON.parse(content));
 	});
 
-	test("exposes Synapse Sync only to paid plans", async () => {
+	test("exposes Monolyth Sync only to paid plans", async () => {
 		const account = await register("sync-entitlement");
 		const starter = await request("GET", "/user/sync/entitlement", { token: account.token });
 		expect(starter.response.status).toBe(200);
@@ -605,7 +605,7 @@ describe.serial("API integration", () => {
 		const controller = new AbortController();
 		const response = await api.fetch(
 			new Request("http://api.integration/sync/events", {
-				headers: { "x-synapse-access-token": account.token },
+				headers: { "x-monolyth-access-token": account.token },
 				signal: controller.signal,
 			})
 		);

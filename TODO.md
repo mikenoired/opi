@@ -2,7 +2,7 @@
 
 ## После UI-unification
 
-- [ ] Desktop: add a secure provider-configuration boundary for personal AI providers (OpenAI, Anthropic, DeepSeek, Ollama and compatible endpoints), including encrypted credential storage and model selection. Paid Synapse accounts must be able to choose the hosted Backend analysis path instead.
+- [ ] Desktop: add a secure provider-configuration boundary for personal AI providers (OpenAI, Anthropic, DeepSeek, Ollama and compatible endpoints), including encrypted credential storage and model selection. Paid Monolyth accounts must be able to choose the hosted Backend analysis path instead.
 - [ ] Decide whether the Settings modal should remove its close button in favour of a sidebar-level back arrow; validate the navigation model before changing the shared settings shell.
 
 - [ ] DOCX & PDF parser/viewer

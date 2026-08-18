@@ -1,7 +1,7 @@
-import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
-import { useI18n } from "@synapse/i18n";
-import { MAX_TAGS_PER_CONTENT } from "@synapse/shared/schemas";
-import { InputField } from "@synapse/ui/components";
+import { normalizeTagTitle, uniqueTagTitles } from "@monolyth/core";
+import { useI18n } from "@monolyth/i18n";
+import { MAX_TAGS_PER_CONTENT } from "@monolyth/shared/schemas";
+import { InputField } from "@monolyth/ui/components";
 import type { ReactNode } from "react";
 import { useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";

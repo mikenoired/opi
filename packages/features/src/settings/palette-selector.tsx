@@ -1,5 +1,5 @@
-import { ColorPalette } from "@synapse/shared/preferences";
-import { cn } from "@synapse/ui/cn";
+import { ColorPalette } from "@monolyth/shared/preferences";
+import { cn } from "@monolyth/ui/cn";
 import { Palette } from "lucide-react";
 
 interface PaletteSelectorProps {

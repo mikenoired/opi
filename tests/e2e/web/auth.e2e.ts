@@ -1,6 +1,6 @@
 describe("authentication", () => {
 	it("registers, signs in again, and deletes a new account", async () => {
-		const email = `e2e-${Date.now()}@synapse.test`;
+		const email = `e2e-${Date.now()}@monolyth.test`;
 		const password = "SecureTest123";
 		await browser.url("/");
 
@@ -23,7 +23,7 @@ describe("authentication", () => {
 		await $("#email").setValue(email);
 		await $("#password").setValue(password);
 		await $("form button[type='submit']").click();
-		await expect($("[aria-label='Вход в Synapse']")).not.toBeDisplayed();
+		await expect($("[aria-label='Вход в Monolyth']")).not.toBeDisplayed();
 
 		await browser.url("/?settings=general");
 		await $("button=Удалить аккаунт").click();

@@ -1,5 +1,5 @@
-import { ContentGridSurface } from "@synapse/features";
-import type { Content } from "@synapse/shared/schemas";
+import { ContentGridSurface } from "@monolyth/features";
+import type { Content } from "@monolyth/shared/schemas";
 import { memo } from "react";
 
 import { getPresignedMediaUrl } from "@/shared/lib/image-utils";

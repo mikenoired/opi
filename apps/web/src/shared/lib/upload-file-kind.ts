@@ -1,1 +1,1 @@
-export { inferContentTypeFromFiles, normalizeDroppedFiles } from "@synapse/features";
+export { inferContentTypeFromFiles, normalizeDroppedFiles } from "@monolyth/features";

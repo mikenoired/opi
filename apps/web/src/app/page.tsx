@@ -1,4 +1,4 @@
-import { Button } from "@synapse/ui/components";
+import { Button } from "@monolyth/ui/components";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -101,7 +101,7 @@ export default function HomePage() {
 						</div>
 						<Image
 							src="/logo-lettering.svg"
-							alt="Synapse"
+							alt="Monolyth"
 							width={65}
 							height={13}
 							className="invert dark:invert-0"
@@ -159,7 +159,7 @@ export default function HomePage() {
 							<h2 className="text-3xl font-bold md:text-4xl">Ваши материалы остаются связанными</h2>
 						</div>
 						<p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-							Synapse объединяет разные форматы в один понятный рабочий процесс.
+							Monolyth объединяет разные форматы в один понятный рабочий процесс.
 						</p>
 					</div>
 
@@ -174,7 +174,7 @@ export default function HomePage() {
 			<section className="border-y bg-muted/35 px-4 py-20">
 				<div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1fr_1.4fr] lg:items-end">
 					<div className="space-y-4">
-						<p className="text-sm font-medium tracking-[0.2em] text-primary uppercase">Synapse Desktop</p>
+						<p className="text-sm font-medium tracking-[0.2em] text-primary uppercase">Monolyth Desktop</p>
 						<h2 className="text-3xl font-bold text-balance md:text-4xl">Ваш архив — на вашем устройстве</h2>
 						<p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
 							Локальная библиотека работает независимо от браузера. Синхронизация доступна на платных планах,

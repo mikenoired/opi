@@ -1,4 +1,4 @@
-import type { Api } from "@synapse/backend/api";
+import type { Api } from "@monolyth/backend/api";
 import { hc } from "hono/client";
 
 import { apiBaseUrl } from "@/shared/config/api";

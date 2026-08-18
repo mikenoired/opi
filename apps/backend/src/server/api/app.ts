@@ -3,15 +3,15 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { Scalar } from "@scalar/hono-api-reference";
-import { canUseSynapseSync } from "@synapse/shared/plans";
+import { canUseMonolythSync } from "@monolyth/shared/plans";
 import {
 	authSchema,
 	contentTypeSchema,
 	createContentSchema,
 	MAX_TAGS_PER_CONTENT,
 	updateContentSchema,
-} from "@synapse/shared/schemas";
+} from "@monolyth/shared/schemas";
+import { Scalar } from "@scalar/hono-api-reference";
 import { Hono, type Context as HonoContext } from "hono";
 import { setCookie } from "hono/cookie";
 import { cors } from "hono/cors";
@@ -224,7 +224,7 @@ function serviceContext(context: import("./context").ApiContext): Context {
 /** Entitlement is enforced server-side; a Desktop client hint is never authorization. */
 async function requireSyncSubscription(context: Context): Promise<void> {
 	const user = await new UserService(context).getUser();
-	if (!canUseSynapseSync(user.plan)) throw new ApiError("FORBIDDEN", "Synapse Sync requires a paid plan");
+	if (!canUseMonolythSync(user.plan)) throw new ApiError("FORBIDDEN", "Monolyth Sync requires a paid plan");
 }
 
 function syncEventsHandler(c: HonoContext) {
@@ -306,9 +306,9 @@ export const api = new Hono()
 	.get(
 		"/docs",
 		Scalar({
-			pageTitle: "Synapse API Reference",
+			pageTitle: "Monolyth API Reference",
 			url: "/api/openapi.json",
-			metaData: { title: "Synapse API Reference" },
+			metaData: { title: "Monolyth API Reference" },
 		})
 	)
 	.get("/health", (c) => c.json({ ok: true as const }))
@@ -409,7 +409,7 @@ export const api = new Hono()
 		const payload = verifyToken(input.token);
 		if (!payload) throw new ApiError("UNAUTHORIZED", "Invalid token");
 
-		setCookie(c, "synapse_token", input.token, {
+		setCookie(c, "monolyth_token", input.token, {
 			httpOnly: true,
 			secure: process.env.NODE_ENV === "production",
 			sameSite: "Strict",
@@ -417,7 +417,7 @@ export const api = new Hono()
 			path: "/",
 		});
 		if (input.refreshToken && verifyRefreshToken(input.refreshToken)) {
-			setCookie(c, "synapse_refresh_token", input.refreshToken, {
+			setCookie(c, "monolyth_refresh_token", input.refreshToken, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === "production",
 				sameSite: "Strict",
@@ -429,8 +429,8 @@ export const api = new Hono()
 		return c.json({ success: true, user: { id: payload.userId, email: payload.email } });
 	})
 	.delete("/session", protectMutation, rateLimit("mutation"), (c) => {
-		setCookie(c, "synapse_token", "", { maxAge: 0, path: "/" });
-		setCookie(c, "synapse_refresh_token", "", { maxAge: 0, path: "/" });
+		setCookie(c, "monolyth_token", "", { maxAge: 0, path: "/" });
+		setCookie(c, "monolyth_refresh_token", "", { maxAge: 0, path: "/" });
 		return c.json({ success: true });
 	})
 	.post("/auth/register", protectMutation, rateLimit("mutation"), async (c) =>
@@ -612,7 +612,7 @@ export const api = new Hono()
 	)
 	.get("/user/sync/entitlement", requireAuth, rateLimit("query"), async (c) => {
 		const user = await new UserService(c.get("apiContext")).getUser();
-		return c.json({ eligible: canUseSynapseSync(user.plan), plan: user.plan });
+		return c.json({ eligible: canUseMonolythSync(user.plan), plan: user.plan });
 	})
 	.delete("/user", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
 		const userId = c.get("apiContext").user!.id;

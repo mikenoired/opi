@@ -1,4 +1,4 @@
-import type { Content } from "@synapse/shared/schemas";
+import type { Content } from "@monolyth/shared/schemas";
 
 const documentExtensions = new Set(["pdf", "doc", "docx", "epub", "xlsx", "xls", "csv"]);
 const audioExtensions = new Set(["aac", "flac", "m4a", "mp3", "ogg", "opus", "wav", "webm"]);

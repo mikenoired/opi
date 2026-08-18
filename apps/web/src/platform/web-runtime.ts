@@ -1,6 +1,6 @@
-import { commonAppConfiguration, mergeAppConfiguration, type AppRuntime } from "@synapse/features/runtime";
+import { commonAppConfiguration, mergeAppConfiguration, type AppRuntime } from "@monolyth/features/runtime";
 
-import { createWebSynapseClient } from "./web-synapse-client";
+import { createWebMonolythClient } from "./web-monolyth-client";
 
 /** Web's entire contribution to shared UI: a REST client, capabilities and declarative extensions. */
 export const webRuntime: AppRuntime = {
@@ -9,7 +9,7 @@ export const webRuntime: AppRuntime = {
 	}),
 	services: {
 		capabilities: { enabled: ["account", "ai", "cloud-storage", "media-import"] },
-		client: createWebSynapseClient(),
+		client: createWebMonolythClient(),
 		commands: {
 			execute: async (command) => {
 				throw new Error(`Unsupported Web command: ${command}`);

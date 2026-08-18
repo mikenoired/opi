@@ -1,6 +1,6 @@
-import { parseMediaJson } from "@synapse/core";
-import { extractContentText } from "@synapse/shared/content-search";
-import { MAX_TAGS_PER_CONTENT } from "@synapse/shared/schemas";
+import { parseMediaJson } from "@monolyth/core";
+import { extractContentText } from "@monolyth/shared/content-search";
+import { MAX_TAGS_PER_CONTENT } from "@monolyth/shared/schemas";
 import { z } from "zod";
 
 import { aiConfig, computeCostUsd } from "../ai/config";

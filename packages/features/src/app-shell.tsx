@@ -1,7 +1,14 @@
-import { useI18n } from "@synapse/i18n";
-import { SIDEBAR_ANIMATION } from "@synapse/shared/animations";
-import { cn } from "@synapse/ui/cn";
-import { TabItem, Tabs, TabsList, Tooltip, TooltipProvider, useProximityHover } from "@synapse/ui/components";
+import { useI18n } from "@monolyth/i18n";
+import { SIDEBAR_ANIMATION } from "@monolyth/shared/animations";
+import { cn } from "@monolyth/ui/cn";
+import {
+	TabItem,
+	Tabs,
+	TabsList,
+	Tooltip,
+	TooltipProvider,
+	useProximityHover,
+} from "@monolyth/ui/components";
 import { AnimatePresence, motion } from "framer-motion";
 import {
 	ChevronLeft,
@@ -97,7 +104,7 @@ export function ConfiguredAppSidebar({
 	);
 }
 
-/** Shared Synapse frame. Platforms supply behaviour, never a second navigation design. */
+/** Shared Monolyth frame. Platforms supply behaviour, never a second navigation design. */
 export function AppSidebar({
 	collapseLabel,
 	expanded: controlledExpanded,

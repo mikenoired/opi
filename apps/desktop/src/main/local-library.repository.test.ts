@@ -7,7 +7,7 @@ import { LocalLibraryRepository } from "./local-library.repository";
 
 describe("LocalLibraryRepository", () => {
 	test("serializes outbox, cursor, and replica mutations across repository instances", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		await library.updateSettings({ syncPolicy: "automatic" });
 		await library.save({
@@ -43,7 +43,7 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("creates a new mutation id when a queued local edit replaces its intent", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		await library.updateSettings({ syncPolicy: "automatic" });
 		const item = await library.save({
@@ -65,7 +65,7 @@ describe("LocalLibraryRepository", () => {
 		expect(second.mutation.clientMutationId).not.toBe(first.mutation.clientMutationId);
 	});
 	test("persists items, settings, search, and statistics across repository instances", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		const item = await library.save({
 			content: "Текст заметки",
@@ -98,7 +98,7 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("queues a manually selected item without changing the default policy", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		const item = await library.save({
 			content: "",
@@ -120,7 +120,7 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("keeps the SyncEngine outbox durable across a repository restart", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		const item = await library.save({
 			content: "outbox",
@@ -139,7 +139,7 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("persists the shared user-preferences contract locally", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 
 		await library.updatePreferences({
@@ -154,7 +154,7 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("merges remote tag metadata into the local tag without creating a duplicate", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		await library.save({
 			content: "",
@@ -181,7 +181,7 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("links one exact server match before replaying the local outbox", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		await library.updateSettings({ syncPolicy: "automatic" });
 		const local = await library.save({
@@ -221,18 +221,18 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("queues device objects when a sync run starts", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		await library.updateSettings({ syncPolicy: "automatic" });
 		const item = await library.save({
 			content: JSON.stringify({
 				media: {
 					type: "image",
-					url: "synapse-object://local/local/imports/a.png",
+					url: "monolyth-object://local/local/imports/a.png",
 				},
 			}),
 			media_type: "image",
-			media_url: "synapse-object://local/local/imports/a.png",
+			media_url: "monolyth-object://local/local/imports/a.png",
 			tags: [],
 			title: "Локальное изображение",
 			type: "media",
@@ -245,7 +245,7 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("links a local media item to its canonical server upload without duplicating it", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		await library.updateSettings({ syncPolicy: "automatic" });
 		const local = await library.save({
@@ -254,13 +254,13 @@ describe("LocalLibraryRepository", () => {
 					object: "local/imports/photo.png",
 					thumbnailBase64: "",
 					type: "image",
-					url: "synapse-object://local/local%2Fimports%2Fphoto.png",
+					url: "monolyth-object://local/local%2Fimports%2Fphoto.png",
 				},
 			}),
 			media_type: "image",
-			media_url: "synapse-object://local/local%2Fimports%2Fphoto.png",
+			media_url: "monolyth-object://local/local%2Fimports%2Fphoto.png",
 			tags: ["inbox"],
-			thumbnail_url: "synapse-object://local/local%2Fimports%2Fphoto.png",
+			thumbnail_url: "monolyth-object://local/local%2Fimports%2Fphoto.png",
 			title: "photo.png",
 			type: "media",
 		});
@@ -304,7 +304,7 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("turns a remotely deleted item into a new local-only item after an edit", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		const item = await library.save({
 			content: "Первая версия",
@@ -328,7 +328,7 @@ describe("LocalLibraryRepository", () => {
 	});
 
 	test("keeps a local conflict copy while applying the server winner", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-library-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);
 		const item = await library.save({
 			content: "Локальная версия",

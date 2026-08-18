@@ -1,5 +1,5 @@
-import { ContentMasonry as SharedContentMasonry } from "@synapse/features";
-import type { Content } from "@synapse/shared/schemas";
+import { ContentMasonry as SharedContentMasonry } from "@monolyth/features";
+import type { Content } from "@monolyth/shared/schemas";
 import { lazy, memo } from "react";
 
 const Item = lazy(() => import("@/entities/item/ui/item"));

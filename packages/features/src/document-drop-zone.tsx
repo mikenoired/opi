@@ -1,5 +1,5 @@
-import { useI18n } from "@synapse/i18n";
-import { Button } from "@synapse/ui/components";
+import { useI18n } from "@monolyth/i18n";
+import { Button } from "@monolyth/ui/components";
 import { FileText, Upload, X } from "lucide-react";
 import type { DragEvent } from "react";
 import { useRef, useState } from "react";

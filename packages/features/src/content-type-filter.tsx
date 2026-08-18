@@ -1,6 +1,6 @@
-import { useI18n } from "@synapse/i18n";
-import { getQueryTypesForFilter } from "@synapse/shared/content-types";
-import type { Content } from "@synapse/shared/schemas";
+import { useI18n } from "@monolyth/i18n";
+import { getQueryTypesForFilter } from "@monolyth/shared/content-types";
+import type { Content } from "@monolyth/shared/schemas";
 import { FileText, FileUp, Image, Link, ListChecks, Music2, X } from "lucide-react";
 import type { ComponentType } from "react";
 

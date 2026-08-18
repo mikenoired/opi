@@ -12,9 +12,9 @@ const run = promisify(execFile);
 
 describe("real cross-client synchronization", () => {
 	it("converges Web and two durable Desktop replicas without reloading", async () => {
-		const email = `cross-client-${Date.now()}@synapse.test`;
+		const email = `cross-client-${Date.now()}@monolyth.test`;
 		const password = "SecureTest123";
-		const root = await mkdtemp(join(tmpdir(), "synapse-cross-client-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-cross-client-"));
 		const firstLibrary = new LocalLibraryRepository(join(root, "desktop-a"));
 		const secondLibrary = new LocalLibraryRepository(join(root, "desktop-b"));
 		const firstDesktop = new DesktopSyncService(firstLibrary);

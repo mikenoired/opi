@@ -1,4 +1,4 @@
-import { CheckboxGroup, EditableCheckboxItem, ReadonlyCheckboxItem } from "@synapse/ui/components";
+import { CheckboxGroup, EditableCheckboxItem, ReadonlyCheckboxItem } from "@monolyth/ui/components";
 import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 
 function checkedIndices(node: NodeViewProps["node"]) {
@@ -12,8 +12,8 @@ function checkedIndices(node: NodeViewProps["node"]) {
 export function TaskListView({ node }: NodeViewProps) {
 	return (
 		<NodeViewWrapper as="ul" data-type="taskList">
-			<CheckboxGroup checkedIndices={checkedIndices(node)} className="synapse-task-list-group">
-				<NodeViewContent as="div" className="synapse-task-list-content" />
+			<CheckboxGroup checkedIndices={checkedIndices(node)} className="monolyth-task-list-group">
+				<NodeViewContent as="div" className="monolyth-task-list-content" />
 			</CheckboxGroup>
 		</NodeViewWrapper>
 	);
@@ -23,7 +23,7 @@ export function ReadonlyTaskItemView({ node }: NodeViewProps) {
 	return (
 		<NodeViewWrapper
 			as="li"
-			className="synapse-task-item"
+			className="monolyth-task-item"
 			data-type="taskItem"
 			data-checked={node.attrs.checked}>
 			<ReadonlyCheckboxItem checked={node.attrs.checked} label={node.textContent} />
@@ -35,7 +35,7 @@ export function EditableTaskItemView({ node, updateAttributes }: NodeViewProps) 
 	return (
 		<NodeViewWrapper
 			as="li"
-			className="synapse-task-item"
+			className="monolyth-task-item"
 			data-type="taskItem"
 			data-checked={node.attrs.checked}>
 			<EditableCheckboxItem

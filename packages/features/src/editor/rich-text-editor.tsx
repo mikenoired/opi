@@ -1,5 +1,5 @@
-import { useI18n } from "@synapse/i18n";
-import { cn } from "@synapse/ui/cn";
+import { useI18n } from "@monolyth/i18n";
+import { cn } from "@monolyth/ui/cn";
 import {
 	Button,
 	DropdownContent,
@@ -12,7 +12,7 @@ import {
 	TooltipProvider,
 	SelectContent,
 	SelectItem,
-} from "@synapse/ui/components";
+} from "@monolyth/ui/components";
 import { Extension, type Editor as TiptapEditor } from "@tiptap/core";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Image from "@tiptap/extension-image";
@@ -82,7 +82,7 @@ const editorTextSpacing = [
 ] as const;
 
 const editorContentClassName = cn(
-	"synapse-editor-content synapse-prose min-h-[420px] max-w-none px-1 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] text-base leading-7 outline-none",
+	"monolyth-editor-content monolyth-prose min-h-[420px] max-w-none px-1 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] text-base leading-7 outline-none",
 	editorTextSpacing,
 	"[&_p.is-editor-empty:first-child::before]:pointer-events-none",
 	"[&_p.is-editor-empty:first-child::before]:float-left",
@@ -107,7 +107,7 @@ function createEditorShortcuts(
 	onRequestLink?: (currentHref: string) => string | null | Promise<string | null>
 ) {
 	return Extension.create({
-		name: "synapseShortcuts",
+		name: "monolythShortcuts",
 		addKeyboardShortcuts() {
 			return {
 				"Mod-k": () => {

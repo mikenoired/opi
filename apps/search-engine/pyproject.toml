@@ -1,6 +1,5 @@
 [project]
-name = "synapse-search-engine"
+name = "monolyth-search-engine"
 version = "0.1.0"
-description = "Offline search relevance experiments for Synapse"
+description = "Offline search relevance experiments for Monolyth"
 requires-python = ">=3.9"
-

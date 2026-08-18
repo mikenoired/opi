@@ -1,4 +1,4 @@
-import { AiSettingsPanel } from "@synapse/features";
+import { AiSettingsPanel } from "@monolyth/features";
 
 import { api } from "@/shared/api/hooks";
 

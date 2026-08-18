@@ -1,4 +1,4 @@
-import { cn } from "@synapse/ui/cn";
+import { cn } from "@monolyth/ui/cn";
 import type { ReactNode } from "react";
 
 import { modalSpacing } from "@/shared/ui/design-tokens";

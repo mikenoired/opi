@@ -1,4 +1,4 @@
-import { useI18n } from "@synapse/i18n";
+import { useI18n } from "@monolyth/i18n";
 import { type ReactNode, useState } from "react";
 
 import { ContentTag } from "./content-tag";

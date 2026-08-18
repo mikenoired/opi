@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 
-import { sanitizeNoteContent } from "@synapse/core";
+import { sanitizeNoteContent } from "@monolyth/core";
 
 import { deleteFile, getFileMetadata, getPublicUrl, uploadFile } from "../../storage/minio";
 import { imageUploadMaxFileSizeBytes } from "../services/upload/upload-media";

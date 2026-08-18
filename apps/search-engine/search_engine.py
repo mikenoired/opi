@@ -46,7 +46,7 @@ SEED_QUERIES = [
     "цветовое пространство OKLCH в CSS",
     "полезные настройки Obsidian",
     "что посмотреть вечером",
-    "проект Synapse",
+    "проект Monolyth",
     "проект Gramax",
     "проект dev-vault",
     "планы по работе",
@@ -164,7 +164,7 @@ def export_corpus(email: str, output: Path) -> None:
         "-U",
         "postgres",
         "-d",
-        "synapse",
+        "monolyth",
         "-At",
         "--set=email={}".format(email),
     ]
@@ -395,7 +395,7 @@ def build_postgres_fts(email: str, corpus_path: Path, queries_path: Path, limit:
             "-U",
             "postgres",
             "-d",
-            "synapse",
+            "monolyth",
             "-At",
             "--set=email={}".format(email),
             "--set=query={}".format(query["query"]),
@@ -639,7 +639,7 @@ def evaluate(run_path: Path, judgments_path: Path, limit: int) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Synapse search benchmark")
+    parser = argparse.ArgumentParser(description="Monolyth search benchmark")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     export_parser = subparsers.add_parser("export")

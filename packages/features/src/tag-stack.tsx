@@ -1,5 +1,5 @@
-import type { Content } from "@synapse/shared/schemas";
-import { cn } from "@synapse/ui/cn";
+import type { Content } from "@monolyth/shared/schemas";
+import { cn } from "@monolyth/ui/cn";
 import type { ReactNode } from "react";
 
 export interface TagStackProps {

@@ -13,16 +13,16 @@ import {
 	writeContentTagRelations,
 	getTagsWithContentPage,
 	type SuggestedContentTag,
-} from "@synapse/core";
-import { buildContentSearchText } from "@synapse/shared/content-search";
-import { isSupportedFileType } from "@synapse/shared/file-types";
+} from "@monolyth/core";
+import { buildContentSearchText } from "@monolyth/shared/content-search";
+import { isSupportedFileType } from "@monolyth/shared/file-types";
 import type {
 	Content,
 	CreateContent,
 	createContentSchema,
 	updateContentSchema,
-} from "@synapse/shared/schemas";
-import { contentDetailSchema, contentListItemSchema, contentTypeSchema } from "@synapse/shared/schemas";
+} from "@monolyth/shared/schemas";
+import { contentDetailSchema, contentListItemSchema, contentTypeSchema } from "@monolyth/shared/schemas";
 import type z from "zod";
 
 import { BackendCoreContentProvider } from "../adapters/backend-core-content.provider";

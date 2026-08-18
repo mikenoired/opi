@@ -1,7 +1,7 @@
-import { useI18n } from "@synapse/i18n";
-import type { ColorPalette, InterfaceLanguage } from "@synapse/shared/preferences";
-import { cn } from "@synapse/ui/cn";
-import { Switch } from "@synapse/ui/components";
+import { useI18n } from "@monolyth/i18n";
+import type { ColorPalette, InterfaceLanguage } from "@monolyth/shared/preferences";
+import { cn } from "@monolyth/ui/cn";
+import { Switch } from "@monolyth/ui/components";
 import {
 	Circle,
 	Flame,

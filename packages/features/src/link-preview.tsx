@@ -1,4 +1,4 @@
-import { Button, InputField } from "@synapse/ui/components";
+import { Button, InputField } from "@monolyth/ui/components";
 import { Clock, ExternalLink, Globe, X } from "lucide-react";
 
 export interface LinkPreviewData {

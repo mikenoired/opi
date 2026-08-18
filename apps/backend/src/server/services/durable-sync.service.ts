@@ -1,4 +1,4 @@
-import type { SyncMutation, SyncPushResult } from "@synapse/api";
+import type { SyncMutation, SyncPushResult } from "@monolyth/api";
 
 import type { Context } from "../context";
 import ContentService from "./content.service";

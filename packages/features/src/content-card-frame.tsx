@@ -1,4 +1,4 @@
-import type { Content } from "@synapse/shared/schemas";
+import type { Content } from "@monolyth/shared/schemas";
 import type { ReactNode } from "react";
 
 /** Shared visual frame for every content card; platform code only supplies the card body and actions. */

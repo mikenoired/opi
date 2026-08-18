@@ -1,4 +1,4 @@
-import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@synapse/shared/preferences";
+import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@monolyth/shared/preferences";
 import { relations, sql } from "drizzle-orm";
 import {
 	boolean,

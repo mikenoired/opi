@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "synapse",
+      "name": "monolyth",
       "dependencies": {
         "electron-to-chromium": "^1.5.405",
         "tailwindcss": "^4.3.3",
@@ -22,14 +22,14 @@
       },
     },
     "apps/backend": {
-      "name": "@synapse/backend",
+      "name": "@monolyth/backend",
       "version": "0.0.0",
       "dependencies": {
         "@scalar/hono-api-reference": "^0.11.12",
-        "@synapse/api": "workspace:*",
-        "@synapse/core": "workspace:*",
-        "@synapse/shared": "workspace:*",
-        "@synapse/sync": "workspace:*",
+        "@monolyth/api": "workspace:*",
+        "@monolyth/core": "workspace:*",
+        "@monolyth/shared": "workspace:*",
+        "@monolyth/sync": "workspace:*",
         "drizzle-orm": "^0.45.2",
         "epub2": "^3.0.2",
         "hono": "^4.12.34",
@@ -46,7 +46,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "@types/bun": "^1.3.14",
         "@types/jsonwebtoken": "^9.0.10",
         "@types/minio": "^7.1.1",
@@ -57,15 +57,15 @@
       },
     },
     "apps/desktop": {
-      "name": "@synapse/desktop",
+      "name": "@monolyth/desktop",
       "version": "0.0.0",
       "dependencies": {
-        "@synapse/api": "workspace:*",
-        "@synapse/core": "workspace:*",
-        "@synapse/features": "workspace:*",
-        "@synapse/i18n": "workspace:*",
-        "@synapse/shared": "workspace:*",
-        "@synapse/sync": "workspace:*",
+        "@monolyth/api": "workspace:*",
+        "@monolyth/core": "workspace:*",
+        "@monolyth/features": "workspace:*",
+        "@monolyth/i18n": "workspace:*",
+        "@monolyth/shared": "workspace:*",
+        "@monolyth/sync": "workspace:*",
         "electron": "^43.3.0",
         "lucide-react": "^1.28.0",
         "music-metadata": "^11.13.0",
@@ -73,7 +73,7 @@
         "react-dom": "^19.2.8",
       },
       "devDependencies": {
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "@tailwindcss/postcss": "^4.3.3",
         "@types/bun": "^1.3.14",
         "@types/node": "^24.13.3",
@@ -86,17 +86,17 @@
       },
     },
     "apps/web": {
-      "name": "@synapse/web",
+      "name": "@monolyth/web",
       "version": "0.0.0",
       "dependencies": {
-        "@synapse/api": "workspace:*",
-        "@synapse/backend": "workspace:*",
-        "@synapse/core": "workspace:*",
-        "@synapse/features": "workspace:*",
-        "@synapse/i18n": "workspace:*",
-        "@synapse/shared": "workspace:*",
-        "@synapse/sync": "workspace:*",
-        "@synapse/ui": "workspace:*",
+        "@monolyth/api": "workspace:*",
+        "@monolyth/backend": "workspace:*",
+        "@monolyth/core": "workspace:*",
+        "@monolyth/features": "workspace:*",
+        "@monolyth/i18n": "workspace:*",
+        "@monolyth/shared": "workspace:*",
+        "@monolyth/sync": "workspace:*",
+        "@monolyth/ui": "workspace:*",
         "@tanstack/react-query": "^5.101.0",
         "@tanstack/react-router": "^1.170.18",
         "@tiptap/core": "^3.27.0",
@@ -121,7 +121,7 @@
         "vite": "^8.2.0",
       },
       "devDependencies": {
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "@tailwindcss/postcss": "^4.3.1",
         "@types/bun": "^1.3.14",
         "@types/lowlight": "^2.0.1",
@@ -132,36 +132,36 @@
       },
     },
     "packages/api": {
-      "name": "@synapse/api",
+      "name": "@monolyth/api",
       "version": "0.0.0",
       "dependencies": {
-        "@synapse/shared": "workspace:*",
+        "@monolyth/shared": "workspace:*",
       },
       "devDependencies": {
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
     "packages/core": {
-      "name": "@synapse/core",
+      "name": "@monolyth/core",
       "version": "0.0.0",
       "dependencies": {
-        "@synapse/shared": "workspace:*",
+        "@monolyth/shared": "workspace:*",
       },
       "devDependencies": {
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
     "packages/features": {
-      "name": "@synapse/features",
+      "name": "@monolyth/features",
       "version": "0.0.0",
       "dependencies": {
-        "@synapse/api": "workspace:*",
-        "@synapse/core": "workspace:*",
-        "@synapse/i18n": "workspace:*",
-        "@synapse/shared": "workspace:*",
-        "@synapse/ui": "workspace:*",
+        "@monolyth/api": "workspace:*",
+        "@monolyth/core": "workspace:*",
+        "@monolyth/i18n": "workspace:*",
+        "@monolyth/shared": "workspace:*",
+        "@monolyth/ui": "workspace:*",
         "@tiptap/core": "^3.27.0",
         "@tiptap/extension-code-block-lowlight": "^3.27.0",
         "@tiptap/extension-image": "^3.27.0",
@@ -179,60 +179,60 @@
         "react-masonry-css": "^1.0.16",
       },
       "devDependencies": {
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "@types/react": "^19.2.17",
         "@types/react-dom": "^19.2.3",
         "typescript": "^7.0.2",
       },
     },
     "packages/i18n": {
-      "name": "@synapse/i18n",
+      "name": "@monolyth/i18n",
       "version": "0.0.0",
       "dependencies": {
         "react": "^19.2.8",
       },
       "devDependencies": {
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "@types/react": "^19.2.18",
         "typescript": "^7.0.2",
       },
     },
     "packages/shared": {
-      "name": "@synapse/shared",
+      "name": "@monolyth/shared",
       "version": "0.0.0",
       "dependencies": {
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
     "packages/sync": {
-      "name": "@synapse/sync",
+      "name": "@monolyth/sync",
       "version": "0.0.0",
       "dependencies": {
-        "@synapse/core": "workspace:*",
+        "@monolyth/core": "workspace:*",
       },
       "devDependencies": {
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "typescript": "^7.0.2",
       },
     },
     "packages/tsconfig": {
-      "name": "@synapse/tsconfig",
+      "name": "@monolyth/tsconfig",
       "version": "0.0.0",
       "devDependencies": {
         "tsconfig-paths": "^4.1.0",
       },
     },
     "packages/ui": {
-      "name": "@synapse/ui",
+      "name": "@monolyth/ui",
       "version": "0.0.0",
       "dependencies": {
         "@base-ui-components/react": "^1.0.0-rc.0",
         "@base-ui/react": "^1.6.0",
-        "@synapse/tsconfig": "workspace:*",
+        "@monolyth/tsconfig": "workspace:*",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "framer-motion": "^12.40.0",
@@ -681,27 +681,27 @@
 
     "@sindresorhus/merge-streams": ["@sindresorhus/merge-streams@4.0.0", "", {}, "sha512-tlqY9xq5ukxTUZBmoOp+m61cqwQD5pHJtFY3Mn8CA8ps6yghLH/Hw8UPdqg4OLmFW3IFlcXnQNmo/dh8HzXYIQ=="],
 
-    "@synapse/api": ["@synapse/api@workspace:packages/api"],
+    "@monolyth/api": ["@monolyth/api@workspace:packages/api"],
 
-    "@synapse/backend": ["@synapse/backend@workspace:apps/backend"],
+    "@monolyth/backend": ["@monolyth/backend@workspace:apps/backend"],
 
-    "@synapse/core": ["@synapse/core@workspace:packages/core"],
+    "@monolyth/core": ["@monolyth/core@workspace:packages/core"],
 
-    "@synapse/desktop": ["@synapse/desktop@workspace:apps/desktop"],
+    "@monolyth/desktop": ["@monolyth/desktop@workspace:apps/desktop"],
 
-    "@synapse/features": ["@synapse/features@workspace:packages/features"],
+    "@monolyth/features": ["@monolyth/features@workspace:packages/features"],
 
-    "@synapse/i18n": ["@synapse/i18n@workspace:packages/i18n"],
+    "@monolyth/i18n": ["@monolyth/i18n@workspace:packages/i18n"],
 
-    "@synapse/shared": ["@synapse/shared@workspace:packages/shared"],
+    "@monolyth/shared": ["@monolyth/shared@workspace:packages/shared"],
 
-    "@synapse/sync": ["@synapse/sync@workspace:packages/sync"],
+    "@monolyth/sync": ["@monolyth/sync@workspace:packages/sync"],
 
-    "@synapse/tsconfig": ["@synapse/tsconfig@workspace:packages/tsconfig"],
+    "@monolyth/tsconfig": ["@monolyth/tsconfig@workspace:packages/tsconfig"],
 
-    "@synapse/ui": ["@synapse/ui@workspace:packages/ui"],
+    "@monolyth/ui": ["@monolyth/ui@workspace:packages/ui"],
 
-    "@synapse/web": ["@synapse/web@workspace:apps/web"],
+    "@monolyth/web": ["@monolyth/web@workspace:apps/web"],
 
     "@szmarczak/http-timer": ["@szmarczak/http-timer@4.0.6", "", { "dependencies": { "defer-to-connect": "^2.0.0" } }, "sha512-4BAffykYOgO+5nzBWYwE3W90sBgLJoUPRWWcL8wlyiM8IB8ipJz3UMJ9KXQd1RKQXpKp8Tutn80HZtWsu2u76w=="],
 
@@ -2613,11 +2613,11 @@
 
     "@scalar/types/type-fest": ["type-fest@5.8.0", "", { "dependencies": { "tagged-tag": "^1.0.0" } }, "sha512-YGYEVz3Fm5iy/AybuA0oyNFq7H4CgQNfRp/qfe8nurE1kuCeNm3/vfm9X4Mtl+qLyaKJUh5xrFZwogr41SMjYA=="],
 
-    "@synapse/backend/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+    "@monolyth/backend/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
-    "@synapse/ui/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+    "@monolyth/ui/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
-    "@synapse/web/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+    "@monolyth/web/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "@tailwindcss/node/lightningcss": ["lightningcss@1.32.0", "", { "dependencies": { "detect-libc": "^2.0.3" }, "optionalDependencies": { "lightningcss-android-arm64": "1.32.0", "lightningcss-darwin-arm64": "1.32.0", "lightningcss-darwin-x64": "1.32.0", "lightningcss-freebsd-x64": "1.32.0", "lightningcss-linux-arm-gnueabihf": "1.32.0", "lightningcss-linux-arm64-gnu": "1.32.0", "lightningcss-linux-arm64-musl": "1.32.0", "lightningcss-linux-x64-gnu": "1.32.0", "lightningcss-linux-x64-musl": "1.32.0", "lightningcss-win32-arm64-msvc": "1.32.0", "lightningcss-win32-x64-msvc": "1.32.0" } }, "sha512-NXYBzinNrblfraPGyrbPoD19C1h9lfI/1mzgWYvXUTe414Gz/X1FD2XBZSZM7rRTrMA8JL3OtAaGifrIKhQ5yQ=="],
 

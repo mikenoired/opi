@@ -1,6 +1,6 @@
-import { DashboardSurface } from "@synapse/features/app-shell";
-import { AppRuntimeProvider } from "@synapse/features/runtime";
-import { I18nProvider } from "@synapse/i18n";
+import { DashboardSurface } from "@monolyth/features/app-shell";
+import { AppRuntimeProvider } from "@monolyth/features/runtime";
+import { I18nProvider } from "@monolyth/i18n";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	createRootRoute,

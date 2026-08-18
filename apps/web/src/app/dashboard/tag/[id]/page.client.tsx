@@ -1,6 +1,6 @@
-import { TagHeader } from "@synapse/features";
-import { useI18n } from "@synapse/i18n";
-import type { Content } from "@synapse/shared/schemas";
+import { TagHeader } from "@monolyth/features";
+import { useI18n } from "@monolyth/i18n";
+import type { Content } from "@monolyth/shared/schemas";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 

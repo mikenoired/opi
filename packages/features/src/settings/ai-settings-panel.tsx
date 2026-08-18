@@ -1,7 +1,7 @@
-import type { AiUsage } from "@synapse/api";
-import { useI18n } from "@synapse/i18n";
-import { isUnlimited } from "@synapse/shared/plans";
-import { Skeleton } from "@synapse/ui/components";
+import type { AiUsage } from "@monolyth/api";
+import { useI18n } from "@monolyth/i18n";
+import { isUnlimited } from "@monolyth/shared/plans";
+import { Skeleton } from "@monolyth/ui/components";
 import { Activity, Bot, CircleDollarSign, Gauge, Timer } from "lucide-react";
 
 import { PixelSparkles } from "../components/pixel-sparkles";

@@ -1,5 +1,5 @@
 {
-	"name": "@synapse/features",
+	"name": "@monolyth/features",
 	"version": "0.1.0",
 	"private": true,
 	"type": "module",
@@ -16,17 +16,17 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
-		"@synapse/tsconfig": "workspace:*",
+		"@monolyth/tsconfig": "workspace:*",
 		"@types/react": "^19.2.17",
 		"@types/react-dom": "^19.2.3",
 		"typescript": "^7.0.2"
 	},
 	"dependencies": {
-		"@synapse/api": "workspace:*",
-		"@synapse/core": "workspace:*",
-		"@synapse/ui": "workspace:*",
-		"@synapse/shared": "workspace:*",
-		"@synapse/i18n": "workspace:*",
+		"@monolyth/api": "workspace:*",
+		"@monolyth/core": "workspace:*",
+		"@monolyth/ui": "workspace:*",
+		"@monolyth/shared": "workspace:*",
+		"@monolyth/i18n": "workspace:*",
 		"@tiptap/core": "^3.27.0",
 		"@tiptap/extension-code-block-lowlight": "^3.27.0",
 		"@tiptap/extension-image": "^3.27.0",

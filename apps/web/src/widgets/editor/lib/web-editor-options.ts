@@ -1,5 +1,5 @@
-import type { RichTextEditorProps } from "@synapse/features";
-import { useI18n } from "@synapse/i18n";
+import type { RichTextEditorProps } from "@monolyth/features";
+import { useI18n } from "@monolyth/i18n";
 import toast from "react-hot-toast";
 
 /** Supplies the Web shell's localization and browser integrations to the shared editor. */

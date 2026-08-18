@@ -13,7 +13,7 @@ describe("DesktopSseTransport", () => {
 			() => "https://api.example/api",
 			() => "desktop-secret",
 			(_input, init) => {
-				expect(new Headers(init?.headers).get("x-synapse-access-token")).toBe("desktop-secret");
+				expect(new Headers(init?.headers).get("x-monolyth-access-token")).toBe("desktop-secret");
 				return new Promise((resolve) => {
 					openStream = resolve;
 				});
@@ -54,7 +54,7 @@ describe("DesktopSseTransport", () => {
 		const disconnect = await transport.connect(() => undefined);
 		await Promise.resolve();
 		expect(requests[0]?.url).toBe("https://api.example/api/sync/events");
-		expect(requests[0]?.headers.get("x-synapse-access-token")).toBe("desktop-secret");
+		expect(requests[0]?.headers.get("x-monolyth-access-token")).toBe("desktop-secret");
 		expect(requests[0]?.url).not.toContain("desktop-secret");
 		disconnect();
 	});
@@ -62,7 +62,7 @@ describe("DesktopSseTransport", () => {
 
 describe("DesktopReplicaStore", () => {
 	test("serializes a canonical batch and cursor with concurrent local mutations", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-replica-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-replica-"));
 		const library = new LocalLibraryRepository(root);
 		const replica = new DesktopReplicaStore(library);
 
@@ -89,7 +89,7 @@ describe("DesktopReplicaStore", () => {
 	});
 
 	test("atomically replaces the remote replica and cursor on reset without deleting local-only items", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-replica-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-replica-"));
 		const library = new LocalLibraryRepository(root);
 		const replica = new DesktopReplicaStore(library);
 		await replica.transact(async (transaction) => {
@@ -108,7 +108,7 @@ describe("DesktopReplicaStore", () => {
 	});
 
 	test("commits remote metadata and cursor when binary hydration is interrupted", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-replica-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-replica-"));
 		const library = new LocalLibraryRepository(root);
 		const replica = new DesktopReplicaStore(library, async () => {
 			throw new Error("download interrupted");
@@ -127,7 +127,7 @@ describe("DesktopReplicaStore", () => {
 	});
 
 	test("notifies the main process immediately after committing a remote V2 change", async () => {
-		const root = await mkdtemp(join(tmpdir(), "synapse-replica-"));
+		const root = await mkdtemp(join(tmpdir(), "monolyth-replica-"));
 		const library = new LocalLibraryRepository(root);
 		let committed = 0;
 		const replica = new DesktopReplicaStore(

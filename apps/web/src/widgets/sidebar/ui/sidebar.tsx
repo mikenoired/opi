@@ -1,5 +1,5 @@
-import { ConfiguredAppSidebar } from "@synapse/features/app-shell";
-import { useI18n } from "@synapse/i18n";
+import { ConfiguredAppSidebar } from "@monolyth/features/app-shell";
+import { useI18n } from "@monolyth/i18n";
 import { useCallback } from "react";
 
 import { getSettingsHref } from "@/features/settings/lib/settings-modal-url";

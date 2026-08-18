@@ -1,14 +1,14 @@
 import { expect, test } from "bun:test";
 
-import type { SyncIntent } from "@synapse/sync";
+import type { SyncIntent } from "@monolyth/sync";
 
-import { createWebSynapseClient } from "./web-synapse-client";
+import { createWebMonolythClient } from "./web-monolyth-client";
 
 test("web content create returns the canonical entity written through sync", async () => {
 	const originalFetch = globalThis.fetch;
 	globalThis.fetch = (() => Promise.reject(new Error("REST must not be used"))) as typeof globalThis.fetch;
 	let intent: SyncIntent | undefined;
-	const client = createWebSynapseClient({
+	const client = createWebMonolythClient({
 		mutate: async (next: SyncIntent) => {
 			intent = next;
 		},
@@ -60,7 +60,7 @@ test("web content update carries the canonical replica version", async () => {
 			updated_at: "2026-01-01T00:00:00.000Z",
 			user_id: "user-1",
 		})) as typeof globalThis.fetch;
-	const client = createWebSynapseClient({
+	const client = createWebMonolythClient({
 		mutate: async (intent: SyncIntent) => {
 			intents.push(intent);
 		},
@@ -79,7 +79,7 @@ test("web content update carries the canonical replica version", async () => {
 
 test("web content delete carries the canonical replica version", async () => {
 	const intents: SyncIntent[] = [];
-	const client = createWebSynapseClient({
+	const client = createWebMonolythClient({
 		mutate: async (intent: SyncIntent) => {
 			intents.push(intent);
 		},
@@ -109,7 +109,7 @@ test("web content mutations fall back to REST when sync is unavailable", async (
 			user_id: "user-1",
 		});
 	}) as typeof globalThis.fetch;
-	const client = createWebSynapseClient({
+	const client = createWebMonolythClient({
 		mutate: () => Promise.reject(new Error("Web sync is not running")),
 		readEntity: async () => undefined,
 		readEntityVersion: async () => undefined,

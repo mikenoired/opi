@@ -2,14 +2,14 @@
 
 ## Purpose
 
-Synapse is a private personal archive for notes, links, documents, media, audio, and todos. It organizes content with per-user tags, search, a visual relationship graph, and optional AI-generated tag suggestions.
+Monolyth is a private personal archive for notes, links, documents, media, audio, and todos. It organizes content with per-user tags, search, a visual relationship graph, and optional AI-generated tag suggestions.
 
 ## Stable stack
 
 - Bun workspace monorepo; TypeScript/React Vite web application.
 - Hono + Zod + TanStack React Query.
 - PostgreSQL/Drizzle, Redis, and MinIO.
-- Shared `@synapse/ui` component package; optional Z.ai LLM provider.
+- Shared `@monolyth/ui` component package; optional Z.ai LLM provider.
 
 ## Stable architecture
 

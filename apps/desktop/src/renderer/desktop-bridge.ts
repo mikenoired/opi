@@ -1,7 +1,7 @@
-import type { AiTagsInput, AiTagsResult, AiUsage, BinaryFile, SyncRunResult } from "@synapse/api";
-import type { ContentTag } from "@synapse/api";
-import type { UserPreferences, UserPreferencesInput } from "@synapse/shared/preferences";
-import type { Content, CreateContent } from "@synapse/shared/schemas";
+import type { AiTagsInput, AiTagsResult, AiUsage, BinaryFile, SyncRunResult } from "@monolyth/api";
+import type { ContentTag } from "@monolyth/api";
+import type { UserPreferences, UserPreferencesInput } from "@monolyth/shared/preferences";
+import type { Content, CreateContent } from "@monolyth/shared/schemas";
 
 export type DesktopColorScheme = "dark" | "light" | "system";
 export type DesktopSyncPolicy = "automatic" | "manual";
@@ -77,12 +77,12 @@ export interface SyncProgress {
 
 declare global {
 	interface Window {
-		synapseDesktop: DesktopBridge;
+		monolythDesktop: DesktopBridge;
 	}
 }
 
 export function getDesktopBridge(): DesktopBridge {
-	return window.synapseDesktop;
+	return window.monolythDesktop;
 }
 
 export function hasAccountConnection(bridge: DesktopBridge): bridge is DesktopBridge & {

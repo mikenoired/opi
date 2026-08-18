@@ -1,4 +1,4 @@
-import type { StorageProvider } from "@synapse/core";
+import type { StorageProvider } from "@monolyth/core";
 
 import { deleteFile, getFileMetadata, getPublicUrl, uploadFile } from "../../storage/minio";
 

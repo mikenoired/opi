@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { scrapeAudioMetadata } from "@synapse/core";
+import { scrapeAudioMetadata } from "@monolyth/core";
 
 import {
 	detectArtworkMimeType,

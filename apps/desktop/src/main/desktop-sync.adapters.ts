@@ -1,4 +1,4 @@
-import type { Content } from "@synapse/shared/schemas";
+import type { Content } from "@monolyth/shared/schemas";
 import type {
 	EntityAdapter,
 	JournalApi,
@@ -11,7 +11,7 @@ import type {
 	SyncChange,
 	SyncCursor,
 	SyncIntent,
-} from "@synapse/sync";
+} from "@monolyth/sync";
 
 import type { LocalLibraryRepository } from "./local-library.repository";
 
@@ -72,16 +72,16 @@ export class DesktopJournalApi implements JournalApi {
 			...init,
 			headers: {
 				"content-type": "application/json",
-				...(this.token() ? { "x-synapse-access-token": this.token()! } : {}),
+				...(this.token() ? { "x-monolyth-access-token": this.token()! } : {}),
 			},
 		});
-		if (!response.ok) throw new Error(`Synapse API returned ${response.status}`);
+		if (!response.ok) throw new Error(`Monolyth API returned ${response.status}`);
 		return response.json() as Promise<T>;
 	}
 
 	private requireApiUrl(): string {
 		const value = this.apiUrl();
-		if (!value) throw new Error("Сначала подключите аккаунт Synapse");
+		if (!value) throw new Error("Сначала подключите аккаунт Monolyth");
 		return value;
 	}
 }
@@ -90,7 +90,7 @@ function compareServerCursors(left: SyncCursor, right: SyncCursor): number {
 	const leftValue = Number(/^j:(\d+)$/.exec(left)?.[1]);
 	const rightValue = Number(/^j:(\d+)$/.exec(right)?.[1]);
 	if (!Number.isSafeInteger(leftValue) || !Number.isSafeInteger(rightValue))
-		throw new Error("Synapse API returned an invalid sync cursor");
+		throw new Error("Monolyth API returned an invalid sync cursor");
 	return leftValue - rightValue;
 }
 
@@ -126,7 +126,7 @@ export class DesktopSseTransport implements RealtimeTransport {
 				const apiUrl = this.apiUrl();
 				if (!apiUrl) return;
 				const response = await this.request(`${apiUrl}/sync/events`, {
-					headers: this.token() ? { "x-synapse-access-token": this.token()! } : {},
+					headers: this.token() ? { "x-monolyth-access-token": this.token()! } : {},
 					signal,
 				});
 				if (!response.ok || !response.body) throw new Error("Sync event stream unavailable");

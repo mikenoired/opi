@@ -1,7 +1,7 @@
-import type { AuthCredentials, AuthError } from "@synapse/api";
-import { useI18n } from "@synapse/i18n";
-import { authSchema } from "@synapse/shared/schemas";
-import { Button, InputField, Modal } from "@synapse/ui/components";
+import type { AuthCredentials, AuthError } from "@monolyth/api";
+import { useI18n } from "@monolyth/i18n";
+import { authSchema } from "@monolyth/shared/schemas";
+import { Button, InputField, Modal } from "@monolyth/ui/components";
 import { X } from "lucide-react";
 import { useState } from "react";
 

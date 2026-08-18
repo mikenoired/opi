@@ -1,2 +1,2 @@
-export { ConfirmDialog } from "@synapse/features";
-export type { ConfirmDialogProps } from "@synapse/features";
+export { ConfirmDialog } from "@monolyth/features";
+export type { ConfirmDialogProps } from "@monolyth/features";

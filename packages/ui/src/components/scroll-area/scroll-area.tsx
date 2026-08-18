@@ -1,4 +1,4 @@
-import { cn } from "@synapse/ui/cn";
+import { cn } from "@monolyth/ui/cn";
 import type { ComponentPropsWithoutRef } from "react";
 
 type ScrollAreaProps = ComponentPropsWithoutRef<"div">;

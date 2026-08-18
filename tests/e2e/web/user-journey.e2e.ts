@@ -48,7 +48,7 @@ async function changeTypeConfirmation() {
 }
 
 describe("complete web user journey", () => {
-	const email = `journey-${Date.now()}@synapse.test`;
+	const email = `journey-${Date.now()}@monolyth.test`;
 	const password = "SecureTest123";
 
 	after(async () => {

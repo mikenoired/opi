@@ -1,5 +1,5 @@
-import { normalizeTagTitle, uniqueTagTitles } from "@synapse/core";
-import type { createContentSchema, updateContentSchema } from "@synapse/shared/schemas";
+import { normalizeTagTitle, uniqueTagTitles } from "@monolyth/core";
+import type { createContentSchema, updateContentSchema } from "@monolyth/shared/schemas";
 import { and, asc, desc, eq, gt, ilike, inArray, isNull, lt, lte, ne, or, type SQL, sql } from "drizzle-orm";
 import type z from "zod";
 

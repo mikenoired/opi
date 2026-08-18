@@ -2,7 +2,7 @@
 
 ## System shape
 
-- **Synapse** is a private, multi-user personal archive for notes, links, documents, media, audio, and todos. It adds tag-based organization, a content/tag graph, full-text search, and optional AI tag suggestions.
+- **Monolyth** is a private, multi-user personal archive for notes, links, documents, media, audio, and todos. It adds tag-based organization, a content/tag graph, full-text search, and optional AI tag suggestions.
 - Bun workspace monorepo:
   - `apps/web`: browser application.
   - `apps/backend`: Bun/Hono API application.
@@ -35,10 +35,10 @@ apps/backend/src       Hono API, services, repositories, DB, integrations, parse
 packages/ui            Framework-agnostic shared component library
 ```
 
-- Client UI depends on `features`, `entities`, `widgets`, `shared`, and `@synapse/ui`.
+- Client UI depends on `features`, `entities`, `widgets`, `shared`, and `@monolyth/ui`.
 - Client-to-server calls use typed Hono contracts and TanStack Query.
 - Server flow is **Hono route → service → repository → database/infrastructure**. Routes own transport validation; services own workflows; repositories own persistence and enforce ownership queries.
-- Shared Zod schemas in `@synapse/shared/schemas` define the principal client/server content contracts.
+- Shared Zod schemas in `@monolyth/shared/schemas` define the principal client/server content contracts.
 - Do not introduce Backend imports into client components except the type-only public API contracts. Keep infrastructure access inside `apps/backend`.
 
 ## Request and rendering lifecycle

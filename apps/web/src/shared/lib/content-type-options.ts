@@ -1,5 +1,5 @@
-import type { TranslationKey } from "@synapse/i18n";
-import type { Content } from "@synapse/shared/schemas";
+import type { TranslationKey } from "@monolyth/i18n";
+import type { Content } from "@monolyth/shared/schemas";
 import {
 	FileText,
 	FileUp,
@@ -14,7 +14,7 @@ export {
 	documentContentTypes,
 	getQueryTypesForFilter,
 	isContentTypeFilterAvailable,
-} from "@synapse/shared/content-types";
+} from "@monolyth/shared/content-types";
 
 interface ContentTypeOption {
 	description: string;

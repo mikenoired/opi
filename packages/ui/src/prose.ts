@@ -1,1 +1,1 @@
-export const prose = "synapse-prose";
+export const prose = "monolyth-prose";

@@ -1,4 +1,4 @@
-import { getTagColor, TAG_COLOR_PALETTE } from "@synapse/shared/tag-colors";
+import { getTagColor, TAG_COLOR_PALETTE } from "@monolyth/shared/tag-colors";
 import { Check, Palette, Slash } from "lucide-react";
 import { useState } from "react";
 

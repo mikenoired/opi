@@ -1,2 +1,2 @@
-export { BaseModal } from "@synapse/features";
-export type { BaseModalProps } from "@synapse/features";
+export { BaseModal } from "@monolyth/features";
+export type { BaseModalProps } from "@monolyth/features";

@@ -28,7 +28,7 @@
 - `entities/item`: presentation of an archive item and its media/document/tag variants.
 - `widgets`: reusable composed UI (content viewer, editor, modal system, sidebar, settings modal).
 - `shared`: HTTP query hooks and MinIO client helpers, schemas, contexts, i18n, URL-query synchronization, design tokens, and generic utilities.
-- `@synapse/ui`: exported primitive component collection and styling utilities; use its barrel exports rather than application-internal paths.
+- `@monolyth/ui`: exported primitive component collection and styling utilities; use its barrel exports rather than application-internal paths.
 
 ## Background/operational modules
 

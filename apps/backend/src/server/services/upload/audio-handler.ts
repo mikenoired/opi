@@ -1,4 +1,4 @@
-import { buildAudioContent, scrapeAudioMetadata } from "@synapse/core";
+import { buildAudioContent, scrapeAudioMetadata } from "@monolyth/core";
 import sharp from "sharp";
 
 import { deleteFile, getPublicUrl, uploadFile } from "../../../storage/minio";

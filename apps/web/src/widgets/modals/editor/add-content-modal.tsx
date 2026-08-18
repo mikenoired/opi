@@ -1,6 +1,6 @@
-import { ContentCreateDialog, type ContentTypePickerOption } from "@synapse/features";
-import { useI18n } from "@synapse/i18n";
-import type { Content } from "@synapse/shared/schemas";
+import { ContentCreateDialog, type ContentTypePickerOption } from "@monolyth/features";
+import { useI18n } from "@monolyth/i18n";
+import type { Content } from "@monolyth/shared/schemas";
 import { useMemo } from "react";
 
 import { contentTypeOptions } from "@/shared/lib/content-type-options";

@@ -1,4 +1,4 @@
-import { MediaSettingsPanel } from "@synapse/features";
+import { MediaSettingsPanel } from "@monolyth/features";
 
 import { api } from "@/shared/api/hooks";
 import { useUserPreferences } from "@/shared/lib/user-preferences-context";

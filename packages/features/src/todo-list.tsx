@@ -1,5 +1,5 @@
-import { useI18n } from "@synapse/i18n";
-import { Button, CheckboxGroup, CheckboxItem, InputField } from "@synapse/ui/components";
+import { useI18n } from "@monolyth/i18n";
+import { Button, CheckboxGroup, CheckboxItem, InputField } from "@monolyth/ui/components";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 

@@ -1,4 +1,4 @@
-import { DEFAULT_PLAN_ID } from "@synapse/shared/plans";
+import { DEFAULT_PLAN_ID } from "@monolyth/shared/plans";
 import { eq } from "drizzle-orm";
 
 import type { Context } from "../context";

@@ -13,7 +13,7 @@ import {
 	type SyncChange,
 	type SyncCursor,
 	type SyncIntent,
-} from "@synapse/sync";
+} from "@monolyth/sync";
 
 import { apiUrl } from "@/shared/config/api";
 
@@ -99,7 +99,7 @@ function createBrowserRuntime(
 	userId: string,
 	onProjection: ChangeListener
 ): { engine: RuntimeEngine; replica: ProjectionReplica } {
-	const name = `synapse-sync-${userId}`;
+	const name = `monolyth-sync-${userId}`;
 	const replica = new IndexedDbReplicaStore(name, onProjection);
 	return {
 		engine: new SyncEngine({
@@ -160,7 +160,7 @@ function compareServerCursors(left: SyncCursor, right: SyncCursor): number {
 	const leftValue = Number(/^j:(\d+)$/.exec(left)?.[1]);
 	const rightValue = Number(/^j:(\d+)$/.exec(right)?.[1]);
 	if (!Number.isSafeInteger(leftValue) || !Number.isSafeInteger(rightValue))
-		throw new Error("Synapse API returned an invalid sync cursor");
+		throw new Error("Monolyth API returned an invalid sync cursor");
 	return leftValue - rightValue;
 }
 
@@ -185,7 +185,7 @@ export class CookieSseTransport implements RealtimeTransport {
 			events.addEventListener("error", () => {
 				if (opened) return;
 				events.close();
-				reject(new Error("Synapse realtime connection failed before opening"));
+				reject(new Error("Monolyth realtime connection failed before opening"));
 			});
 		});
 	}

@@ -1,6 +1,6 @@
-import { useI18n } from "@synapse/i18n";
-import { formatSize } from "@synapse/shared/formatting";
-import { Button, Switch } from "@synapse/ui/components";
+import { useI18n } from "@monolyth/i18n";
+import { formatSize } from "@monolyth/shared/formatting";
+import { Button, Switch } from "@monolyth/ui/components";
 import { FolderUp, HardDrive, PlayCircle } from "lucide-react";
 
 export interface MediaSettingsPanelProps {

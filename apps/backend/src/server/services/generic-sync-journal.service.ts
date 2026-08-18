@@ -1,4 +1,4 @@
-import type { PullResult, SyncChange, SyncCursor } from "@synapse/sync";
+import type { PullResult, SyncChange, SyncCursor } from "@monolyth/sync";
 
 import type { Context } from "../context";
 import { syncJournalEntries } from "../db/schema";

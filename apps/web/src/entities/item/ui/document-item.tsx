@@ -1,6 +1,6 @@
-import type { Content } from "@synapse/shared/schemas";
-import { calculateReadingTime } from "@synapse/shared/schemas";
-import { Badge } from "@synapse/ui/components";
+import type { Content } from "@monolyth/shared/schemas";
+import { calculateReadingTime } from "@monolyth/shared/schemas";
+import { Badge } from "@monolyth/ui/components";
 import { motion } from "framer-motion";
 import { Calendar, Clock } from "lucide-react";
 import { useMemo } from "react";

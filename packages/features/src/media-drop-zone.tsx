@@ -1,4 +1,4 @@
-import { Button } from "@synapse/ui/components";
+import { Button } from "@monolyth/ui/components";
 import { Plus, Upload, X } from "lucide-react";
 import type { DragEvent } from "react";
 

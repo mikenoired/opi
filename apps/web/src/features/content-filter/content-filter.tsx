@@ -1,6 +1,6 @@
-import { ContentFilterBar } from "@synapse/features";
-import { useI18n } from "@synapse/i18n";
-import type { Content } from "@synapse/shared/schemas";
+import { ContentFilterBar } from "@monolyth/features";
+import { useI18n } from "@monolyth/i18n";
+import type { Content } from "@monolyth/shared/schemas";
 
 import { useDashboard } from "@/shared/lib/dashboard-context";
 

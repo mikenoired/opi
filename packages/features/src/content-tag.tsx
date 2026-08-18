@@ -1,6 +1,6 @@
-import { getTagColor } from "@synapse/shared/tag-colors";
-import { cn } from "@synapse/ui/cn";
-import { Badge } from "@synapse/ui/components";
+import { getTagColor } from "@monolyth/shared/tag-colors";
+import { cn } from "@monolyth/ui/cn";
+import { Badge } from "@monolyth/ui/components";
 import { X } from "lucide-react";
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 
