@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react
 import { createPortal } from "react-dom";
 
 import { ContentCardFrame } from "./content-card-frame";
+import { useContentSelection } from "./content-selection";
 import { ContentTag } from "./content-tag";
 
 export interface ContentCardProps {
@@ -33,9 +34,14 @@ export function ContentCard({
 	resolveMediaUrl,
 }: ContentCardProps) {
 	const { t } = useI18n();
+	const selection = useContentSelection();
+	const selected = selection?.isSelected(item.id) ?? false;
 	const visibleTags = excludedTag ? item.tags.filter((tag) => tag !== excludedTag) : item.tags;
 	const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
 	const menuRef = useRef<HTMLDivElement>(null);
+	const longPress = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+	const pointerStart = useRef<{ x: number; y: number } | undefined>(undefined);
+	const suppressClick = useRef(false);
 	useEffect(() => {
 		if (!menuPosition) return;
 		const closeOnOutsidePointer = (event: PointerEvent) => {
@@ -55,23 +61,74 @@ export function ContentCard({
 		setMenuPosition(null);
 		action();
 	};
+	const cancelLongPress = () => {
+		if (longPress.current) clearTimeout(longPress.current);
+		longPress.current = undefined;
+		pointerStart.current = undefined;
+	};
 	return (
 		<>
 			<div
-				className="cursor-pointer"
-				onClick={() => onOpen?.(item)}
+				aria-selected={selected}
+				className="cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-(--focus-ring)"
+				onClick={(event) => {
+					if (suppressClick.current) {
+						suppressClick.current = false;
+						return;
+					}
+					if (selection && (selection.selectionMode || event.ctrlKey || event.metaKey)) {
+						selection.toggle(item.id);
+						return;
+					}
+					onOpen?.(item);
+				}}
 				onContextMenu={(event) => {
 					event.preventDefault();
 					setMenuPosition({ x: event.clientX, y: event.clientY });
-				}}>
+				}}
+				onKeyDown={(event) => {
+					if (event.key === " ") {
+						event.preventDefault();
+						selection?.toggle(item.id);
+					}
+					if (event.key === "Enter") onOpen?.(item);
+				}}
+				onPointerCancel={cancelLongPress}
+				onPointerDown={(event) => {
+					if (event.pointerType !== "touch" || !selection) return;
+					pointerStart.current = { x: event.clientX, y: event.clientY };
+					longPress.current = setTimeout(() => {
+						suppressClick.current = true;
+						selection.toggle(item.id);
+						longPress.current = undefined;
+					}, 450);
+				}}
+				onPointerMove={(event) => {
+					const start = pointerStart.current;
+					if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) cancelLongPress();
+				}}
+				onPointerUp={cancelLongPress}
+				role="option"
+				tabIndex={0}>
 				<motion.div
 					initial={disableAnimation ? false : { opacity: 0, y: 20 }}
 					animate={disableAnimation ? undefined : { opacity: 1, y: 0 }}
 					transition={disableAnimation ? undefined : { duration: 0.2 }}
-					className="group">
+					className="group relative">
 					<ContentCardFrame type={item.type}>
 						<ContentCardBody item={item} index={index} tags={visibleTags} resolveMediaUrl={resolveMediaUrl} />
 					</ContentCardFrame>
+					{selected && (
+						<motion.div
+							aria-hidden
+							className="pointer-events-none absolute inset-0 z-10 rounded-xl bg-primary/8 ring-2 ring-primary ring-inset after:absolute after:inset-[3px] after:rounded-[9px] after:ring-1 after:ring-white/70 after:ring-inset dark:after:ring-black/70"
+							initial={{ opacity: 0 }}
+							animate={{ opacity: 1 }}>
+							<span className="absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-primary text-primary-foreground shadow-md ring-2 ring-background">
+								<Check className="size-4" strokeWidth={2.5} />
+							</span>
+						</motion.div>
+					)}
 				</motion.div>
 			</div>
 			{menuPosition &&
@@ -84,6 +141,11 @@ export function ContentCard({
 						<CardMenuItem onClick={() => runMenuAction(() => onOpen?.(item))}>
 							{t("library.open")}
 						</CardMenuItem>
+						{selection && (
+							<CardMenuItem onClick={() => runMenuAction(() => selection.toggle(item.id))}>
+								{selected ? t("library.selection.deselect") : t("library.selection.select")}
+							</CardMenuItem>
+						)}
 						{onEdit && (
 							<CardMenuItem onClick={() => runMenuAction(() => onEdit(item))}>
 								{t("library.edit")}

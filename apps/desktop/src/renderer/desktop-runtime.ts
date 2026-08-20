@@ -96,6 +96,10 @@ function createDesktopMonolythClient(): MonolythClient {
 				await getDesktopBridge().library.delete(id);
 				return { success: true };
 			},
+			deleteMany: async ({ ids }) => {
+				await getDesktopBridge().library.deleteMany(ids);
+				return { deletedIds: ids };
+			},
 			get: async (id) => {
 				const items = await getDesktopBridge().library.list();
 				const item = items.find((candidate) => candidate.id === id);
@@ -154,6 +158,7 @@ function createDesktopMonolythClient(): MonolythClient {
 					url: input.url ?? existing.url,
 				});
 			},
+			updateTags: async (input) => ({ items: await getDesktopBridge().library.updateTags(input) }),
 			updateTagColor: async (input) => {
 				return getDesktopBridge().library.updateTagColor(input.id, input.color);
 			},

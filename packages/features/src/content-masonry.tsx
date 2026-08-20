@@ -53,6 +53,11 @@ interface ItemMotion {
 	y: MotionValue<number>;
 }
 
+const MASONRY_REFLOW_TRANSITION = {
+	duration: 0.28,
+	ease: [0.22, 1, 0.36, 1],
+} as const;
+
 interface RenderedEntry<T> {
 	id: string;
 	item?: T;
@@ -93,6 +98,8 @@ export const ContentMasonry = memo(function ContentMasonry<T extends { id: strin
 	const settleAnimation = useRef<{ stop(): void } | undefined>(undefined);
 	const wheelIdleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 	const layoutFrame = useRef<number | undefined>(undefined);
+	const animateNextLayout = useRef(false);
+	const previousEntryIds = useRef<string[]>([]);
 	const anchorFrame = useRef<number | undefined>(undefined);
 	const anchor = useRef<ZoomAnchor | undefined>(undefined);
 	const touches = useRef(new Map<number, TouchPoint>());
@@ -152,17 +159,26 @@ export const ContentMasonry = memo(function ContentMasonry<T extends { id: strin
 				return measured;
 			});
 			const currentDensity = density.get();
-			const projection = projectMasonry(width, currentDensity, heights, MASONRY_GAP, MASONRY_GAP);
+			const projection = projectMasonry(width, currentDensity, heights, MASONRY_GAP);
+			const animateReflow = animateNextLayout.current && !reducedMotion;
+			animateNextLayout.current = false;
 			projection.items.forEach((layout, index) => {
 				const values = motions[index];
 				if (!values) return;
-				values.width.set(layout.width);
-				values.x.set(layout.x);
-				values.y.set(layout.y);
+				if (animateReflow) {
+					animate(values.width, layout.width, MASONRY_REFLOW_TRANSITION);
+					animate(values.x, layout.x, MASONRY_REFLOW_TRANSITION);
+					animate(values.y, layout.y, MASONRY_REFLOW_TRANSITION);
+				} else {
+					values.width.set(layout.width);
+					values.x.set(layout.x);
+					values.y.set(layout.y);
+				}
 				const element = itemElements.current.get(entries[index]?.id ?? "");
 				element?.toggleAttribute("data-column-changing", itemChangesColumn(index, currentDensity));
 			});
-			masonryHeight.set(projection.height);
+			if (animateReflow) animate(masonryHeight, projection.height, MASONRY_REFLOW_TRANSITION);
+			else masonryHeight.set(projection.height);
 			const root = rootRef.current;
 			if (root) {
 				const transition = transitionFor(zoomState.current);
@@ -173,7 +189,7 @@ export const ContentMasonry = memo(function ContentMasonry<T extends { id: strin
 			if (!ready && (entries.length === 0 || heights.every((height) => height > 0))) setReady(true);
 			preserveAnchor();
 		});
-	}, [density, entries, masonryHeight, motions, preserveAnchor, ready]);
+	}, [density, entries, masonryHeight, motions, preserveAnchor, ready, reducedMotion]);
 
 	const updateAnchor = useCallback((x: number, y: number) => {
 		const root = rootRef.current;
@@ -256,7 +272,7 @@ export const ContentMasonry = memo(function ContentMasonry<T extends { id: strin
 			if (!width) return;
 			if (Math.abs(width - containerWidth.current) < 0.5) return;
 			containerWidth.current = width;
-			maximumColumns.current = maximumColumnCount(width - MASONRY_GAP, compact);
+			maximumColumns.current = maximumColumnCount(width, compact);
 			const desired = Math.min(initialColumnCount(window.innerWidth, compact), maximumColumns.current);
 			const nextDensity = interacted.current
 				? Math.min(maximumColumns.current, Math.max(COLUMN_ZOOM_SETTINGS.minimumColumns, density.get()))
@@ -272,6 +288,21 @@ export const ContentMasonry = memo(function ContentMasonry<T extends { id: strin
 		observer.observe(root);
 		return () => observer.disconnect();
 	}, [compact, density, scheduleLayout]);
+
+	useLayoutEffect(() => {
+		const nextIds = entries.map((entry) => entry.id);
+		const previousIds = previousEntryIds.current;
+		const changed =
+			nextIds.length !== previousIds.length || nextIds.some((id, index) => id !== previousIds[index]);
+		if (!changed) return;
+		animateNextLayout.current = previousIds.some((id) => !nextIds.includes(id));
+		previousEntryIds.current = nextIds;
+		if (layoutFrame.current !== undefined) {
+			cancelAnimationFrame(layoutFrame.current);
+			layoutFrame.current = undefined;
+		}
+		scheduleLayout();
+	}, [entries, scheduleLayout]);
 
 	useLayoutEffect(() => {
 		const observer = new ResizeObserver((observations) => {

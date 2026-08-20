@@ -265,9 +265,18 @@ function DesktopAppContent({
 					await bridge.library.delete(item.id);
 					await refresh();
 				}}
+				onDeleteMany={async (selectedItems) => {
+					await bridge.library.deleteMany(selectedItems.map((item) => item.id));
+					await refresh();
+				}}
 				onSave={async (input) => {
 					await bridge.library.save(input);
 					await refresh();
+				}}
+				onUpdateTags={async (input) => {
+					const updated = await bridge.library.updateTags(input);
+					await refresh();
+					return updated;
 				}}
 			/>
 			{syncing && (

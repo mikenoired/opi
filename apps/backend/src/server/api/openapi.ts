@@ -102,6 +102,12 @@ export const openApiDocument = {
 			post: operation("Content create", { body: true, mutation: true }),
 		},
 		"/content/types": { get: operation("Content types") },
+		"/content/batch/delete": {
+			post: operation("Content batch delete", { body: true, mutation: true }),
+		},
+		"/content/batch/tags": {
+			patch: operation("Content batch tags", { body: true, mutation: true }),
+		},
 		"/content/tags": { get: operation("Content tags") },
 		"/content/tags/page": { get: operation("Content tags page") },
 		"/content/tags/with-content": { get: operation("Content tags with content") },

@@ -1,6 +1,13 @@
 import type { PlanId, PlanLimits } from "@monolyth/shared/plans";
 import type { UserPreferences, UserPreferencesInput } from "@monolyth/shared/preferences";
-import type { Content, ContentListItem, CreateContent, UpdateContent } from "@monolyth/shared/schemas";
+import type {
+	Content,
+	ContentListItem,
+	CreateContent,
+	DeleteContentBatch,
+	UpdateContent,
+	UpdateContentTagsBatch,
+} from "@monolyth/shared/schemas";
 
 /**
  * Transport-neutral contract used by the shared product UI.
@@ -20,6 +27,7 @@ export interface MonolythClient {
 export interface ContentClient {
 	create(input: CreateContentInput): Promise<ContentDetail>;
 	delete(id: string): Promise<DeleteContentResult>;
+	deleteMany(input: DeleteContentBatch): Promise<DeleteContentBatchResult>;
 	get(id: string): Promise<ContentDetail>;
 	getAvailableTypes(): Promise<ContentType[]>;
 	getSuggestions(input: ContentSuggestionsInput): Promise<ContentSuggestions>;
@@ -31,6 +39,7 @@ export interface ContentClient {
 	list(input: ContentListInput): Promise<ContentList>;
 	parseLink(input: ParseLinkInput): Promise<ParsedLink>;
 	update(input: UpdateContentInput): Promise<ContentDetail>;
+	updateTags(input: UpdateContentTagsBatch): Promise<UpdateContentTagsBatchResult>;
 	updateTagColor(input: UpdateTagColorInput): Promise<ContentTag>;
 	upload(input: UploadInput): Promise<UploadResult>;
 }
@@ -181,6 +190,14 @@ export function createParsedLinkFallback(value: string): ParsedLink {
 
 export interface DeleteContentResult {
 	success: true;
+}
+
+export interface DeleteContentBatchResult {
+	deletedIds: string[];
+}
+
+export interface UpdateContentTagsBatchResult {
+	items: ContentDetail[];
 }
 
 export interface Graph {

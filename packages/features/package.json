@@ -17,8 +17,11 @@
 	},
 	"devDependencies": {
 		"@monolyth/tsconfig": "workspace:*",
+		"@testing-library/react": "^16.3.2",
+		"@testing-library/user-event": "^14.6.5",
 		"@types/react": "^19.2.17",
 		"@types/react-dom": "^19.2.3",
+		"happy-dom": "^20.11.2",
 		"typescript": "^7.0.2"
 	},
 	"dependencies": {

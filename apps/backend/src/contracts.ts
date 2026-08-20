@@ -1,4 +1,9 @@
-import type { createContentSchema, updateContentSchema } from "@monolyth/shared/schemas";
+import type {
+	createContentSchema,
+	deleteContentBatchSchema,
+	updateContentSchema,
+	updateContentTagsBatchSchema,
+} from "@monolyth/shared/schemas";
 import { contentTypeSchema } from "@monolyth/shared/schemas";
 import type { z } from "zod";
 
@@ -47,6 +52,10 @@ export type UpdateContentInput = z.input<typeof updateContentSchema>;
 export type CreateContentResult = Awaited<ReturnType<ContentService["create"]>>;
 export type UpdateContentResult = Awaited<ReturnType<ContentService["update"]>>;
 export type DeleteContentResult = Awaited<ReturnType<ContentService["delete"]>>;
+export type DeleteContentBatchInput = z.infer<typeof deleteContentBatchSchema>;
+export type DeleteContentBatchResult = { deletedIds: string[] };
+export type UpdateContentTagsBatchInput = z.infer<typeof updateContentTagsBatchSchema>;
+export type UpdateContentTagsBatchResult = { items: ContentDetail[] };
 export type ImportFileResult = Awaited<ReturnType<ContentService["importFile"]>>;
 export type UploadResult = Awaited<ReturnType<UploadService["handleUpload"]>>;
 export type AiTagsResult = Awaited<ReturnType<AiTaggingService["suggestTags"]>>;

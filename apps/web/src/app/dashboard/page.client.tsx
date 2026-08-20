@@ -229,6 +229,8 @@ export default function DashboardClient({
 	}, [openAddDialog, setPreloadedFiles]);
 
 	const deleteContentMutation = api.content.delete.useMutation();
+	const deleteContentsMutation = api.content.deleteMany.useMutation();
+	const updateContentTagsMutation = api.content.updateTags.useMutation();
 
 	const handleItemClick = (item: Content) => {
 		openModal({
@@ -310,6 +312,19 @@ export default function DashboardClient({
 							isLoading={contentLoading && content.length === 0}
 							onContentUpdated={handleContentUpdated}
 							onContentDeleted={handleContentDeleted}
+							onContentsDeleted={async (ids) => {
+								await deleteContentsMutation.mutateAsync({ ids });
+								for (const id of ids) void utils.content.getById.invalidate({ id });
+								void utils.content.getAll.invalidate();
+								invalidateRelatedQueries();
+							}}
+							onUpdateTags={async (input) => {
+								const result = await updateContentTagsMutation.mutateAsync(input);
+								for (const item of result.items) utils.content.getById.setData({ id: item.id }, item);
+								void utils.content.getAll.invalidate();
+								invalidateRelatedQueries();
+								return result.items;
+							}}
 							onItemClick={handleItemClick}
 							searchQuery={debouncedSearchQuery}
 							selectedTags={selectedTags}

@@ -58,6 +58,7 @@ export { ContentFilterBar } from "./content-filter-bar";
 export type { ContentFilterBarProps } from "./content-filter-bar";
 export { ContentGridSurface } from "./content-grid-surface";
 export type { ContentGridSurfaceProps } from "./content-grid-surface";
+export type { ContentTagBatchChange } from "./content-selection";
 export { LibraryWorkspace } from "./library-workspace";
 export type { LibraryWorkspaceProps } from "./library-workspace";
 export { ContentMasonry } from "./content-masonry";

@@ -1,5 +1,11 @@
 import type { SyncMutation, SyncMutationOutcome } from "@monolyth/api";
-import type { Content, CreateContent } from "@monolyth/shared/schemas";
+import { normalizeTagTitle, uniqueTagTitles } from "@monolyth/core";
+import {
+	MAX_TAGS_PER_CONTENT,
+	type Content,
+	type CreateContent,
+	type UpdateContentTagsBatch,
+} from "@monolyth/shared/schemas";
 import type { MutationReceipt, SyncChange, SyncIntent } from "@monolyth/sync";
 import { sql } from "drizzle-orm";
 
@@ -119,6 +125,44 @@ export default class SyncMutationCoordinator {
 		// canonical mutation and the watermark makes a concurrent pull reset safely.
 		await new GenericSyncJournalService(this.ctx).pruneRetained();
 		return outcome;
+	}
+
+	async deleteMany(ids: string[]): Promise<string[]> {
+		const uniqueIds = [...new Set(ids)];
+		await Promise.all(uniqueIds.map((id) => new ContentService(this.ctx).getById(id)));
+		for (const id of uniqueIds)
+			await this.apply({ clientMutationId: crypto.randomUUID(), kind: "delete", remoteId: id });
+		return uniqueIds;
+	}
+
+	async updateTagsMany(input: UpdateContentTagsBatch): Promise<Content[]> {
+		const remove = new Set(input.remove.map(normalizeTagTitle));
+		const currentItems = await Promise.all(
+			[...new Set(input.ids)].map((id) => new ContentService(this.ctx).getById(id))
+		);
+		const changes = currentItems.map((current) => {
+			const tags = uniqueTagTitles([
+				...current.tags.filter((tag) => !remove.has(normalizeTagTitle(tag))),
+				...input.add,
+			]);
+			if (tags.length > MAX_TAGS_PER_CONTENT)
+				throw new ApiError({
+					code: "BAD_REQUEST",
+					message: `A content item cannot have more than ${MAX_TAGS_PER_CONTENT} tags`,
+				});
+			return { current, tags };
+		});
+		const updated: Content[] = [];
+		for (const { current, tags } of changes) {
+			const outcome = await this.apply({
+				clientMutationId: crypto.randomUUID(),
+				content: toCreateContent(current, tags),
+				kind: "upsert",
+				remoteId: current.id,
+			});
+			if (outcome.content) updated.push(outcome.content);
+		}
+		return updated;
 	}
 
 	async updateTagColor(id: string, color: number): Promise<{ color: number; id: string; title: string }> {
@@ -333,4 +377,22 @@ function appliedDeleted(clientMutationId: string, revision: number): SyncMutatio
 function requireContent(mutation: SyncMutation): CreateContent {
 	if (!mutation.content) throw new Error("An upsert sync mutation requires content");
 	return mutation.content;
+}
+
+function toCreateContent(content: Content, tags: string[]): CreateContent {
+	return {
+		content: content.content,
+		document_images: content.document_images,
+		media_height: content.media_height,
+		media_type: content.media_type ?? "image",
+		media_url: content.media_url,
+		media_width: content.media_width,
+		tag_ids: undefined,
+		tags,
+		thumbnail_base64: content.thumbnail_base64,
+		thumbnail_url: content.thumbnail_url,
+		title: content.title,
+		type: content.type,
+		url: content.url,
+	};
 }

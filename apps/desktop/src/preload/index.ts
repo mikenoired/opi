@@ -13,10 +13,13 @@ contextBridge.exposeInMainWorld("monolythDesktop", {
 			return () => ipcRenderer.removeListener("library:changed", callback);
 		},
 		delete: (id: string) => ipcRenderer.invoke("library:delete", id),
+		deleteMany: (ids: string[]) => ipcRenderer.invoke("library:delete-many", ids),
 		deleteAll: () => ipcRenderer.invoke("library:delete-all"),
 		list: (search?: string) => ipcRenderer.invoke("library:list", search),
 		tags: () => ipcRenderer.invoke("library:tags"),
 		updateTagColor: (id: string, color: number) => ipcRenderer.invoke("library:update-tag-color", id, color),
+		updateTags: (input: { add: string[]; ids: string[]; remove: string[] }) =>
+			ipcRenderer.invoke("library:update-tags", input),
 		settings: () => ipcRenderer.invoke("library:settings"),
 		preferences: () => ipcRenderer.invoke("library:preferences"),
 		queueSync: (id: string) => ipcRenderer.invoke("library:queue-sync", id),

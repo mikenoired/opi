@@ -10,7 +10,7 @@ import {
 	type UserPreferences,
 	type UserPreferencesInput,
 } from "@monolyth/shared/preferences";
-import type { Content, CreateContent } from "@monolyth/shared/schemas";
+import { MAX_TAGS_PER_CONTENT, type Content, type CreateContent } from "@monolyth/shared/schemas";
 
 export type LocalContentType = Content["type"];
 export type SyncPolicy = "manual" | "automatic";
@@ -210,6 +210,53 @@ export class LocalLibraryRepository {
 	/** A deletion is journaled until the remote acknowledgement is durable. */
 	async delete(id: string): Promise<void> {
 		return this.mutate((data) => this.deleteFromData(data, id));
+	}
+
+	/** Applies one durable local transaction while retaining one sync intent per content entity. */
+	async deleteMany(ids: string[]): Promise<void> {
+		return this.mutate((data) => {
+			for (const id of new Set(ids)) this.deleteFromData(data, id);
+		});
+	}
+
+	/** Adds and removes tags across content without replacing unrelated per-item tags. */
+	async updateTags(input: { add: string[]; ids: string[]; remove: string[] }): Promise<LocalItem[]> {
+		return this.mutate((data) => {
+			const add = normalizeTags(input.add);
+			const remove = new Set(normalizeTags(input.remove).map(normalizeTagTitle));
+			const selected = new Set(input.ids);
+			const updatedById = new Map<string, LocalItem>();
+			const now = new Date().toISOString();
+			data.items = data.items.map((existing) => {
+				if (!selected.has(existing.id) || existing.deleted) return existing;
+				const tags = normalizeTags([
+					...existing.tags.filter((tag) => !remove.has(normalizeTagTitle(tag))),
+					...add,
+				]);
+				if (tags.length > MAX_TAGS_PER_CONTENT)
+					throw new Error(`A content item cannot have more than ${MAX_TAGS_PER_CONTENT} tags`);
+				const containsLocalObject = hasLocalObjectReference(existing);
+				const item: LocalItem = {
+					...existing,
+					syncState: containsLocalObject
+						? "local-only"
+						: existing.remoteId || data.settings.syncPolicy === "automatic"
+							? "queued"
+							: "local-only",
+					tag_ids: tags.map((title) => ensureTag(data.tags, title)),
+					tags,
+					updated_at: now,
+				};
+				if (!containsLocalObject && (existing.remoteId || data.settings.syncPolicy === "automatic"))
+					this.replaceOutboxEntry(data, item);
+				updatedById.set(item.id, item);
+				return item;
+			});
+			return input.ids.flatMap((id) => {
+				const item = updatedById.get(id);
+				return item ? [item] : [];
+			});
+		});
 	}
 
 	/** Queues durable tombstones for every synced item; local-only records are removed immediately. */

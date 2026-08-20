@@ -6,6 +6,54 @@ import { join } from "node:path";
 import { LocalLibraryRepository } from "./local-library.repository";
 
 describe("LocalLibraryRepository", () => {
+	test("deletes several items through one durable batch operation", async () => {
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
+		const library = new LocalLibraryRepository(root);
+		await library.updateSettings({ syncPolicy: "automatic" });
+		const first = await library.save({ content: "first", tags: [], title: "First", type: "note" });
+		const second = await library.save({ content: "second", tags: [], title: "Second", type: "note" });
+		await library.acknowledgeMutation((await library.getPendingOperations())[0]!.mutation.clientMutationId);
+		await library.acknowledgeMutation((await library.getPendingOperations())[0]!.mutation.clientMutationId);
+		await library.updateSync(first.id, { remoteId: "remote-first", syncState: "synced" });
+		await library.updateSync(second.id, { remoteId: "remote-second", syncState: "synced" });
+
+		await library.deleteMany([first.id, second.id]);
+
+		expect(await library.list()).toEqual([]);
+		expect((await library.getPendingOperations()).map((entry) => entry.mutation.kind)).toEqual([
+			"delete",
+			"delete",
+		]);
+	});
+
+	test("updates tags for several items while preserving their individual tags", async () => {
+		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
+		const library = new LocalLibraryRepository(root);
+		const first = await library.save({
+			content: "first",
+			tags: ["common", "first-only", "remove"],
+			title: "First",
+			type: "note",
+		});
+		const second = await library.save({
+			content: "second",
+			tags: ["common", "second-only"],
+			title: "Second",
+			type: "note",
+		});
+
+		const updated = await library.updateTags({
+			add: ["shared"],
+			ids: [first.id, second.id],
+			remove: ["remove"],
+		});
+
+		expect(updated.map((item) => ({ id: item.id, tags: item.tags }))).toEqual([
+			{ id: first.id, tags: ["common", "first-only", "shared"] },
+			{ id: second.id, tags: ["common", "second-only", "shared"] },
+		]);
+	});
+
 	test("serializes outbox, cursor, and replica mutations across repository instances", async () => {
 		const root = await mkdtemp(join(tmpdir(), "monolyth-library-"));
 		const library = new LocalLibraryRepository(root);

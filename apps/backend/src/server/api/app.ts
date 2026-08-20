@@ -5,11 +5,13 @@ import { join } from "node:path";
 
 import { canUseMonolythSync } from "@monolyth/shared/plans";
 import {
+	deleteContentBatchSchema,
 	authSchema,
 	contentTypeSchema,
 	createContentSchema,
 	MAX_TAGS_PER_CONTENT,
 	updateContentSchema,
+	updateContentTagsBatchSchema,
 } from "@monolyth/shared/schemas";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono, type Context as HonoContext } from "hono";
@@ -527,6 +529,16 @@ export const api = new Hono()
 	.get("/content/tags/:id", requireAuth, rateLimit("query"), async (c) =>
 		c.json(await new ContentService(c.get("apiContext")).getTagById(c.req.param("id")))
 	)
+	.post("/content/batch/delete", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
+		const input = await body(c.req.raw, deleteContentBatchSchema);
+		const deletedIds = await new SyncMutationCoordinator(c.get("apiContext")).deleteMany(input.ids);
+		return c.json({ deletedIds });
+	})
+	.patch("/content/batch/tags", requireAuth, protectMutation, rateLimit("mutation"), async (c) => {
+		const input = await body(c.req.raw, updateContentTagsBatchSchema);
+		const items = await new SyncMutationCoordinator(c.get("apiContext")).updateTagsMany(input);
+		return c.json({ items });
+	})
 	.get("/content/:id/suggestions", requireAuth, rateLimit("query"), async (c) =>
 		c.json(
 			await new ContentService(c.get("apiContext")).getSuggestions(

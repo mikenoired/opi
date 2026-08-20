@@ -212,6 +212,48 @@ describe.serial("API integration", () => {
 		expect(created.body.fieldErrors).not.toBeNull();
 	});
 
+	test("deletes several content items in one request", async () => {
+		const account = await register("batch-delete");
+		const first = await request("POST", "/content", { body: note("First"), token: account.token });
+		const second = await request("POST", "/content", { body: note("Second"), token: account.token });
+		const ids = [first.body.id as string, second.body.id as string];
+
+		const deleted = await request("POST", "/content/batch/delete", {
+			body: { ids },
+			token: account.token,
+		});
+
+		expect(deleted.response.status).toBe(200);
+		expect(deleted.body).toEqual({ deletedIds: ids });
+		const listed = await request("GET", "/content", { token: account.token });
+		expect((listed.body.items as Json[]).map((item) => item.id)).not.toContain(ids[0]);
+		expect((listed.body.items as Json[]).map((item) => item.id)).not.toContain(ids[1]);
+	});
+
+	test("adds and removes tags from several content items in one request", async () => {
+		const account = await register("batch-tags");
+		const first = await request("POST", "/content", {
+			body: note("First", ["common", "first-only", "remove"]),
+			token: account.token,
+		});
+		const second = await request("POST", "/content", {
+			body: note("Second", ["common", "second-only"]),
+			token: account.token,
+		});
+		const ids = [first.body.id as string, second.body.id as string];
+
+		const updated = await request("PATCH", "/content/batch/tags", {
+			body: { add: ["shared"], ids, remove: ["remove"] },
+			token: account.token,
+		});
+
+		expect(updated.response.status).toBe(200);
+		expect((updated.body.items as Json[]).map((item) => item.tags)).toEqual([
+			["common", "first-only", "shared"],
+			["common", "second-only", "shared"],
+		]);
+	});
+
 	test("returns complete note content from the detail endpoint", async () => {
 		const account = await register("note-detail");
 		const content = JSON.stringify({

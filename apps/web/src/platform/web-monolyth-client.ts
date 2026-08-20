@@ -24,14 +24,23 @@ import type {
 	UploadInput,
 	UploadResult,
 } from "@monolyth/api";
+import { normalizeTagTitle, uniqueTagTitles } from "@monolyth/core";
 import type { UserPreferences } from "@monolyth/shared/preferences";
-import type { Content, CreateContent, UpdateContent } from "@monolyth/shared/schemas";
+import {
+	MAX_TAGS_PER_CONTENT,
+	type Content,
+	type CreateContent,
+	type UpdateContent,
+} from "@monolyth/shared/schemas";
 
 import { apiUrl } from "@/shared/config/api";
 
 import { webSyncRuntime, type WebSyncRuntime } from "./web-sync";
 
-type WebMutationRuntime = Pick<WebSyncRuntime, "mutate" | "readEntity" | "readEntityVersion">;
+type WebMutationRuntime = Pick<
+	WebSyncRuntime,
+	"isRunning" | "mutate" | "mutateMany" | "readEntity" | "readEntityVersion"
+>;
 
 /** Browser implementation of the shared UI client contract. */
 export function createWebMonolythClient(syncRuntime: WebMutationRuntime = webSyncRuntime): MonolythClient {
@@ -88,6 +97,23 @@ function createContentClient(syncRuntime: WebMutationRuntime): ContentClient {
 			mutateContent(syncRuntime, { entityId: id, operation: "delete" }, () =>
 				request<{ success: true }>("/content/" + encodeURIComponent(id), { method: "DELETE" })
 			).then((result) => result ?? { success: true }),
+		deleteMany: async (input) => {
+			const ids = [...new Set(input.ids)];
+			if (!syncRuntime.isRunning())
+				return request("/content/batch/delete", { body: { ids }, method: "POST" });
+			await syncRuntime.mutateMany(
+				await Promise.all(
+					ids.map(async (entityId) => ({
+						baseEntityVersion: await syncRuntime.readEntityVersion("content", entityId),
+						entityId,
+						entityType: "content",
+						mutationId: crypto.randomUUID(),
+						operation: "delete" as const,
+					}))
+				)
+			);
+			return { deletedIds: ids };
+		},
 		get: (id) => request<Content>("/content/" + encodeURIComponent(id)),
 		getAvailableTypes: () => request<Content["type"][]>("/content/types"),
 		getSuggestions: (input) =>
@@ -113,6 +139,35 @@ function createContentClient(syncRuntime: WebMutationRuntime): ContentClient {
 				() => request<Content>("/content/" + encodeURIComponent(input.id), { body: input, method: "PATCH" })
 			);
 			return updated;
+		},
+		updateTags: async (input) => {
+			if (!syncRuntime.isRunning()) return request("/content/batch/tags", { body: input, method: "PATCH" });
+			const remove = new Set(input.remove.map(normalizeTagTitle));
+			const entries = await Promise.all(
+				[...new Set(input.ids)].map(async (entityId) => {
+					const change = await syncRuntime.readEntity("content", entityId);
+					const current = change?.payload as Content | undefined;
+					if (!change || !current) throw new Error(`Content not found in local replica: ${entityId}`);
+					const tags = uniqueTagTitles([
+						...current.tags.filter((tag) => !remove.has(normalizeTagTitle(tag))),
+						...input.add,
+					]);
+					if (tags.length > MAX_TAGS_PER_CONTENT)
+						throw new Error(`A content item cannot have more than ${MAX_TAGS_PER_CONTENT} tags`);
+					return { content: { ...current, tags }, version: change.entityVersion };
+				})
+			);
+			await syncRuntime.mutateMany(
+				entries.map(({ content, version }) => ({
+					baseEntityVersion: version,
+					entityId: content.id,
+					entityType: "content",
+					mutationId: crypto.randomUUID(),
+					operation: "upsert" as const,
+					payload: { ...toCreateContent(content), tag_ids: undefined, tags: content.tags },
+				}))
+			);
+			return { items: entries.map((entry) => entry.content) };
 		},
 		updateTagColor: async (input: UpdateTagColorInput) => {
 			const current = await request<ContentTag>("/content/tags/" + encodeURIComponent(input.id));

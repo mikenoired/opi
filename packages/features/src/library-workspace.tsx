@@ -9,6 +9,7 @@ import { ContentCreateDialog } from "./content-create-dialog";
 import { ContentEditDialog } from "./content-edit-dialog";
 import { ContentFilterBar } from "./content-filter-bar";
 import { ContentGridSurface } from "./content-grid-surface";
+import type { ContentTagBatchChange } from "./content-selection";
 import { ContentViewer } from "./content-viewer";
 import { ConfirmDialog } from "./dialogs/confirm-dialog";
 import { inferContentTypeFromFiles, normalizeDroppedFiles } from "./file-import";
@@ -26,9 +27,11 @@ export interface LibraryWorkspaceProps {
 	items: Content[];
 	navigation?: NavigationItemConfig[];
 	onDelete(item: Content): Promise<void> | void;
+	onDeleteMany(items: Content[]): Promise<void> | void;
 	onContentCreated?(): void;
 	onOpenSettings(): void;
 	onSave(input: CreateContent & { id?: string }): Promise<void>;
+	onUpdateTags(input: ContentTagBatchChange): Promise<Content[] | void> | Content[] | void;
 	onSelectPage(page: "dashboard" | "graph" | "tags"): void;
 	sidebarFooter?: ReactNode;
 }
@@ -41,9 +44,11 @@ export function LibraryWorkspace({
 	items,
 	navigation,
 	onDelete,
+	onDeleteMany,
 	onContentCreated,
 	onOpenSettings,
 	onSave,
+	onUpdateTags,
 	onSelectPage,
 	sidebarFooter,
 }: LibraryWorkspaceProps) {
@@ -211,8 +216,10 @@ export function LibraryWorkspace({
 									setTypes([]);
 								}}
 								onDelete={(item) => void onDelete(item)}
+								onDeleteMany={onDeleteMany}
 								onEdit={setEditing}
 								onOpen={setViewing}
+								onUpdateTags={onUpdateTags}
 								searchQuery={search}
 								selectedContentTypes={types}
 							/>

@@ -27,6 +27,7 @@ export interface DesktopBridge {
 	library: {
 		onChanged(listener: () => void): () => void;
 		delete(id: string): Promise<void>;
+		deleteMany(ids: string[]): Promise<void>;
 		deleteAll(): Promise<void>;
 		importFiles(input?: {
 			files?: BinaryFile[];
@@ -54,6 +55,7 @@ export interface DesktopBridge {
 		}>;
 		updatePreferences(preferences: UserPreferencesInput): Promise<UserPreferences>;
 		updateTagColor(id: string, color: number): Promise<ContentTag>;
+		updateTags(input: { add: string[]; ids: string[]; remove: string[] }): Promise<Content[]>;
 	};
 	sync: {
 		connectAccount(): Promise<DesktopSession>;

@@ -6,6 +6,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 
 import { ContentCard } from "./content-card";
 import { ContentMasonry } from "./content-masonry";
+import { ContentSelectionLayer, type ContentTagBatchChange } from "./content-selection";
 
 export interface ContentGridSurfaceProps {
 	excludedTag?: string;
@@ -17,9 +18,11 @@ export interface ContentGridSurfaceProps {
 	onAddContent?(): void;
 	onClearFilters?(): void;
 	onDelete?(item: Content): void;
+	onDeleteMany?(items: Content[]): Promise<void> | void;
 	onEdit?(item: Content): void;
 	onItemHover?(): void;
 	onOpen?(item: Content): void;
+	onUpdateTags?(input: ContentTagBatchChange): Promise<Content[] | void> | Content[] | void;
 	renderItems?(items: Content[]): ReactNode;
 	searchQuery?: string;
 	selectedContentTypes?: Content["type"][];
@@ -41,9 +44,11 @@ export function ContentGridSurface({
 	onAddContent,
 	onClearFilters,
 	onDelete,
+	onDeleteMany,
 	onEdit,
 	onItemHover,
 	onOpen,
+	onUpdateTags,
 	renderItems,
 	searchQuery,
 	selectedContentTypes,
@@ -89,8 +94,13 @@ export function ContentGridSurface({
 				</div>
 			</div>
 		);
+	const selectionKey = JSON.stringify([excludedTag, searchQuery, selectedContentTypes, selectedTags]);
 	return (
-		<>
+		<ContentSelectionLayer
+			items={items}
+			onDeleteMany={onDeleteMany}
+			onUpdateTags={onUpdateTags}
+			selectionKey={selectionKey}>
 			{renderItems?.(items) ?? (
 				<ContentMasonry
 					items={items}
@@ -109,7 +119,7 @@ export function ContentGridSurface({
 				/>
 			)}
 			{hasNext && <div aria-hidden className="h-px w-full" ref={sentinelRef} />}
-		</>
+		</ContentSelectionLayer>
 	);
 }
 

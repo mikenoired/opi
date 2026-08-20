@@ -70,6 +70,25 @@ describe("SyncEngine", () => {
 		expect(await outbox.list()).toEqual([]);
 	});
 
+	test("flushes several user mutations through one journal request", async () => {
+		const journal = new CountingJournal();
+		const engine = new SyncEngine({
+			journal,
+			outbox: new InMemoryOutbox(),
+			realtime: new InMemoryRealtimeTransport(),
+			registry: createEntityRegistry(new TestEntityAdapter()),
+			replica: new InMemoryReplicaStore(),
+		});
+
+		await engine.mutateMany([
+			{ entityId: "one", entityType: "test", mutationId: "mutation-1", operation: "delete" },
+			{ entityId: "two", entityType: "test", mutationId: "mutation-2", operation: "delete" },
+		]);
+
+		expect(journal.pushCount).toBe(1);
+		expect(journal.pushed.map((entry) => entry.mutationId)).toEqual(["mutation-1", "mutation-2"]);
+	});
+
 	test("catches up 101 through 103 after reconnect from cursor 100", async () => {
 		const journal = new InMemoryJournalApi();
 		const replica = new InMemoryReplicaStore("j:100");
@@ -185,5 +204,14 @@ class PagedJournal extends InMemoryJournalApi {
 			hasMore: available.length > changes.length,
 			kind: "changes" as const,
 		};
+	}
+}
+
+class CountingJournal extends InMemoryJournalApi {
+	pushCount = 0;
+
+	override async push(mutations: Parameters<InMemoryJournalApi["push"]>[0]) {
+		this.pushCount += 1;
+		return super.push(mutations);
 	}
 }

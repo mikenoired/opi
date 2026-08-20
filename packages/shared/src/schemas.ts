@@ -164,6 +164,20 @@ export const updateContentSchema = createContentSchema.partial().extend({
 	id: z.string(),
 });
 
+const contentBatchIdsSchema = z.array(z.string().min(1)).min(1).max(100);
+
+export const deleteContentBatchSchema = z.object({ ids: contentBatchIdsSchema });
+
+export const updateContentTagsBatchSchema = z
+	.object({
+		add: z.array(z.string().trim().min(1)).max(MAX_TAGS_PER_CONTENT).default([]),
+		ids: contentBatchIdsSchema,
+		remove: z.array(z.string().trim().min(1)).max(MAX_TAGS_PER_CONTENT).default([]),
+	})
+	.refine((input) => input.add.length > 0 || input.remove.length > 0, {
+		message: "At least one tag change is required",
+	});
+
 export const authSchema = z.object({
 	email: z.email("Введите корректный адрес электронной почты"),
 	password: z
@@ -182,6 +196,8 @@ export type LinkContent = z.infer<typeof linkContentSchema>;
 export type Tag = z.infer<typeof tagSchema>;
 export type CreateContent = z.infer<typeof createContentSchema>;
 export type UpdateContent = z.infer<typeof updateContentSchema>;
+export type DeleteContentBatch = z.infer<typeof deleteContentBatchSchema>;
+export type UpdateContentTagsBatch = z.infer<typeof updateContentTagsBatchSchema>;
 export type Auth = z.infer<typeof authSchema>;
 
 export function extractTextFromStructuredContent(structuredContent: any): string {

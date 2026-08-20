@@ -196,6 +196,10 @@ app.whenReady().then(async () => {
 		await library.delete(id);
 		sync.wake();
 	});
+	ipcMain.handle("library:delete-many", async (_event, ids: string[]) => {
+		await library.deleteMany(ids);
+		sync.wake();
+	});
 	ipcMain.handle("library:delete-all", () => library.deleteAll());
 	ipcMain.handle("library:settings", () => library.getSettings());
 	ipcMain.handle("library:update-settings", (_event, settings: Partial<LocalSettings>) =>
@@ -214,6 +218,9 @@ app.whenReady().then(async () => {
 	ipcMain.handle("library:tags", () => library.getTags());
 	ipcMain.handle("library:update-tag-color", (_event, id: string, color: number) =>
 		library.updateTagColor(id, color)
+	);
+	ipcMain.handle("library:update-tags", (_event, input: { add: string[]; ids: string[]; remove: string[] }) =>
+		library.updateTags(input)
 	);
 	ipcMain.handle("library:import-files", async (_event, input?: LocalImportInput) => {
 		if (input?.files?.length) return Promise.all(input.files.map((file) => importLocalBytes(file, input)));

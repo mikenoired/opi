@@ -18,7 +18,7 @@ import {
 import { apiUrl } from "@/shared/config/api";
 
 type ChangeListener = () => void;
-type RuntimeEngine = Pick<SyncEngine, "mutate" | "start" | "stop" | "syncNow">;
+type RuntimeEngine = Pick<SyncEngine, "mutate" | "mutateMany" | "start" | "stop" | "syncNow">;
 type ProjectionReplica = Pick<IndexedDbReplicaStore, "get" | "list">;
 type RuntimeFactory = (
 	userId: string,
@@ -71,6 +71,11 @@ export class WebSyncRuntime {
 	mutate(intent: SyncIntent): Promise<void> {
 		if (!this.engine) return Promise.reject(new Error("Web sync is not running"));
 		return this.engine.mutate(intent);
+	}
+
+	mutateMany(intents: SyncIntent[]): Promise<void> {
+		if (!this.engine) return Promise.reject(new Error("Web sync is not running"));
+		return this.engine.mutateMany(intents);
 	}
 
 	subscribeProjection(listener: ChangeListener): () => void {

@@ -27,6 +27,8 @@ import type {
 	ContentTags,
 	CreateContentResult,
 	DeleteContentResult,
+	DeleteContentBatchInput,
+	DeleteContentBatchResult,
 	CreateContentInput,
 	Graph,
 	ImportFileInput,
@@ -40,6 +42,8 @@ import type {
 	TagsWithContent,
 	UpdateContentInput,
 	UpdateContentResult,
+	UpdateContentTagsBatchInput,
+	UpdateContentTagsBatchResult,
 	UpdateTagColorInput,
 	UploadInput,
 	UploadResult,
@@ -259,6 +263,22 @@ const runtimeApi = {
 					...options,
 				}),
 		},
+		deleteMany: {
+			useMutation: (options: any = {}) =>
+				useMutation({
+					mutationFn: (input: DeleteContentBatchInput) =>
+						webRuntime.services.client.content.deleteMany(input),
+					...options,
+				}),
+		},
+		updateTags: {
+			useMutation: (options: any = {}) =>
+				useMutation({
+					mutationFn: (input: UpdateContentTagsBatchInput) =>
+						webRuntime.services.client.content.updateTags(input),
+					...options,
+				}),
+		},
 		updateTagColor: {
 			useMutation: (options: any = {}) =>
 				useMutation({
@@ -378,6 +398,8 @@ interface Client {
 		create: { useMutation: Mutation<CreateContentInput, CreateContentResult> };
 		update: { useMutation: Mutation<UpdateContentInput, UpdateContentResult> };
 		delete: { useMutation: Mutation<{ id: string }, DeleteContentResult> };
+		deleteMany: { useMutation: Mutation<DeleteContentBatchInput, DeleteContentBatchResult> };
+		updateTags: { useMutation: Mutation<UpdateContentTagsBatchInput, UpdateContentTagsBatchResult> };
 		updateTagColor: { useMutation: Mutation<UpdateTagColorInput, ContentTags[number]> };
 		importFile: { useMutation: Mutation<ImportFileInput, ImportFileResult> };
 	};

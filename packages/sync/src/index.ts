@@ -138,11 +138,18 @@ export class SyncEngine {
 	}
 
 	async mutate(intent: SyncIntent): Promise<void> {
-		const adapter = this.dependencies.registry.get(intent.entityType);
-		adapter.validateIntent(intent);
-		await this.dependencies.outbox.enqueue(intent);
+		await this.mutateMany([intent]);
+	}
+
+	async mutateMany(intents: SyncIntent[]): Promise<void> {
+		const entries = intents.map((intent) => ({
+			adapter: this.dependencies.registry.get(intent.entityType),
+			intent,
+		}));
+		for (const { adapter, intent } of entries) adapter.validateIntent(intent);
+		for (const { intent } of entries) await this.dependencies.outbox.enqueue(intent);
 		await this.dependencies.replica.transact(async (transaction) => {
-			await adapter.applyOptimistic(transaction, intent);
+			for (const { adapter, intent } of entries) await adapter.applyOptimistic(transaction, intent);
 		});
 		await this.syncNow();
 	}
