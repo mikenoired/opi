@@ -13,7 +13,7 @@
 
 ## Technology stack
 
-- TypeScript, Bun 1.3.14+, React 19, Vite, and TanStack Router.
+- TypeScript, Bun 1.4+, React 19, Vite, and TanStack Router.
 - Hono with Zod validation and Hono RPC type contracts.
 - Drizzle ORM over `postgres` for PostgreSQL.
 - TanStack React Query for client server-state; Next Themes and dedicated React contexts for client UI state.

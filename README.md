@@ -6,7 +6,7 @@ _Private media/data manager w/ AI autosorting & context asking_
 
 ### 1. Установите зависимости
 
-Понадобятся [Bun 1.3.14+](https://bun.sh/) и Docker с Compose.
+Понадобятся [Bun 1.4+](https://bun.sh/) и Docker с Compose.
 
 ```bash
 bun install

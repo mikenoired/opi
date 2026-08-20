@@ -20,6 +20,7 @@
 		"dev": "bun --watch src/index.ts",
 		"test:server": "bun test src/server --path-ignore-patterns '**/*.integration.test.ts'",
 		"test:api": "JWT_SECRET=test-access-secret JWT_REFRESH_SECRET=test-refresh-secret API_RATE_LIMIT_MUTATION=1000 bun test src/server --test-name-pattern 'API integration'",
+		"smoke": "JWT_SECRET=smoke-test-secret JWT_REFRESH_SECRET=smoke-test-refresh-secret API_RATE_LIMIT_MUTATION=1000 bun scripts/server-smoke.ts",
 		"test:coverage": "JWT_SECRET=test-access-secret JWT_REFRESH_SECRET=test-refresh-secret API_RATE_LIMIT_MUTATION=1000 bun test src/server --coverage --coverage-reporter=lcov --coverage-dir=../../coverage/server",
 		"test": "bun run test:server && bun run test:api",
 		"typecheck": "tsc --noEmit"
@@ -47,7 +48,7 @@
 	},
 	"devDependencies": {
 		"@monolyth/tsconfig": "workspace:*",
-		"@types/bun": "^1.3.14",
+		"@types/bun": "^1.4.0",
 		"@types/jsonwebtoken": "^9.0.10",
 		"@types/minio": "^7.1.1",
 		"@types/node": "^24.13.2",

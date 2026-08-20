@@ -16,7 +16,7 @@
 	"ignorePatterns": [
 		"**/src/routeTree.gen.ts",
 		"**/src/styles.css",
-		"docs/performance/server-smoke.json",
+		"**/docs/performance/server-smoke.json",
 		"**/dist",
 		"**/build",
 		"**/coverage"

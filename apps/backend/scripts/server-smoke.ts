@@ -11,10 +11,10 @@ process.env.MINIO_ENDPOINT ||= "localhost:9000";
 process.env.MINIO_ACCESS_KEY ||= "minioadmin";
 process.env.MINIO_SECRET_KEY ||= "minioadmin";
 
-const { api } = await import("../apps/backend/src/server/api/app");
-const { db } = await import("../apps/backend/src/server/db");
-const { users } = await import("../apps/backend/src/server/db/schema");
-const { deleteUserFiles } = await import("../apps/backend/src/storage/minio");
+const { api } = await import("../src/server/api/app");
+const { db } = await import("../src/server/db");
+const { users } = await import("../src/server/db/schema");
+const { deleteUserFiles } = await import("../src/storage/minio");
 
 const statisticsPath = join(import.meta.dir, "..", "docs", "performance", "server-smoke.json");
 const parseCount = (value: string | undefined, fallback: number, minimum = 1) => {

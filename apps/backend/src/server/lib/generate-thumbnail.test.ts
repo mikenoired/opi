@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { extractVideoThumbnail } from "../services/upload/upload-media";
 import { generateThumbnail, getImageDimensions } from "./generate-thumbnail";
 
-const asset = (name: string) => Bun.file(join(import.meta.dir, "../../../../../test/assets", name)).bytes();
+const asset = (name: string) => Bun.file(join(import.meta.dir, "../../../test/assets", name)).bytes();
 let tempDir: string;
 
 beforeAll(async () => {
